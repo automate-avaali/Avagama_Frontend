@@ -1,10 +1,10 @@
 
 /**
  * API Service for Avagama AI
- * Integrated with Render backend at https://avagama-backend.onrender.com/api
+ * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
  */
 
-const BASE_URL = 'https://avagama-backend.onrender.com/api';
+const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
 
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
