@@ -93,7 +93,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
  const Logo = () => (
     <div className="flex items-center">
       <img
-        src="/Avagama.AI_Logo.png"
+        src="/Avagama.AI_Logo.jpg"
         alt="Avagama AI"
         className="h-10 object-contain"
       />

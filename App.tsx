@@ -79,7 +79,7 @@ const App: React.FC = () => {
               <div className="flex items-center">
                 <div className="flex items-start">
                   <img
-                    src="/Avagama.AI_Logo.png"
+                    src="/Avagama.AI_Logo.jpg"
                     alt="Avagama AI"
                     className="h-6 object-contain"
                   />
