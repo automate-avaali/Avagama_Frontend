@@ -204,25 +204,43 @@ const StrategicQuadrant: React.FC = () => {
       else quadrantCounts.lp++;
 
       // Use the scales for plotting
-      let x = xScale(f);
-      let y = yScale(bv);
+      const origX = xScale(f);
+      const origY = yScale(bv);
+      let x = origX;
+      let y = origY;
 
-      // Collision detection - Increased distance to prevent overlapping
+      // Determine quadrant boundaries to prevent points from shifting to wrong quadrants
+      const midX = innerWidth / 2;
+      const midY = innerHeight / 2;
+      const minX = f >= 0.5 ? midX : 0;
+      const maxX = f >= 0.5 ? innerWidth : midX;
+      const minY = bv >= 0.5 ? 0 : midY;
+      const maxY = bv >= 0.5 ? midY : innerHeight;
+
+      // Collision detection - Deterministic spiral search to ensure consistent plotting
       let attempts = 0;
-      while (attempts < 100) {
+      const collisionRadius = 38; // Optimized for clarity and packing
+      while (attempts < 150) {
         let collision = false;
         for (const p of plottedPoints) {
           const dist = Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2));
-          if (dist < 45) { // Slightly reduced from 55 to allow more natural grouping if needed
+          if (dist < collisionRadius) {
             collision = true;
             break;
           }
         }
         if (!collision) break;
-        x += (Math.random() - 0.5) * 40;
-        y += (Math.random() - 0.5) * 40;
-        x = Math.max(30, Math.min(innerWidth - 30, x));
-        y = Math.max(30, Math.min(innerHeight - 30, y));
+        
+        // Deterministic offset using a spiral pattern based on attempts and index
+        const angle = attempts * 0.4 + (idx * 0.1);
+        const radius = attempts * 1.5;
+        x = origX + Math.cos(angle) * radius;
+        y = origY + Math.sin(angle) * radius;
+        
+        // Clamp to quadrant boundaries with padding to keep points inside their correct quadrant
+        x = Math.max(minX + 20, Math.min(maxX - 20, x));
+        y = Math.max(minY + 20, Math.min(maxY - 20, y));
+        
         attempts++;
       }
 
