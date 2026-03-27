@@ -1,6 +1,7 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { apiService } from '../../services/api';
 import { useCortex } from '../../context/CortexContext';
@@ -9,6 +10,7 @@ const DiscoveryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [hoveredFeasibility, setHoveredFeasibility] = useState<{idx: number, rect: DOMRect, scoring: any[]} | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { openChat } = useCortex();
@@ -68,6 +70,24 @@ const DiscoveryDetail: React.FC = () => {
     if (v.includes('strong')) return 'bg-emerald-50 text-emerald-600 border-emerald-100';
     if (v.includes('moderate')) return 'bg-blue-50 text-blue-600 border-blue-100';
     return 'bg-gray-50 text-gray-400 border-gray-100';
+  };
+
+  const formatJustification = (text: string) => {
+    if (!text) return '';
+    const trimmed = text.trim();
+    // Check if it starts and ends with " or **
+    const isQuoted = trimmed.startsWith('"') && trimmed.endsWith('"');
+    const isBolded = trimmed.startsWith('**') && trimmed.endsWith('**');
+    
+    if (isQuoted || isBolded) {
+      // If it's already bolded with **, return as is. 
+      // If it's quoted, wrap it in ** to make it bold.
+      if (isQuoted && !isBolded) {
+        return `**${trimmed}**`;
+      }
+      return trimmed;
+    }
+    return trimmed;
   };
 
   /**
@@ -239,15 +259,26 @@ const DiscoveryDetail: React.FC = () => {
                        </div>
                        
                        <div className="pt-6 md:pt-8 border-t border-gray-200 mt-6 md:mt-10">
-                          <div className="flex justify-between items-center bg-white p-5 md:p-8 lg:p-10 rounded-[24px] md:rounded-[40px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                          <div 
+                            className={`flex justify-between items-center bg-white p-5 md:p-8 lg:p-10 rounded-[24px] md:rounded-[40px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all cursor-help hover:border-[#9d7bb0]/30`}
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setHoveredFeasibility({
+                                idx,
+                                rect,
+                                scoring: uc.technical_scoring || []
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredFeasibility(null)}
+                          >
                              <div className="space-y-1">
                                 <p className="text-[9px] md:text-[11px] font-bold text-gray-400 uppercase tracking-widest">FEASIBILITY SCORE</p>
                                 <div className="text-2xl md:text-4xl font-black text-gray-900 flex items-baseline gap-1">
-                                  {uc.business_benefit_score?.score || 0}
+                                  {uc.technical_feasibility_score?.score || 0}
                                   <span className="text-[10px] md:text-sm text-gray-300 font-bold">/100</span>
                                 </div>
                              </div>
-                             <BenefitScoreRing score={uc.business_benefit_score?.score || 0} />
+                             <BenefitScoreRing score={uc.technical_feasibility_score?.score || 0} />
                           </div>
                        </div>
                     </div>
@@ -331,7 +362,7 @@ const DiscoveryDetail: React.FC = () => {
                                Ask Avagama
                              </button>
                              <span className="text-xl md:text-2xl font-black text-gray-900">
-                                {uc.totalWeightedScore !== undefined && uc.totalWeightedScore !== null ? uc.totalWeightedScore : '-'}
+                                {uc.business_benefit_score?.score || '-'}
                              </span>
                           </div>
                        </div>
@@ -392,6 +423,71 @@ const DiscoveryDetail: React.FC = () => {
            </div>
         </div>
       </div>
+
+      {/* Technical Feasibility Tooltip Portal */}
+      {hoveredFeasibility && createPortal(
+        <div 
+          className="fixed z-[9999] pointer-events-none animate-in fade-in zoom-in duration-200"
+          style={{
+            top: hoveredFeasibility.rect.top - 4,
+            left: hoveredFeasibility.rect.left + hoveredFeasibility.rect.width / 2,
+            transform: 'translate(-50%, -100%)'
+          }}
+        >
+          <div className="bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 p-6 w-[320px] md:w-[450px] space-y-5">
+            <div className="flex items-center justify-between border-b border-gray-50 pb-3">
+              <h6 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Technical Scoring Parameters</h6>
+              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-xs">⚙️</div>
+            </div>
+            <div className="space-y-5 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+              {hoveredFeasibility.scoring.length > 0 ? (
+                hoveredFeasibility.scoring.map((ts, i) => (
+                  <div key={i} className="space-y-2 group/item">
+                    <div className="flex justify-between items-end gap-4">
+                      <div className="space-y-1 flex-1">
+                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-tight">{ts.parameter}</p>
+                        <div className="text-[9px] font-medium text-gray-500 leading-snug">
+                          <ReactMarkdown components={{
+                            p: ({node, ...props}) => <p className="m-0" {...props} />,
+                            strong: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />
+                          }}>
+                            {formatJustification(ts.justification)}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 flex flex-col items-end">
+                        <div className="flex items-baseline gap-1">
+                          <span className={`text-sm font-black ${discoveryType === 'domain' ? 'text-[#4db6ac]' : 'text-[#9d7bb0]'}`}>{ts.score}</span>
+                          <span className="text-[8px] font-bold text-gray-300">/{ts.weight || 10}</span>
+                        </div>
+                        {ts.weight && (
+                          <div className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">
+                            Weight: {ts.weight}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-1000 ease-out ${discoveryType === 'domain' ? 'bg-[#4db6ac]' : 'bg-[#9d7bb0]'}`} 
+                        style={{width: `${(ts.score / (ts.weight || 10)) * 100}%`}}
+                      ></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[10px] font-bold text-gray-400 uppercase text-center py-4">No parameters available</p>
+              )}
+            </div>
+            <div className="pt-1 flex justify-center">
+               <div className="w-1.5 h-1.5 rounded-full bg-gray-200"></div>
+            </div>
+          </div>
+          {/* Tooltip Arrow */}
+          <div className="w-4 h-4 bg-white border-r border-b border-gray-100 rotate-45 absolute -bottom-1.5 left-1/2 -translate-x-1/2"></div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 {
-  "name": "Remix: Avagama AI Enterprise Portal",
+  "name": "Avagama AI Enterprise Portal",
   "description": "An enterprise-grade AI-powered process evaluation platform designed to discover, evaluate, and scale automation workflows using agentic intelligence.",
   "requestFramePermissions": [
     "camera",
