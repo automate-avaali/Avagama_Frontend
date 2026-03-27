@@ -93,13 +93,11 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
  const Logo = () => (
     <div className="flex items-center">
       <img
-        src="/Avagama.AI_Logo.jpg"
+        src="/Avagama.AI_Logo.jpg" 
         alt="Avagama AI"
         className="h-10 object-contain"
       />
-      <span className="text-[8px] text-gray-400 relative -top-3 ml-[2px]">
-                    TM
-                  </span>
+      <span className="text-[8px] text-gray-400 relative -top-3 ml-[2px]">TM</span>
     </div>
   );
 
