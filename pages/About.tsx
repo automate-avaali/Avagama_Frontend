@@ -106,9 +106,9 @@ const About: React.FC = () => {
       <section className="py-32 px-6 text-center">
          <div className="max-w-2xl mx-auto space-y-10">
             <h2 className="text-4xl font-bold">Ready to discover your <span className="text-[#9d7bb0]">Agentic Roadmap?</span></h2>
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center">
                <Link to="/login" className="bg-[#9d7bb0] text-white px-10 py-5 rounded-2xl font-black shadow-2xl shadow-purple-200 hover:scale-105 transition-all inline-block">Get Started Now</Link>
-               <Link to="/pricing" className="border-2 border-gray-100 px-10 py-5 rounded-2xl font-black hover:bg-gray-50 transition-all inline-block">View Pricing</Link>
+               {/* <Link to="/pricing" className="border-2 border-gray-100 px-10 py-5 rounded-2xl font-black hover:bg-gray-50 transition-all inline-block">View Pricing</Link> */}
             </div>
          </div>
       </section>
