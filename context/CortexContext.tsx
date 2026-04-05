@@ -51,37 +51,18 @@ export const CortexProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (!token) return;
 
     try {
-      const res = await apiService.auth.getCredits();
-      console.log("Credits refresh response:", res);
-      
-      // Handle various response structures: 
-      // 1. { credits: 50 }
-      // 2. { data: { credits: 50 } }
-      // 3. { success: true, credits: 50 }
-      let newCredits = undefined;
-      
-      if (typeof res === 'number') {
-        newCredits = res;
-      } else if (res.credits !== undefined) {
-        newCredits = res.credits;
-      } else if (res.data?.credits !== undefined) {
-        newCredits = res.data.credits;
-      } else if (res.data !== undefined && typeof res.data === 'number') {
-        newCredits = res.data;
-      } else if (res.user?.credits !== undefined) {
-        newCredits = res.user.credits;
-      } else if (res.data?.user?.credits !== undefined) {
-        newCredits = res.data.user.credits;
-      }
-      
-      if (newCredits !== undefined) {
-        const numericCredits = Number(newCredits);
+      const res = await apiService.auth.getMe();
+      if (res.success && res.data) {
+        const numericCredits = Number(res.data.credits);
         setCredits(numericCredits);
         const userStr = sessionStorage.getItem('user');
         if (userStr) {
           try {
             const user = JSON.parse(userStr);
             user.credits = numericCredits;
+            user.role = res.data.role;
+            user.organization = res.data.organization;
+            user.department = res.data.department;
             sessionStorage.setItem('user', JSON.stringify(user));
           } catch (e) {
             console.error("Error updating user in sessionStorage", e);

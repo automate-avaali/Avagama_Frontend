@@ -23,7 +23,9 @@ import Pricing from './pages/Pricing';
 import CompanyDiscovery from './pages/Discovery/CompanyDiscovery';
 import DomainDiscovery from './pages/Discovery/DomainDiscovery';
 import DiscoveryDetail from './pages/Discovery/DiscoveryDetail';
-import AdminPanel from './pages/Admin/AdminPanel';
+import SystemAdmin from './pages/Admin/SystemAdmin';
+import OrgAdminDashboard from './pages/Admin/OrgAdminDashboard';
+import DeptAdminDashboard from './pages/Admin/DeptAdminDashboard';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -70,7 +72,9 @@ const App: React.FC = () => {
               <Route path="/discovery/detail/:id" element={<DiscoveryDetail />} />
               
               {/* Admin Routes */}
-              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/system" element={<SystemAdmin />} />
+              <Route path="/admin/org" element={<OrgAdminDashboard />} />
+              <Route path="/admin/dept" element={<DeptAdminDashboard />} />
             </Routes>
           </main>
           

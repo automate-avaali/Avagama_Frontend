@@ -1,10 +1,10 @@
 
 /**
  * API Service for Avagama AI
- * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
+ * Integrated with Render backend at https://avagamabackendtest.onrender.com/api
  */
 
-const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
+const BASE_URL = 'https://avagamabackendtest.onrender.com/api';
 
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
@@ -55,6 +55,12 @@ export const apiService = {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ token, password }),
+      });
+      return handleResponse(response);
+    },
+    getMe: async () => {
+      const response = await fetch(`${BASE_URL}/me`, {
+        headers: getHeaders(),
       });
       return handleResponse(response);
     },
@@ -307,6 +313,107 @@ export const apiService = {
     }
   },
 
+  system: {
+    onboardEnterprise: async (data: any) => {
+      const response = await fetch(`${BASE_URL}/system/onboard`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    getDashboard: async () => {
+      const response = await fetch(`${BASE_URL}/system/dashboard`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getUsers: async () => {
+      const response = await fetch(`${BASE_URL}/system/users`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getCreditRequests: async () => {
+      const response = await fetch(`${BASE_URL}/system/credit-requests`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    assignPlan: async (orgId: string, data: { plan: string; validityDays: number }) => {
+      const response = await fetch(`${BASE_URL}/system/organizations/${orgId}/assign-plan`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    assignCredits: async (orgId: string, data: { amount: number }) => {
+      const response = await fetch(`${BASE_URL}/system/organizations/${orgId}/assign-credits`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    toggleOrganizationStatus: async (orgId: string) => {
+      const response = await fetch(`${BASE_URL}/system/organizations/${orgId}/toggle-status`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    deleteOrganization: async (orgId: string) => {
+      const response = await fetch(`${BASE_URL}/system/organizations/${orgId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/system/users/${userId}/approve`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    toggleUserStatus: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/system/users/${userId}/toggle-status`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    deleteUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/system/users/${userId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveCreditRequest: async (requestId: string) => {
+      const response = await fetch(`${BASE_URL}/system/credit-requests/${requestId}/approve`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    rejectCreditRequest: async (requestId: string, data: { reason: string }) => {
+      const response = await fetch(`${BASE_URL}/system/credit-requests/${requestId}/reject`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    getCreditRequestsHistory: async () => {
+      const response = await fetch(`${BASE_URL}/system/credit-requests/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    }
+  },
+
   documents: {
     upload: async (file: File) => {
       const formData = new FormData();
@@ -344,6 +451,214 @@ export const apiService = {
       const response = await fetch(`${BASE_URL}/documents/chat/${documentId}/message/${messageId}`, {
         method: 'DELETE',
         headers: getHeaders(),
+      });
+      return handleResponse(response);
+    }
+  },
+
+  org: {
+    onboardUser: async (data: any) => {
+      const response = await fetch(`${BASE_URL}/org/onboard`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    getDashboard: async () => {
+      const response = await fetch(`${BASE_URL}/org/dashboard`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getDepartments: async () => {
+      const response = await fetch(`${BASE_URL}/org/departments`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    createDepartment: async (data: { name: string }) => {
+      const response = await fetch(`${BASE_URL}/org/departments`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    deleteDepartment: async (deptId: string) => {
+      const response = await fetch(`${BASE_URL}/org/departments/${deptId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getUsers: async () => {
+      const response = await fetch(`${BASE_URL}/org/users`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/approve`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    removeUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/remove`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    moveUser: async (userId: string, data: { departmentId: string }) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/move`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    promoteUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/promote`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    demoteUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/demote`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    makeOrgAdmin: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/make-org-admin`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    removeOrgAdmin: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/org/users/${userId}/remove-org-admin`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    allocateCredits: async (data: { departmentId: string, amount: number }) => {
+      const response = await fetch(`${BASE_URL}/org/credits/allocate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    returnCredits: async (data: { departmentId: string, amount: number }) => {
+      const response = await fetch(`${BASE_URL}/org/credits/return`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    getJoinRequests: async () => {
+      const response = await fetch(`${BASE_URL}/org/join-requests`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveJoinRequest: async (reqId: string) => {
+      const response = await fetch(`${BASE_URL}/org/join-requests/${reqId}/approve`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    rejectJoinRequest: async (reqId: string) => {
+      const response = await fetch(`${BASE_URL}/org/join-requests/${reqId}/reject`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getTransferRequests: async () => {
+      const response = await fetch(`${BASE_URL}/org/transfer-requests`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveTransferRequest: async (reqId: string) => {
+      const response = await fetch(`${BASE_URL}/org/transfer-requests/${reqId}/approve`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    rejectTransferRequest: async (reqId: string) => {
+      const response = await fetch(`${BASE_URL}/org/transfer-requests/${reqId}/reject`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getCreditRequests: async () => {
+      const response = await fetch(`${BASE_URL}/org/credit-requests`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getJoinRequestsHistory: async () => {
+      const response = await fetch(`${BASE_URL}/org/join-requests/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getTransferRequestsHistory: async () => {
+      const response = await fetch(`${BASE_URL}/org/transfer-requests/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getCreditRequestsHistory: async () => {
+      const response = await fetch(`${BASE_URL}/org/credit-requests/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getPendingSentSystemRequests: async () => {
+      const response = await fetch(`${BASE_URL}/org/credits/requests-to-system`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getSentSystemRequestsHistory: async () => {
+      const response = await fetch(`${BASE_URL}/org/credits/requests-to-system/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveCreditRequest: async (reqId: string) => {
+      const response = await fetch(`${BASE_URL}/org/credit-requests/${reqId}/approve`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    rejectCreditRequest: async (reqId: string) => {
+      const response = await fetch(`${BASE_URL}/org/credit-requests/${reqId}/reject`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    requestSystemCredits: async (data: { amount: number, reason: string }) => {
+      const response = await fetch(`${BASE_URL}/org/credits/request`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
       });
       return handleResponse(response);
     }

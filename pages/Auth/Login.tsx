@@ -33,24 +33,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
            return;
         }
 
-        const token = response.token || response.data?.token;
+        const token = response.token;
         if (token) {
           sessionStorage.setItem("token", token);
           
-          // Capture user data from various possible structures
-          const rawUser = response.user || response.data?.user || {};
-          const role = rawUser.role || response.role || response.data?.role || 'USER_ROLE';
-          const credits = rawUser.credits !== undefined ? rawUser.credits : (response.credits !== undefined ? response.credits : 0);
-          const licenseExpiry = rawUser.licenseExpiry || response.licenseExpiry || null;
-          const plan = rawUser.plan || response.plan || 'Free';
-          
           const userInfo = {
-            ...rawUser,
-            firstName: rawUser.firstName || email.split('@')[0],
-            role: role,
-            credits: credits,
-            licenseExpiry: licenseExpiry,
-            plan: plan
+            firstName: email.split('@')[0],
+            role: response.role || 'USER_ROLE',
+            credits: response.credits || 0,
+            organization: response.organization || null,
+            department: response.department || null,
+            email: email
           };
           
           sessionStorage.setItem("user", JSON.stringify(userInfo));
@@ -58,7 +51,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           await refreshCredits();
           onLogin();
           navigate("/dashboard");
+        } else {
+          setError("Login failed. No token received.");
         }
+      } else {
+        setError(response?.message || "Access denied. Please check your credentials.");
       }
     } catch (err: any) {
       setError(err.message || "Access denied. Please check your credentials.");
