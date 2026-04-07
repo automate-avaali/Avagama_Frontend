@@ -38,7 +38,7 @@ const AskPdfModal: React.FC = () => {
     }
     .markdown-body p { margin-bottom: 12px; }
     .markdown-body p:last-child { margin-bottom: 0; }
-    .markdown-body strong { font-weight: 700; color: inherit; }
+    .markdown-body strong { font-weight: 900; color: inherit; }
     .markdown-body ul, .markdown-body ol { margin-bottom: 12px; padding-left: 20px; }
     .markdown-body li { margin-bottom: 4px; }
     .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 { 
@@ -258,20 +258,20 @@ const AskPdfModal: React.FC = () => {
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            className="relative w-full max-w-6xl h-[85vh] bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20"
+            className="relative w-full max-w-6xl h-full md:h-[85vh] bg-white rounded-none md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20"
           >
             {/* Sidebar (History) */}
-            <div className="w-full md:w-80 bg-gray-50 border-r border-gray-100 flex flex-col shrink-0 h-1/3 md:h-full">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
+            <div className="w-full md:w-80 bg-gray-50 border-r border-gray-100 flex flex-col shrink-0 h-[40%] md:h-full">
+              <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center bg-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Ask PDF</h3>
-                    <p className="text-[10px] font-bold text-gray-400">Document Q&A</p>
+                    <h3 className="text-xs md:text-sm font-black text-gray-900 uppercase tracking-widest">Ask PDF</h3>
+                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400">Document Q&A</p>
                   </div>
                 </div>
                 <button 
@@ -283,35 +283,35 @@ const AskPdfModal: React.FC = () => {
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2 mb-4">Recent Documents</p>
+              <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
+                <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2 mb-2 md:mb-4">Recent Documents</p>
                 {documents.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic px-2">No documents uploaded yet.</p>
+                  <p className="text-[10px] md:text-xs text-gray-400 italic px-2">No documents uploaded yet.</p>
                 ) : (
                   documents.map(doc => (
                     <div key={doc.documentId} className="relative group">
                       {documentToDelete === doc.documentId ? (
-                        <div className="w-full px-4 py-3 rounded-xl text-sm bg-red-50 border border-red-100 flex items-center justify-between">
-                          <span className="text-red-600 font-bold truncate pr-2 text-xs">Delete {doc.name}?</span>
+                        <div className="w-full px-3 md:px-4 py-2 md:py-3 rounded-xl text-xs bg-red-50 border border-red-100 flex items-center justify-between">
+                          <span className="text-red-600 font-bold truncate pr-2 text-[10px] md:text-xs">Delete {doc.name}?</span>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setDocumentToDelete(null);
                               }}
-                              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
+                              className="p-1 rounded-lg text-gray-500 hover:bg-gray-200 transition-colors"
                               title="Cancel"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </button>
                             <button
                               onClick={(e) => handleDeleteChat(doc.documentId, e)}
-                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-200 transition-colors"
+                              className="p-1 rounded-lg text-red-600 hover:bg-red-200 transition-colors"
                               title="Confirm Delete"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                               </svg>
                             </button>
@@ -321,13 +321,13 @@ const AskPdfModal: React.FC = () => {
                         <>
                           <button
                             onClick={() => setActiveDocumentId(doc.documentId)}
-                            className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-colors flex items-center gap-3 pr-10 ${
+                            className={`w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-xl text-xs transition-colors flex items-center gap-2 md:gap-3 pr-10 ${
                               activeDocumentId === doc.documentId 
                                 ? 'bg-white shadow-sm border border-gray-100 text-[#a26da8] font-bold' 
                                 : 'text-gray-600 hover:bg-gray-100 font-medium'
                             }`}
                           >
-                            <svg className="w-4 h-4 shrink-0 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                             </svg>
                             <span className="truncate">{doc.name}</span>
@@ -337,12 +337,12 @@ const AskPdfModal: React.FC = () => {
                               e.stopPropagation();
                               setDocumentToDelete(doc.documentId);
                             }}
-                            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity ${
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 md:group-hover:opacity-100 transition-opacity ${
                               activeDocumentId === doc.documentId ? 'opacity-100' : ''
                             }`}
                             title="Delete document"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
@@ -355,19 +355,19 @@ const AskPdfModal: React.FC = () => {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-white h-2/3 md:h-full relative">
+            <div className="flex-1 flex flex-col bg-white h-[60%] md:h-full relative">
               <button 
                 onClick={closeAskPdf}
-                className="absolute top-6 right-6 z-10 w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-10 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
 
               {!activeDocumentId ? (
                 // Upload Screen
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-8 text-center">
                   <div 
-                    className="w-full max-w-md p-10 border-2 border-dashed border-gray-200 rounded-[32px] bg-gray-50 hover:bg-gray-100 hover:border-purple-200 transition-all cursor-pointer flex flex-col items-center justify-center gap-6"
+                    className="w-full max-w-md p-6 md:p-10 border-2 border-dashed border-gray-200 rounded-[24px] md:rounded-[32px] bg-gray-50 hover:bg-gray-100 hover:border-purple-200 transition-all cursor-pointer flex flex-col items-center justify-center gap-4 md:gap-6"
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
@@ -379,60 +379,60 @@ const AskPdfModal: React.FC = () => {
                       className="hidden" 
                       accept=".pdf,.docx,.txt,.xlsx,.png,.jpg,.jpeg"
                     />
-                    <div className="w-20 h-20 rounded-2xl bg-white shadow-sm flex items-center justify-center text-purple-500">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl md:rounded-2xl bg-white shadow-sm flex items-center justify-center text-purple-500">
                       {uploading ? (
-                        <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 md:w-8 md:h-8 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       ) : (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       )}
                     </div>
                     <div>
-                      <h4 className="text-lg font-black text-gray-900 mb-2">Upload Document</h4>
-                      <p className="text-sm text-gray-500 font-medium">Drag & drop or click to browse</p>
-                      <p className="text-[10px] text-gray-400 mt-4 uppercase tracking-widest font-bold">Supports PDF, DOCX, TXT, XLSX, PNG, JPG</p>
+                      <h4 className="text-base md:text-lg font-black text-gray-900 mb-1 md:mb-2 uppercase tracking-tight">Upload Document</h4>
+                      <p className="text-xs md:text-sm text-gray-500 font-medium">Drag & drop or click to browse</p>
+                      <p className="text-[8px] md:text-[10px] text-gray-400 mt-3 md:mt-4 uppercase tracking-widest font-bold">Supports PDF, DOCX, TXT, XLSX, PNG, JPG</p>
                     </div>
                   </div>
                 </div>
               ) : (
                 // Chat Screen
                 <>
-                  <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-sm z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="p-4 md:p-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-sm z-10">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                        <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
-                      <h3 className="font-bold text-gray-900 truncate max-w-[200px] md:max-w-md">
+                      <h3 className="text-xs md:text-sm font-bold text-gray-900 truncate max-w-[150px] md:max-w-md">
                         {documents.find(d => d.documentId === activeDocumentId)?.name || 'Document'}
                       </h3>
                     </div>
                   </div>
 
-                  <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/30">
+                  <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 bg-gray-50/30">
                     {fetchingHistory ? (
                       <div className="flex justify-center py-10">
                         <div className="animate-pulse flex space-x-2">
-                          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
                         </div>
                       </div>
                     ) : messages.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-                        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400">
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400">
+                          <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                           </svg>
                         </div>
                         <div>
-                          <p className="font-bold text-gray-600">Document analyzed and ready.</p>
-                          <p className="text-sm text-gray-500">Ask any question about the contents.</p>
+                          <p className="text-sm md:text-base font-bold text-gray-600">Document analyzed and ready.</p>
+                          <p className="text-xs md:text-sm text-gray-500">Ask any question about the contents.</p>
                         </div>
                       </div>
                     ) : (
@@ -441,62 +441,62 @@ const AskPdfModal: React.FC = () => {
                           key={idx}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className={`flex gap-4 group ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                          className={`flex gap-3 md:gap-4 group ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                         >
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                          <div className={`w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 ${
                             msg.role === 'user' 
                               ? 'bg-gray-900 text-white' 
                               : 'bg-gradient-to-br from-[#a26da8] to-[#6fcbbd] text-white shadow-sm'
                           }`}>
                             {msg.role === 'user' ? (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                             ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                             )}
                           </div>
-                          <div className={`max-w-[85%] rounded-2xl p-5 relative ${
+                          <div className={`max-w-[90%] md:max-w-[85%] rounded-xl md:rounded-2xl p-4 md:p-5 relative ${
                             msg.role === 'user' 
                               ? 'bg-gray-900 text-white rounded-tr-sm' 
                               : 'bg-white border border-gray-100 shadow-sm rounded-tl-sm'
                           }`}>
                             {msg._id && (
-                              <div className={`absolute top-2 ${msg.role === 'user' ? 'left-2' : 'right-2'} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                              <div className={`absolute top-2 ${msg.role === 'user' ? 'left-2' : 'right-2'} flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity`}>
                                 <button
                                   onClick={() => handleCopyMessage(msg._id!, msg.content)}
-                                  className={`p-1.5 rounded-lg text-gray-400 hover:text-[#a26da8] ${msg.role === 'user' ? 'hover:bg-white/10' : 'hover:bg-purple-50'}`}
+                                  className={`p-1 rounded-lg text-gray-400 hover:text-[#a26da8] ${msg.role === 'user' ? 'hover:bg-white/10' : 'hover:bg-purple-50'}`}
                                   title="Copy message"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                   </svg>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteMessage(msg._id!)}
-                                  className={`p-1.5 rounded-lg text-gray-400 hover:text-red-500 ${msg.role === 'user' ? 'hover:bg-red-500/20' : 'hover:bg-red-50'}`}
+                                  className={`p-1 rounded-lg text-gray-400 hover:text-red-500 ${msg.role === 'user' ? 'hover:bg-red-500/20' : 'hover:bg-red-50'}`}
                                   title="Delete message"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
                               </div>
                             )}
                             {msg.role === 'user' ? (
-                              <p className="text-sm leading-relaxed">{msg.content}</p>
+                              <p className="text-xs md:text-sm leading-relaxed">{msg.content}</p>
                             ) : (
                               <div className="space-y-4">
                                 <div className="markdown-body">
                                   <Markdown>{msg.content}</Markdown>
                                 </div>
                                 {msg.citations && msg.citations.length > 0 && (
-                                  <div className="mt-4 pt-4 border-t border-gray-100">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Sources</p>
+                                  <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
+                                    <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 md:mb-3">Sources</p>
                                     <div className="space-y-2">
                                       {msg.citations.map((cit, cIdx) => (
-                                        <div key={cIdx} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                          <p className="text-xs text-gray-600 italic leading-relaxed">"{cit.snippet}"</p>
-                                          <div className="mt-2 flex justify-end">
-                                            <span className="text-[9px] font-bold text-[#a26da8] bg-purple-50 px-2 py-0.5 rounded-md">
+                                        <div key={cIdx} className="bg-gray-50 rounded-lg md:rounded-xl p-2 md:p-3 border border-gray-100">
+                                          <p className="text-[10px] md:text-xs text-gray-600 italic leading-relaxed">"{cit.snippet}"</p>
+                                          <div className="mt-1.5 md:mt-2 flex justify-end">
+                                            <span className="text-[8px] md:text-[9px] font-bold text-[#a26da8] bg-purple-50 px-1.5 md:px-2 py-0.5 rounded-md">
                                               Relevance: {Math.round(cit.score * 100)}%
                                             </span>
                                           </div>
@@ -512,14 +512,14 @@ const AskPdfModal: React.FC = () => {
                       ))
                     )}
                     {loading && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#a26da8] to-[#6fcbbd] text-white shadow-sm flex items-center justify-center shrink-0">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 md:gap-4">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl bg-gradient-to-br from-[#a26da8] to-[#6fcbbd] text-white shadow-sm flex items-center justify-center shrink-0">
+                          <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </div>
-                        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl rounded-tl-sm p-5 flex items-center gap-2">
-                          <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="bg-white border border-gray-100 shadow-sm rounded-xl md:rounded-2xl rounded-tl-sm p-4 md:p-5 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                         </div>
                       </motion.div>
                     )}
@@ -531,22 +531,22 @@ const AskPdfModal: React.FC = () => {
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Ask a question about this document..."
-                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-2xl focus:ring-2 focus:ring-[#a26da8]/20 focus:border-[#a26da8] block p-4 pr-14 transition-all"
+                        placeholder="Ask about this document..."
+                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs md:text-sm rounded-xl md:rounded-2xl focus:ring-2 focus:ring-[#a26da8]/20 focus:border-[#a26da8] block p-3 md:p-4 pr-12 md:pr-14 transition-all"
                         disabled={loading}
                       />
                       <button
                         type="submit"
                         disabled={!input.trim() || loading}
-                        className="absolute right-2 top-2 bottom-2 w-10 flex items-center justify-center bg-gray-900 text-white rounded-xl hover:bg-black disabled:opacity-50 disabled:hover:bg-gray-900 transition-colors"
+                        className="absolute right-1.5 top-1.5 bottom-1.5 w-9 md:w-10 flex items-center justify-center bg-gray-900 text-white rounded-lg md:rounded-xl hover:bg-black disabled:opacity-50 disabled:hover:bg-gray-900 transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                       </button>
                     </form>
-                    <div className="text-center mt-3">
-                      <p className="text-[10px] text-gray-400 font-medium">AI can make mistakes. Verify important information from the source document.</p>
+                    <div className="text-center mt-2 md:mt-3">
+                      <p className="text-[8px] md:text-[10px] text-gray-400 font-medium px-4">AI can make mistakes. Verify important information from the source document.</p>
                     </div>
                   </div>
                 </>

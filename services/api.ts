@@ -1,10 +1,10 @@
 
 /**
  * API Service for Avagama AI
- * Integrated with Render backend at https://avagamabackendtest.onrender.com/api
+ * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
  */
 
-const BASE_URL = 'https://avagamabackendtest.onrender.com/api';
+const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
 
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
@@ -723,6 +723,89 @@ export const apiService = {
     },
     deleteUser: async (id: string) => {
       const response = await fetch(`${BASE_URL}/admin/delete-user/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    }
+  },
+
+  agents: {
+    create: async (payload: { type: string, entityId: string, usecaseId: string }) => {
+      const response = await fetch(`${BASE_URL}/agents/create`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+      return handleResponse(response);
+    },
+    chat: async (id: string, message?: string, file?: File) => {
+      const token = sessionStorage.getItem('token');
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (message) formData.append('message', message);
+        
+        const response = await fetch(`${BASE_URL}/agents/${id}/chat`, {
+          method: 'POST',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: formData,
+        });
+        return handleResponse(response);
+      } else {
+        const response = await fetch(`${BASE_URL}/agents/${id}/chat`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ message }),
+        });
+        return handleResponse(response);
+      }
+    },
+    regenerate: async (id: string, feedback: string) => {
+      const response = await fetch(`${BASE_URL}/agents/${id}/regenerate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ feedback }),
+      });
+      return handleResponse(response);
+    },
+    rollback: async (id: string, version: number) => {
+      const response = await fetch(`${BASE_URL}/agents/${id}/rollback`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ version }),
+      });
+      return handleResponse(response);
+    },
+    getHistory: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/agents/${id}/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    get: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/agents/${id}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    list: async (params: { type: string, entityId: string, usecaseId?: string }) => {
+      const query = new URLSearchParams(params as any).toString();
+      const response = await fetch(`${BASE_URL}/agents?${query}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getStatusBulk: async (type: string, entityId: string) => {
+      const response = await fetch(`${BASE_URL}/agents/status/bulk?type=${type}&entityId=${entityId}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    delete: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/agents/${id}/delete`, {
         method: 'DELETE',
         headers: getHeaders(),
       });

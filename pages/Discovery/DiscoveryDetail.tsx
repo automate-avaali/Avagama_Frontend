@@ -8,8 +8,10 @@ import { useCortex } from '../../context/CortexContext';
 
 const DiscoveryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  console.log("[DiscoveryDetail] Rendering with ID:", id);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [agentStatuses, setAgentStatuses] = useState<Record<string, any>>({});
   const [hoveredFeasibility, setHoveredFeasibility] = useState<{idx: number, rect: DOMRect, scoring: any[]} | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,30 +22,71 @@ const DiscoveryDetail: React.FC = () => {
   const discoveryType = searchParams.get('type') || 'company';
   const backPath = discoveryType === 'domain' ? '/discovery/domain' : '/discovery/company';
 
+  const initializedRef = useRef<string | null>(null);
+
   useEffect(() => {
+    const currentKey = `${id}-${discoveryType}`;
+    if (initializedRef.current === currentKey) return;
     if (!id) return;
-    const fetchData = async () => {
+    
+    initializedRef.current = currentKey;
+    setAgentStatuses({}); // Reset stale data
+    
+    const fetchAll = async () => {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        console.error("[DiscoveryDetail] No token found, skipping fetch");
+        return;
+      }
+
+      setLoading(true);
       try {
-        let res;
-        // Distinguish between company and domain detail endpoints
-        if (discoveryType === 'domain') {
-          res = await apiService.useCases.getDomain(id);
-        } else {
-          res = await apiService.useCases.getCompany(id);
-        }
-        
-        const detail = res.data || res;
-        if (detail && (detail._id || detail.id)) {
-          setData(detail);
-        }
-      } catch (err) {
-        console.error("Fetch detail error:", err);
+        // Fetch Status
+        const statusPromise = apiService.agents.getStatusBulk(discoveryType, id!).then(statusRes => {
+          console.log("[DiscoveryDetail] Status response:", statusRes);
+          const statusData = statusRes?.status || statusRes?.data || (statusRes?.success === undefined ? statusRes : null);
+          if (statusData) {
+            console.log("[DiscoveryDetail] Extracted status data:", statusData);
+            setAgentStatuses(statusData);
+          }
+        }).catch(err => {
+          console.error("[DiscoveryDetail] Status fetch error:", err);
+          if (err.status === 401) {
+            // Token might be expired
+            sessionStorage.removeItem('token');
+            window.location.href = '#/login';
+          }
+        });
+
+        // Fetch Detail
+        const detailPromise = (discoveryType === 'domain' ? apiService.useCases.getDomain(id!) : apiService.useCases.getCompany(id!)).then(res => {
+          const detail = res.data || res;
+          if (detail) {
+            setData(detail);
+          }
+        }).catch(err => {
+          console.error("[DiscoveryDetail] Detail fetch error:", err);
+          if (err.status === 401) {
+            sessionStorage.removeItem('token');
+            window.location.href = '#/login';
+          }
+        });
+
+        await Promise.all([statusPromise, detailPromise]);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+
+    fetchAll();
   }, [id, discoveryType]);
+
+  useEffect(() => {
+    if (data?.use_cases && Object.keys(agentStatuses).length > 0) {
+      console.log("[DiscoveryDetail] UseCase IDs:", data.use_cases.map((uc: any) => (uc._id || uc.id)?.toString()));
+      console.log("[DiscoveryDetail] Status Keys:", Object.keys(agentStatuses));
+    }
+  }, [data, agentStatuses]);
 
   if (loading) {
     return (
@@ -335,33 +378,82 @@ const DiscoveryDetail: React.FC = () => {
                        </div>
                        
                        <div className={`p-4 md:p-6 rounded-[24px] md:rounded-[32px] border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 md:mt-8 ${discoveryType === 'domain' ? 'bg-[#4db6ac]/5 border-[#4db6ac]/10' : 'bg-[#9d7bb0]/5 border-[#9d7bb0]/10'}`}>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 shrink-0">
                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-xs md:text-sm shrink-0">🎯</div>
                              <div>
                                 <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest ${discoveryType === 'domain' ? 'text-[#4db6ac]' : 'text-[#9d7bb0]'}`}>Benefit Score</p>
                                 <p className="text-[9px] md:text-[11px] font-bold text-gray-600">Calculated Strategy Alignment</p>
                              </div>
                           </div>
-                          <div className="flex items-center justify-between w-full sm:w-auto gap-4 md:gap-6">
-                             <button 
-                               onClick={() => openChat({
-                                 sourceType: discoveryType as any,
-                                 documentId: data._id || data.id,
-                                 usecaseId: uc._id || uc.id,
-                                 title: uc.title
-                               })}
-                               className={`flex-1 sm:flex-none px-4 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                                 discoveryType === 'domain' 
-                                   ? 'bg-[#4db6ac] text-white hover:bg-[#3d968d]' 
-                                   : 'bg-[#9d7bb0] text-white hover:bg-[#8b6aa1]'
-                               }`}
-                             >
-                               <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                               </svg>
-                               Ask Avagama
-                             </button>
-                             <span className="text-xl md:text-2xl font-black text-gray-900">
+                          <div className="flex items-center justify-end w-full sm:w-auto gap-4 md:gap-8">
+                             <div className="flex flex-col gap-2 shrink-0 min-w-[140px] md:min-w-[160px]">
+                                <button 
+                                  onClick={() => openChat({
+                                    sourceType: discoveryType as any,
+                                    documentId: data._id || data.id,
+                                     usecaseId: (uc._id || uc.id)?.toString(),
+                                    title: uc.title
+                                  })}
+                                  className={`w-full px-4 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                    discoveryType === 'domain' 
+                                      ? 'bg-[#4db6ac] text-white hover:bg-[#3d968d]' 
+                                      : 'bg-[#9d7bb0] text-white hover:bg-[#8b6aa1]'
+                                  }`}
+                                >
+                                  <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                  </svg>
+                                  Ask Avagama
+                                </button>
+                                 {(() => {
+                                   const ucId = (uc._id || uc.id)?.toString();
+                                   // Try to find status by ID string or by looking for the ID in keys
+                                   const status = agentStatuses[ucId] || 
+                                                Object.entries(agentStatuses).find(([key]) => key === ucId)?.[1];
+                                   
+                                   if (status) {
+                                     console.log(`[DiscoveryDetail] UseCase ${ucId} status found:`, status);
+                                   }
+                                   
+                                   const hasAgent = !!(status && (
+                                     (typeof status === 'number' && status > 0) ||
+                                     (typeof status === 'object' && (status.exists || status.count > 0))
+                                   ));
+                                   const agentCount = typeof status === 'object' ? (status.count || 0) : (typeof status === 'number' ? status : 0);
+
+                                   return hasAgent ? (
+                                     <button 
+                                       onClick={() => navigate(`/agents?type=${discoveryType}&entityId=${data._id || data.id}&usecaseId=${ucId}`)}
+                                       className={`w-full px-4 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-2 ${
+                                         discoveryType === 'domain' 
+                                           ? 'border-[#4db6ac] text-[#4db6ac] hover:bg-[#4db6ac] hover:text-white' 
+                                           : 'border-[#9d7bb0] text-[#9d7bb0] hover:bg-[#9d7bb0] hover:text-white'
+                                       }`}
+                                     >
+                                       <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                       </svg>
+                                       View Agents ({agentCount})
+                                     </button>
+                                   ) : (
+                                     <button 
+                                       onClick={() => navigate(`/admin/agent-builder?type=${discoveryType}&entityId=${data._id || data.id}&usecaseId=${ucId}`)}
+                                       className={`w-full px-4 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-2 ${
+                                         discoveryType === 'domain' 
+                                           ? 'border-[#4db6ac] text-[#4db6ac] hover:bg-[#4db6ac] hover:text-white' 
+                                           : 'border-[#9d7bb0] text-[#9d7bb0] hover:bg-[#9d7bb0] hover:text-white'
+                                       }`}
+                                     >
+                                       <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                       </svg>
+                                       Create Agent
+                                     </button>
+                                   );
+                                 })()}
+                             </div>
+                             <span className="text-3xl md:text-5xl font-black text-gray-900">
                                 {uc.business_benefit_score?.score || '-'}
                              </span>
                           </div>

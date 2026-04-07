@@ -17,6 +17,26 @@
         .border-avagama-purple { border-color: #9d7bb0; }
         .text-avagama-teal { color: #4db6ac; }
         .bg-avagama-teal { background-color: #4db6ac; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #e2e8f0 transparent;
+        }
     </style>
 <script type="importmap">
 {

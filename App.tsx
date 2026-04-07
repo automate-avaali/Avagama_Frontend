@@ -26,6 +26,8 @@ import DiscoveryDetail from './pages/Discovery/DiscoveryDetail';
 import SystemAdmin from './pages/Admin/SystemAdmin';
 import OrgAdminDashboard from './pages/Admin/OrgAdminDashboard';
 import DeptAdminDashboard from './pages/Admin/DeptAdminDashboard';
+import AgentBuilder from './pages/Admin/AgentBuilder';
+import AgentsList from './pages/Admin/AgentsList';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -33,12 +35,57 @@ import CortexChatModal from './components/Cortex/CortexChatModal';
 import GlobalCortexSearch from './components/Cortex/GlobalCortexSearch';
 import AskPdfModal from './components/Cortex/AskPdfModal';
 
+import { Toaster } from 'react-hot-toast';
+
+const ProtectedRoute = ({ children, isAuthenticated }: { children: React.ReactNode, isAuthenticated: boolean }) => {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!sessionStorage.getItem('token'));
 
   return (
     <CortexProvider>
       <Router>
+        <Toaster 
+          position="top-right"
+          containerStyle={{
+            top: 80,
+            right: 20,
+            bottom: 20,
+            left: 20,
+          }}
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#fff',
+              color: '#1a1a1a',
+              borderRadius: '20px',
+              padding: '16px 24px',
+              fontSize: '12px',
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.05)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#a26da8',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
         <div className="min-h-screen flex flex-col">
           <Navigation isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
           <main className="flex-grow">
@@ -53,28 +100,30 @@ const App: React.FC = () => {
               // <Route path="/ceo" element={<CEO />} />
               <Route path="/pricing" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Pricing />} />
               <Route path="/contact" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Support />} />
-              <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={() => setIsAuthenticated(true)} />} />
+              <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
+              <Route path="/forgot-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
+              <Route path="/reset-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPassword />} />
               
               {/* Authenticated Routes */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/evaluations" element={<Evaluations />} />
-              <Route path="/evaluate" element={<EvaluateProcess />} />
-              <Route path="/results/:id" element={<Results />} />
-              <Route path="/compare" element={<Compare />} />
-              <Route path="/quadrant" element={<Quadrant />} />
+              <Route path="/dashboard" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard /></ProtectedRoute>} />
+              <Route path="/evaluations" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Evaluations /></ProtectedRoute>} />
+              <Route path="/evaluate" element={<ProtectedRoute isAuthenticated={isAuthenticated}><EvaluateProcess /></ProtectedRoute>} />
+              <Route path="/results/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Results /></ProtectedRoute>} />
+              <Route path="/compare" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Compare /></ProtectedRoute>} />
+              <Route path="/quadrant" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Quadrant /></ProtectedRoute>} />
               
               {/* New Discovery Routes */}
-              <Route path="/discovery/company" element={<CompanyDiscovery />} />
-              <Route path="/discovery/domain" element={<DomainDiscovery />} />
-              <Route path="/discovery/detail/:id" element={<DiscoveryDetail />} />
+              <Route path="/discovery/company" element={<ProtectedRoute isAuthenticated={isAuthenticated}><CompanyDiscovery /></ProtectedRoute>} />
+              <Route path="/discovery/domain" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DomainDiscovery /></ProtectedRoute>} />
+              <Route path="/discovery/detail/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DiscoveryDetail /></ProtectedRoute>} />
               
               {/* Admin Routes */}
-              <Route path="/admin/system" element={<SystemAdmin />} />
-              <Route path="/admin/org" element={<OrgAdminDashboard />} />
-              <Route path="/admin/dept" element={<DeptAdminDashboard />} />
+              <Route path="/admin/system" element={<ProtectedRoute isAuthenticated={isAuthenticated}><SystemAdmin /></ProtectedRoute>} />
+              <Route path="/admin/org" element={<ProtectedRoute isAuthenticated={isAuthenticated}><OrgAdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/dept" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DeptAdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/agent-builder" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentBuilder /></ProtectedRoute>} />
+              <Route path="/agents" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentsList /></ProtectedRoute>} />
             </Routes>
           </main>
           
