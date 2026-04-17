@@ -272,11 +272,11 @@ const Results: React.FC = () => {
                  </div>
                  <div className="flex items-baseline gap-2">
                     <span className="text-4xl md:text-6xl font-black text-gray-900">{analysis.businessBenefitScore || 0}</span>
-                    <span className="text-base md:text-xl font-bold text-gray-300">/ {analysis.weight || 10}</span>
+                    <span className="text-base md:text-xl font-bold text-gray-300">/ 100</span>
                  </div>
                  <div className="flex gap-1 pt-2">
                     {[1,2,3,4,5,6,7,8,9,10].map(i => (
-                      <div key={i} className={`flex-1 h-2.5 md:h-3 rounded-sm ${i <= (analysis.businessBenefitScore || 0)/(analysis.weight || 10) ? 'bg-[#4db6ac]' : 'bg-gray-100'}`}></div>
+                      <div key={i} className={`flex-1 h-2.5 md:h-3 rounded-sm ${i <= (analysis.businessBenefitScore || 0) / 10 ? 'bg-[#4db6ac]' : 'bg-gray-100'}`}></div>
                     ))}
                  </div>
                  <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Expected Strategic Value</p>
