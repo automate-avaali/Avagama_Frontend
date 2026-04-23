@@ -2,7 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useCortex } from '../../context/CortexContext';
 
 // Local API helper to avoid modifying api.ts
-const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
+// const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
+/// <reference types="vite/client" />
+
+/**
+ * API Service for Avagama AI
+ * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
+ */
+
+const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
   return {
