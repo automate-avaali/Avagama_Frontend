@@ -34,5 +34,5 @@ jobs:
         shell: powershell
 
       - name: Reload Nginx
-        run: C:\nginx\nginx-1.30.0\nginx.exe -s reload
+        run: C:\nginx\nginx-1.30.0\nginx.exe -p C:\nginx\nginx-1.30.0 -s reload
         shell: powershell
