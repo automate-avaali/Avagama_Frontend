@@ -9,7 +9,6 @@ import { useCortex } from '../../context/CortexContext';
  * API Service for Avagama AI
  * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
  */
-
 const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
