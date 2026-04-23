@@ -33,6 +33,6 @@ jobs:
           Copy-Item -Recurse .\dist\* E:\Avagama\frontend\dist\
         shell: powershell
 
-      - name: Reload Nginx
-        run: C:\nginx\nginx-1.30.0\nginx.exe -p C:\nginx\nginx-1.30.0 -s reload
+      - name: Verify dist deployed
+        run: Get-ChildItem E:\Avagama\frontend\dist | Select-Object -First 5
         shell: powershell
