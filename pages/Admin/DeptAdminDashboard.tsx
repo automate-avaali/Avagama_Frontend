@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useCortex } from '../../context/CortexContext';
 
 // Local API helper to avoid modifying api.ts
-// const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://3.109.133.35:5000/'}/api`;
-const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
+const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://3.109.133.35:5000/'}/api`;
+// const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
   return {
