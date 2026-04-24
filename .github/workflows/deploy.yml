@@ -1,4 +1,4 @@
-name: Deploy Backend
+name: Deploy Frontend
 
 on:
   push:
@@ -6,48 +6,33 @@ on:
       - main
 
 jobs:
-  deploy:
-    runs-on: self-hosted   # runs on your EC2 Windows runner
+  build-and-deploy:
+    runs-on: self-hosted   # runs on your EC2 Windows runner (frontend runner)
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Write .env file
+      - name: Write Vite environment file
         run: |
-          "${{ secrets.ENV_FILE }}" | Out-File -FilePath .env -Encoding utf8
+          "VITE_API_URL=${{ secrets.VITE_API_URL }}" | Out-File -FilePath .env -Encoding utf8
         shell: powershell
 
-      - name: Install production dependencies
-        run: npm ci --omit=dev
+      - name: Install dependencies
+        run: npm ci
         shell: powershell
 
-      - name: Stop PM2 before file copy
+      - name: Build Vite app
+        run: npm run build
+        shell: powershell
+
+      - name: Deploy dist to Nginx directory
         run: |
-          pm2 stop avagama-backend
+          Remove-Item -Recurse -Force E:\Avagama\frontend\dist -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path E:\Avagama\frontend\dist -Force
+          Copy-Item -Recurse .\dist\* E:\Avagama\frontend\dist\
         shell: powershell
 
-      - name: Copy app files to deployment directory
-        run: |
-          robocopy . E:\Avagama\backend /E /XD node_modules .git /XF .env
-          if ($LASTEXITCODE -le 7) { $LASTEXITCODE = 0 }
-          robocopy .\node_modules E:\Avagama\backend\node_modules /E
-          if ($LASTEXITCODE -le 7) { $LASTEXITCODE = 0 }
-          Copy-Item .env E:\Avagama\backend\.env -Force
-        shell: powershell
-
-      - name: Restart or Start PM2
-        run: |
-          Set-Location E:\Avagama\backend
-          pm2 describe avagama-backend
-          if ($LASTEXITCODE -eq 0) {
-            pm2 restart avagama-backend
-          } else {
-            pm2 start app.js --name avagama-backend
-            pm2 save
-          }
-        shell: powershell
-
-      - name: Show PM2 status
-        run: pm2 status
+      - name: Verify dist deployed
+        run: Get-ChildItem E:\Avagama\frontend\dist | Select-Object -First 5
         shell: powershell
