@@ -104,6 +104,7 @@ const App: React.FC = () => {
               <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
               <Route path="/forgot-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
               <Route path="/reset-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPassword />} />
+              <Route path="/reset-password/:token" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPassword />} />
               
               {/* Authenticated Routes */}
               <Route path="/dashboard" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard /></ProtectedRoute>} />

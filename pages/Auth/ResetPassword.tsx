@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { apiService } from '../../services/api';
 
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token: urlToken } = useParams<{ token: string }>();
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,14 +16,20 @@ const ResetPassword: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const t = params.get('token');
-    if (t) {
-      setToken(t);
+    // Try to get token from URL params first
+    if (urlToken) {
+      setToken(urlToken);
     } else {
-      setError('Invalid or expired reset token. Please request a new one.');
+      // Fallback to query params if not in URL path
+      const params = new URLSearchParams(location.search);
+      const t = params.get('token');
+      if (t) {
+        setToken(t);
+      } else {
+        setError('Invalid or expired reset token. Please request a new one.');
+      }
     }
-  }, [location]);
+  }, [location, urlToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
