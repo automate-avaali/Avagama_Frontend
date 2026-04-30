@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -50,6 +51,7 @@ const App: React.FC = () => {
   return (
     <CortexProvider>
       <Router>
+        <ScrollToTop />
         <Toaster 
           position="top-right"
           containerStyle={{
