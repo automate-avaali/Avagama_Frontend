@@ -121,4 +121,7 @@ export interface StandaloneTool {
   type: 'mcp' | 'zapier' | 'webhook' | 'builtin';
   enabled: boolean;
   config: any;
+  status?: 'connected' | 'disconnected' | 'error';
+  run_count?: number;
+  last_error?: string;
 }

@@ -56,12 +56,11 @@ const LLMTab: React.FC<LLMTabProps> = ({ llm, guardrails, onLLMChange, onGuardra
                   <button
                     key={p.id}
                     onClick={() => updateLLM('provider', p.id)}
-                    disabled={p.id !== 'nvidia'}
                     className={`flex items-center justify-between px-6 py-4 rounded-[20px] transition-all ${
                       llm.provider === p.id 
                       ? 'bg-purple-50 border-2 border-[#a26da8] text-[#a26da8]' 
                       : 'bg-white border-2 border-gray-50 text-gray-400 hover:border-gray-200'
-                    } ${p.id !== 'nvidia' ? 'opacity-40 cursor-not-allowed grayscale-[0.5]' : ''}`}
+                    }`}
                   >
                     <span className="font-black text-sm uppercase tracking-tight">{p.name}</span>
                     {llm.provider === p.id && <Zap size={14} className="fill-current" />}
