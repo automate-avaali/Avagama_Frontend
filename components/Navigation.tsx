@@ -162,9 +162,6 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
         alt="Avagama AI"
         className="h-10 object-contain"
       />
-      <span className="text-[8px] text-gray-400 relative -top-3 ml-[2px]">
-                    TM
-                  </span>
     </div>
   );
 
@@ -228,6 +225,10 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                 </div>
 
                 <Link to="/evaluations" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/evaluations' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>MY EVALUATIONS</Link>
+                <div className="relative">
+                  <Link to="/admin/standalone" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.startsWith('/admin/standalone') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>STANDALONE AGENTS</Link>
+                </div>
+                <Link to="/admin/orchestration" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/admin/orchestration' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORCHESTRATION</Link>
                 
                 {userRole === 'TENANT_ADMIN' && (
                   <Link to="/admin/system" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/system') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>SYSTEM ADMIN</Link>
@@ -499,6 +500,14 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/evaluations" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Evaluations</Link>
+                        </motion.div>
+
+                        <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
+                          <Link to="/admin/standalone" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Standalone Agents</Link>
+                        </motion.div>
+
+                        <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
+                          <Link to="/admin/orchestration" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Orchestration</Link>
                         </motion.div>
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>

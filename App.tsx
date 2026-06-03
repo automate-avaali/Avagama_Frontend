@@ -29,6 +29,10 @@ import OrgAdminDashboard from './pages/Admin/OrgAdminDashboard';
 import DeptAdminDashboard from './pages/Admin/DeptAdminDashboard';
 import AgentBuilder from './pages/Admin/AgentBuilder';
 import AgentsList from './pages/Admin/AgentsList';
+import AgentOrchestration from './pages/Admin/AgentOrchestration';
+import StandaloneAgents from './pages/Admin/StandaloneAgents';
+import StandaloneAgentBuilder from './pages/Admin/StandaloneAgentBuilder';
+import StandaloneMarketplace from './pages/Admin/StandaloneMarketplace';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -126,6 +130,10 @@ const App: React.FC = () => {
               <Route path="/admin/org" element={<ProtectedRoute isAuthenticated={isAuthenticated}><OrgAdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/dept" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DeptAdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/agent-builder" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentBuilder /></ProtectedRoute>} />
+              <Route path="/admin/orchestration" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentOrchestration /></ProtectedRoute>} />
+              <Route path="/admin/standalone" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneAgents /></ProtectedRoute>} />
+              <Route path="/admin/standalone/marketplace" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneMarketplace /></ProtectedRoute>} />
+              <Route path="/admin/standalone/builder/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneAgentBuilder /></ProtectedRoute>} />
               <Route path="/agents" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentsList /></ProtectedRoute>} />
             </Routes>
           </main>
@@ -139,9 +147,6 @@ const App: React.FC = () => {
                     alt="Avagama AI"
                     className="h-6 object-contain"
                   />
-                  <span className="text-[8px] text-gray-400 relative -top-1 ml-[2px]">
-                    TM
-                  </span>
                 </div>
               </div>
               <p className="text-sm text-gray-400 font-medium">© 2026 Avagama.ai Powered by Avaali. All Rights Reserved.</p>

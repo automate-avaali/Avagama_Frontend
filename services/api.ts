@@ -4,8 +4,8 @@
  * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
  */
 
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://13.206.85.36:5000'}/api`;
-// const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
+// const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://3.109.133.35:5000'}/api`;
+const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
   return {
@@ -240,6 +240,18 @@ export const apiService = {
       });
       return handleResponse(response);
     },
+    listShortlistedDomain: async () => {
+      const response = await fetch(`${BASE_URL}/usecases-domain/list/shortlisted`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    listShortlistedCompany: async () => {
+      const response = await fetch(`${BASE_URL}/usecases/list/shortlisted`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
     exportCompany: async () => {
       const token = sessionStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/export/company`, {
@@ -279,7 +291,21 @@ export const apiService = {
         }
       }
       return response.blob();
-    }
+    },
+    shortlistDomain: async (docId: string, usecaseId: string) => {
+      const response = await fetch(`${BASE_URL}/usecases-domain/${docId}/usecase/${usecaseId}/shortlist`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    shortlistCompany: async (docId: string, usecaseId: string) => {
+      const response = await fetch(`${BASE_URL}/usecases/${docId}/usecase/${usecaseId}/shortlist`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
   },
 
   ai: {
@@ -785,6 +811,60 @@ export const apiService = {
       });
       return handleResponse(response);
     },
+    getHistoryV2: async (agentId: string) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/${agentId}/history`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getV2: async (agentId: string) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/${agentId}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    updateV2: async (agentId: string, data: any) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/${agentId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    deleteV2: async (agentId: string) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/${agentId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    chatV2: async (agentId: string, message: string) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/${agentId}/chat`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ message }),
+      });
+      return handleResponse(response);
+    },
+    regenerateV2: async (agentId: string, feedback: string) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/${agentId}/regenerate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ feedback }),
+      });
+      return handleResponse(response);
+    },
+    createFromUsecase: async (usecaseId: string, payload: any) => {
+      const response = await fetch(`${BASE_URL.replace('/api', '')}/api/v2/agents/from-usecase`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          usecaseId,
+          ...payload
+        }),
+      });
+      return handleResponse(response);
+    },
     get: async (id: string) => {
       const response = await fetch(`${BASE_URL}/agents/${id}`, {
         headers: getHeaders(),
@@ -810,6 +890,572 @@ export const apiService = {
         headers: getHeaders(),
       });
       return handleResponse(response);
+    }
+  },
+
+  workflows: {
+    // Pipelines management
+    generatePipeline: async (usecase: any, options?: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ usecase, options }),
+      });
+      return handleResponse(response);
+    },
+    listPipelines: async (params?: string) => {
+      const query = params ? `?${params}` : '';
+      const response = await fetch(`${BASE_URL}/workflows/pipelines${query}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getPipeline: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    updatePipeline: async (id: string, data: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    executePipeline: async (id: string, inputData: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}/execute`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(inputData),
+      });
+      return handleResponse(response);
+    },
+    listPipelineExecutions: async (pipelineId: string, params?: string) => {
+      const query = params ? `?${params}` : '';
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${pipelineId}/executions${query}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    
+    // Executions management
+    getExecution: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getExecutionLogs: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}/logs`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getExecutionEvents: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}/events`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getExecutionReplay: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}/replay`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    approveNode: async (execId: string, nodeId: string, decision: 'approved' | 'rejected') => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}/approve/${nodeId}`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ decision }),
+      });
+      return handleResponse(response);
+    },
+    cancelExecution: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}/cancel`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    deleteExecution: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+
+    // Legacy fallback bindings to prevent code breaks
+    list: async () => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    get: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    create: async (data: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    update: async (id: string, data: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    delete: async (id: string, withAgents = false) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}?withAgents=${withAgents}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    execute: async (id: string, inputData: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}/execute`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(inputData),
+      });
+      return handleResponse(response);
+    }
+  },
+
+  approvals: {
+    list: async (status: string = 'pending') => {
+      const response = await fetch(`${BASE_URL}/approvals?status=${status}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    get: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/approvals/${id}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    create: async (data: { execution_id: string, node_id: string, message: string }) => {
+      const response = await fetch(`${BASE_URL}/approvals`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    }
+  },
+
+  pipelines: {
+    list: async () => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    get: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    create: async (data: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    update: async (id: string, data: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    delete: async (id: string, withAgents = false) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}?withAgents=${withAgents}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    run: async (id: string, inputData: any) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines/${id}/execute`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(inputData),
+      });
+      return handleResponse(response);
+    }
+  },
+
+  standalone: {
+    agents: {
+      list: async (params?: any) => {
+        const cleanParams: Record<string, string> = {};
+        if (params) {
+          Object.entries(params).forEach(([k, v]) => {
+            if (v != null) cleanParams[k] = String(v);
+          });
+        }
+        const query = Object.keys(cleanParams).length > 0 
+          ? `?${new URLSearchParams(cleanParams).toString()}` 
+          : '';
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents${query}`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      create: async (data: any) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      update: async (id: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      patch: async (id: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      delete: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}`, {
+          method: 'DELETE',
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      publish: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/publish`, {
+          method: 'POST',
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      unpublish: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/unpublish`, {
+          method: 'POST',
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      deploy: async (id: string, data?: { slug: string }) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/deploy`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: data ? JSON.stringify(data) : undefined,
+        });
+        return handleResponse(response);
+      },
+      undeploy: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/undeploy`, {
+          method: 'POST',
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      getDeployment: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/deployment`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      cloneFromBlueprint: async (data: { blueprint_id: string, name?: string }) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/clone-from-blueprint`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      getVersions: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/versions`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      generate: async (data: { description: string; model?: string }) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/generate`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      generateAndSave: async (data: { description: string; model?: string; save_suggestions?: boolean }) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/generate-and-save`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      testChat: async (id: string, data: { message: string, session_id?: string | null }) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/chat`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      kb: {
+        list: async (id: string, params?: any) => {
+          const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb${query}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        uploadFile: async (id: string, file: File) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/file`, {
+            method: 'POST',
+            headers: getHeaders(false),
+            body: formData,
+          });
+          return handleResponse(response);
+        },
+        addUrl: async (id: string, data: { url: string; title: string }) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/url`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        addText: async (id: string, data: { title: string; text: string }) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/text`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        addQa: async (id: string, data: { title: string; pairs: Array<{ q: string; a: string }> }) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/qa`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        getSource: async (id: string, sourceId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/${sourceId}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        updateSource: async (id: string, sourceId: string, data: any) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/${sourceId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        deleteSource: async (id: string, sourceId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/${sourceId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        reprocessSource: async (id: string, sourceId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/kb/${sourceId}/reprocess`, {
+            method: 'POST',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        }
+      },
+      actions: {
+        list: async (id: string, params?: { enabled?: boolean }) => {
+          const query = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/actions${query}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        create: async (id: string, data: any) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/actions`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        get: async (id: string, actionId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/actions/${actionId}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        update: async (id: string, actionId: string, data: any) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/actions/${actionId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        toggle: async (id: string, actionId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/actions/${actionId}/toggle`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        delete: async (id: string, actionId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/actions/${actionId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        }
+      },
+      tools: {
+        list: async (id: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        attach: async (id: string, data: any) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        get: async (id: string, toolId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        update: async (id: string, toolId: string, data: any) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+          });
+          return handleResponse(response);
+        },
+        toggle: async (id: string, toolId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}/toggle`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        delete: async (id: string, toolId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        }
+      },
+      conversations: {
+        list: async (id: string, params?: any) => {
+          const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/conversations${query}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        get: async (id: string, sessionId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/conversations/${sessionId}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        tag: async (id: string, sessionId: string, tags: string[]) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/conversations/${sessionId}/tag`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ tags }),
+          });
+          return handleResponse(response);
+        },
+        end: async (id: string, sessionId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/conversations/${sessionId}/end`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        delete: async (id: string, sessionId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/conversations/${sessionId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        }
+      }
+    },
+    tools: {
+      getCatalog: async () => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/tools/catalog`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      }
+    },
+    blueprints: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v3/standalone/blueprints${query}`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      listIndustries: async () => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/blueprints/industries/list`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/blueprints/${id}`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      }
     }
   }
 };

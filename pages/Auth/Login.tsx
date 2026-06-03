@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError(response?.message || "Access denied. Please check your credentials.");
       }
     } catch (err: any) {
-      setError(err.message || "Access denied. Please check your credentials.");
+      setError(err?.message || "Access denied. Please check your credentials.");
     } finally {
       setLoading(false);
     }

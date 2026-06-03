@@ -130,7 +130,7 @@ const SystemAdmin: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setOnboardEnterpriseModal({ isOpen: false, companyName: '', email: '', password: '', plan: 'FREE', validityDays: 30, initialCredits: 0 });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to onboard enterprise', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -148,7 +148,7 @@ const SystemAdmin: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setPlanModal({ ...planModal, isOpen: false });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to assign plan', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -170,7 +170,7 @@ const SystemAdmin: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setCreditsModal({ ...creditsModal, isOpen: false });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to assign credits', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -199,7 +199,7 @@ const SystemAdmin: React.FC = () => {
           loadAllData();
           showToast(res.message, 'success');
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to approve user', 'error');
         }
       }
     });
@@ -218,7 +218,7 @@ const SystemAdmin: React.FC = () => {
           loadAllData();
           showToast(res.message, 'success');
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to toggle status', 'error');
         }
       }
     });
@@ -237,7 +237,7 @@ const SystemAdmin: React.FC = () => {
           loadAllData();
           showToast(res.message, 'success');
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to delete organization', 'error');
         }
       }
     });
@@ -256,7 +256,7 @@ const SystemAdmin: React.FC = () => {
           loadAllData();
           showToast(res.message, 'success');
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to toggle status', 'error');
         }
       }
     });
@@ -275,7 +275,7 @@ const SystemAdmin: React.FC = () => {
           loadAllData();
           showToast(res.message, 'success');
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to delete user', 'error');
         }
       }
     });
@@ -296,7 +296,7 @@ const SystemAdmin: React.FC = () => {
           }, 1000);
           showToast(res.message, 'success');
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to approve request', 'error');
         }
       }
     });
@@ -314,7 +314,7 @@ const SystemAdmin: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setRejectModal({ ...rejectModal, isOpen: false });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to reject request', 'error');
     } finally {
       setIsConfirming(false);
     }

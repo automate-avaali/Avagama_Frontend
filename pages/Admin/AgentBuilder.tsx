@@ -164,7 +164,7 @@ const AgentBuilder: React.FC = () => {
           setAgents([res.agent]);
           setSelectedAgent(res.agent);
         } else {
-          setError(res.message || 'Failed to fetch agent details.');
+          setError(res?.message || 'Failed to fetch agent details.');
         }
       } else {
         const res = await apiService.agents.create({ 
@@ -176,12 +176,12 @@ const AgentBuilder: React.FC = () => {
           setAgents(res.agents);
           setSelectedAgent(res.agents[0]);
         } else {
-          setError(res.message || 'No agents were returned from the server.');
+          setError(res?.message || 'No agents were returned from the server.');
         }
       }
     } catch (err: any) {
       console.error('Error creating agents:', err);
-      setError(err.message || 'Failed to initialize agents.');
+      setError(err?.message || 'Failed to initialize agents.');
     } finally {
       setLoading(false);
     }
@@ -207,17 +207,21 @@ const AgentBuilder: React.FC = () => {
 
     try {
       const res = await apiService.agents.chat(selectedAgent._id, currentInput, currentFile || undefined);
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: res.response.response,
-        timestamp: new Date()
-      };
-      setChatMessages(prev => [...prev, assistantMessage]);
+      if (res?.response?.response) {
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: res.response.response,
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, assistantMessage]);
+      } else {
+        throw new Error('Invalid response from AI');
+      }
     } catch (err: any) {
       console.error('Chat error:', err);
       const errorMessage: Message = {
         role: 'assistant',
-        content: `Error: ${err.message || 'Something went wrong while chatting.'}`,
+        content: `Error: ${err?.message || 'Something went wrong while chatting.'}`,
         timestamp: new Date()
       };
       setChatMessages(prev => [...prev, errorMessage]);
@@ -241,7 +245,7 @@ const AgentBuilder: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Regenerate error:', err);
-      toast.error(`Failed to regenerate: ${err.message}`);
+      toast.error(`Failed to regenerate: ${err?.message || 'Unknown error'}`);
     } finally {
       setIsRegenerating(false);
     }
@@ -285,7 +289,7 @@ const AgentBuilder: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Rollback error:', err);
-      toast.error(`Failed to rollback: ${err.message}`, { id: toastId });
+      toast.error(`Failed to rollback: ${err?.message || 'Unknown error'}`, { id: toastId });
     } finally {
       setIsRollingBack(false);
     }

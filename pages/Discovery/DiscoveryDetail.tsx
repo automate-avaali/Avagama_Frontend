@@ -3,14 +3,18 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
+import { Star, Loader2 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { useCortex } from '../../context/CortexContext';
+import { toast } from 'react-hot-toast';
 
 const DiscoveryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   console.log("[DiscoveryDetail] Rendering with ID:", id);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'shortlisted'>('all');
+  const [isShortlisting, setIsShortlisting] = useState<Record<string, boolean>>({});
   const [agentStatuses, setAgentStatuses] = useState<Record<string, any>>({});
   const [hoveredFeasibility, setHoveredFeasibility] = useState<{idx: number, rect: DOMRect, scoring: any[]} | null>(null);
   const navigate = useNavigate();
@@ -80,6 +84,31 @@ const DiscoveryDetail: React.FC = () => {
 
     fetchAll();
   }, [id, discoveryType]);
+
+  const toggleShortlist = async (usecaseId: string, currentStatus: boolean) => {
+    if (!id) return;
+    setIsShortlisting(prev => ({ ...prev, [usecaseId]: true }));
+    try {
+      const res = discoveryType === 'domain' 
+        ? await apiService.useCases.shortlistDomain(id, usecaseId)
+        : await apiService.useCases.shortlistCompany(id, usecaseId);
+      
+      if (res.success) {
+        setData((prev: any) => ({
+          ...prev,
+          use_cases: prev.use_cases.map((uc: any) => 
+            (uc._id || uc.id) === usecaseId ? { ...uc, shortlisted: res.shortlisted } : uc
+          )
+        }));
+        toast.success(res.shortlisted ? 'Added to shortlist' : 'Removed from shortlist');
+      }
+    } catch (err) {
+      console.error("Shortlist error:", err);
+      toast.error('Failed to update shortlist');
+    } finally {
+      setIsShortlisting(prev => ({ ...prev, [usecaseId]: false }));
+    }
+  };
 
   useEffect(() => {
     if (data?.use_cases && Object.keys(agentStatuses).length > 0) {
@@ -251,16 +280,41 @@ const DiscoveryDetail: React.FC = () => {
 
         {/* Use Case Catalog */}
         <div className="space-y-8 md:space-y-10">
-           <div className="flex justify-between items-center border-b border-gray-100 pb-6">
+           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-6 gap-4">
               <h3 className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-[0.4em] flex items-center gap-2 md:gap-4">
                  <span className="w-6 md:w-10 h-px bg-gray-200"></span>
                  Opportunity Catalog
               </h3>
-              <span className="text-[9px] md:text-[10px] font-black text-gray-300 uppercase tracking-widest">Diagnostic Detail</span>
+              <div className="flex items-center gap-3">
+                <div className="flex bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+                  <button 
+                    onClick={() => setFilter('all')}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                      filter === 'all' ? (discoveryType === 'domain' ? 'bg-[#4db6ac] text-white shadow-md' : 'bg-[#9d7bb0] text-white shadow-md') : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setFilter('shortlisted')}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                      filter === 'shortlisted' ? (discoveryType === 'domain' ? 'bg-[#4db6ac] text-white shadow-md' : 'bg-[#9d7bb0] text-white shadow-md') : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    Shortlisted
+                    {data.use_cases?.filter((uc: any) => uc.shortlisted).length > 0 && (
+                      <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] ${filter === 'shortlisted' ? 'bg-white ' + (discoveryType === 'domain' ? 'text-[#4db6ac]' : 'text-[#9d7bb0]') : 'bg-gray-100 text-gray-400'}`}>
+                        {data.use_cases.filter((uc: any) => uc.shortlisted).length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <span className="text-[9px] md:text-[10px] font-black text-gray-300 uppercase tracking-widest hidden sm:inline">Diagnostic Detail</span>
+              </div>
            </div>
            
            <div className="grid grid-cols-1 gap-8 md:gap-12">
-              {data.use_cases?.map((uc: any, idx: number) => (
+              {data.use_cases?.filter((uc: any) => filter === 'all' || uc.shortlisted).map((uc: any, idx: number) => (
                 <div key={idx} className={`bg-white rounded-[32px] md:rounded-[56px] border border-gray-100 shadow-sm overflow-hidden group transition-all ${discoveryType === 'domain' ? 'hover:border-[#4db6ac]/20' : 'hover:border-[#9d7bb0]/20'}`}>
                   <div className="grid grid-cols-1 lg:grid-cols-12">
                     
@@ -276,7 +330,24 @@ const DiscoveryDetail: React.FC = () => {
                              </div>
                           </div>
                           <div className="space-y-2 md:space-y-3">
-                             <h4 className={`text-lg md:text-2xl font-black text-gray-900 leading-tight transition-colors ${discoveryType === 'domain' ? 'group-hover:text-[#4db6ac]' : 'group-hover:text-[#9d7bb0]'}`}>{uc.title}</h4>
+                             <div className="flex items-center gap-3">
+                               <h4 className={`text-lg md:text-2xl font-black text-gray-900 leading-tight transition-colors ${discoveryType === 'domain' ? 'group-hover:text-[#4db6ac]' : 'group-hover:text-[#9d7bb0]'}`}>{uc.title}</h4>
+                               <button 
+                                 onClick={(e) => {
+                                   e.preventDefault();
+                                   e.stopPropagation();
+                                   toggleShortlist(uc._id || uc.id, !!uc.shortlisted);
+                                 }}
+                                 disabled={isShortlisting[uc._id || uc.id]}
+                                 className={`p-1.5 rounded-lg transition-all ${uc.shortlisted ? 'text-amber-400 scale-110' : 'text-gray-200 hover:text-gray-300'}`}
+                               >
+                                 {isShortlisting[uc._id || uc.id] ? (
+                                   <Loader2 className="w-5 h-5 animate-spin" />
+                                 ) : (
+                                   <Star className="w-5 h-5" fill={uc.shortlisted ? "currentColor" : "none"} strokeWidth={uc.shortlisted ? 0 : 2} />
+                                 )}
+                               </button>
+                             </div>
                              <div className="text-[11px] md:text-sm font-medium text-gray-500 leading-relaxed italic opacity-80">
                                 <ReactMarkdown components={{
                                   p: ({node, ...props}) => <p className="m-0 inline" {...props} />,

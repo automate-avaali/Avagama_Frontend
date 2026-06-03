@@ -56,7 +56,7 @@ const CompanyDiscovery: React.FC = () => {
       }, 100);
     } catch (err: any) {
       console.error("Export error:", err);
-      alert(`Export Error: ${err.message || "Failed to generate export file."}`);
+      alert(`Export Error: ${err?.message || "Failed to generate export file."}`);
     } finally {
       setIsExporting(false);
     }
@@ -87,7 +87,7 @@ const CompanyDiscovery: React.FC = () => {
       }
     } catch (err: any) {
       console.error("AI Generation error:", err);
-      const errorMessage = err.message || "";
+      const errorMessage = err?.message || "";
       if (errorMessage.toLowerCase().includes('insufficient credits') || errorMessage.toLowerCase().includes('credit')) {
         setErrorModal({
           show: true,
@@ -117,7 +117,7 @@ const CompanyDiscovery: React.FC = () => {
       setDeleteConfirm(null);
     } catch (err: any) {
       console.error("Delete error:", err);
-      alert(`Delete Error: ${err.message || "Failed to delete analysis."}`);
+      alert(`Delete Error: ${err?.message || "Failed to delete analysis."}`);
       setDeleteConfirm(null);
     }
   };

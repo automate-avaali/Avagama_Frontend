@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useCortex } from '../../context/CortexContext';
 
 // Local API helper to avoid modifying api.ts
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://13.206.85.36:5000'}/api`;
-// const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
+// const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://3.109.133.35:5000/'}/api`;
+const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
   return {
@@ -196,7 +196,7 @@ const DeptAdminDashboard: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setOnboardUserModal({ isOpen: false, email: '', password: '' });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to onboard user', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -218,7 +218,7 @@ const DeptAdminDashboard: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setRequestBudgetModal({ isOpen: false, amount: '', reason: '' });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to request budget', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -240,7 +240,7 @@ const DeptAdminDashboard: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setAssignCreditsModal({ isOpen: false, userId: '', userEmail: '', amount: '' });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to assign credits', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -262,7 +262,7 @@ const DeptAdminDashboard: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setRevokeCreditsModal({ isOpen: false, userId: '', userEmail: '', amount: '' });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to revoke credits', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -281,7 +281,7 @@ const DeptAdminDashboard: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       setTransferModal({ isOpen: false, userId: '', userEmail: '', toDepartmentId: '' });
-      showToast(err.message, 'error');
+      showToast(err?.message || 'Failed to transfer user', 'error');
     } finally {
       setIsConfirming(false);
     }
@@ -300,7 +300,7 @@ const DeptAdminDashboard: React.FC = () => {
           showToast(res.message, 'success');
           loadAllData();
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to remove user', 'error');
         }
       }
     });
@@ -318,7 +318,7 @@ const DeptAdminDashboard: React.FC = () => {
           showToast(res.message, 'success');
           loadAllData();
         } catch (err: any) {
-          showToast(err.message, 'error');
+          showToast(err?.message || 'Failed to add user', 'error');
         }
       }
     });

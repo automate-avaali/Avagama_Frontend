@@ -178,7 +178,7 @@ const Evaluations: React.FC = () => {
       }, 100);
     } catch (err: any) {
       console.error("Export error:", err);
-      alert(`Export Error: ${err.message || "The server encountered an error generating your file. Please ensure you have evaluations completed."}`);
+      alert(`Export Error: ${err?.message || "The server encountered an error generating your file. Please ensure you have evaluations completed."}`);
     } finally {
       setIsExporting(false);
     }
