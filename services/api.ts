@@ -1388,6 +1388,19 @@ export const apiService = {
             headers: getHeaders(),
           });
           return handleResponse(response);
+        },
+        getOAuthUrl: async (id: string, toolId: string, provider: 'google' | 'microsoft') => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}/oauth/authorize?provider=${provider}`, {
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
+        disconnectOAuth: async (id: string, toolId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}/oauth`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
         }
       },
       conversations: {

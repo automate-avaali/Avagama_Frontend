@@ -33,6 +33,7 @@ import AgentOrchestration from './pages/Admin/AgentOrchestration';
 import StandaloneAgents from './pages/Admin/StandaloneAgents';
 import StandaloneAgentBuilder from './pages/Admin/StandaloneAgentBuilder';
 import StandaloneMarketplace from './pages/Admin/StandaloneMarketplace';
+import OAuthHandler from './pages/Admin/builder/OAuthHandler';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -134,6 +135,7 @@ const App: React.FC = () => {
               <Route path="/admin/standalone" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneAgents /></ProtectedRoute>} />
               <Route path="/admin/standalone/marketplace" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneMarketplace /></ProtectedRoute>} />
               <Route path="/admin/standalone/builder/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneAgentBuilder /></ProtectedRoute>} />
+              <Route path="/agents/tools" element={<OAuthHandler />} />
               <Route path="/agents" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentsList /></ProtectedRoute>} />
             </Routes>
           </main>
