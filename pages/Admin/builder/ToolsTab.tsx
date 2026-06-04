@@ -135,7 +135,7 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ agentId }) => {
   };
 
   const handleConnectOAuth = async (tool: StandaloneTool) => {
-    const provider = tool.name.toLowerCase().includes('google') ? 'google' : 'microsoft';
+    const provider = (tool.name.toLowerCase().includes('google') || tool.name.toLowerCase().includes('gmail')) ? 'google' : 'microsoft';
     setIsConnecting(tool._id);
     
     try {
@@ -318,7 +318,7 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ agentId }) => {
                   { name: 'Outlook Calendar', type: 'builtin', icon: <Calendar size={14} />, desc: 'Microsoft 365 calendar management.' },
                   { name: 'Outlook Mail', type: 'builtin', icon: <Mail size={14} />, desc: 'Microsoft 365 mail access (read-only).' },
                   { name: 'Post to Slack', type: 'builtin', icon: <MessageSquare size={14} />, desc: 'Send notifications to your team on escalation.', isSlack: true },
-                  ...(catalog.length > 0 ? catalog : [
+                  ...(catalog.length > 0 ? catalog.filter((c: any) => c.name !== 'Calendar' && c.name !== 'Email') : [
                     { name: 'Google Search', type: 'builtin', icon: <Search size={14} />, desc: 'Grounded web search for real-time fact checking.' },
                     { name: 'Financial Math', type: 'builtin', icon: <Lock size={14} />, desc: 'High-precision currency and math processing.' },
                     { name: 'JSON Parser', type: 'builtin', icon: <Box size={14} />, desc: 'Structural data extraction from unstructured chat.' }
@@ -414,7 +414,7 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ agentId }) => {
                             className="px-5 py-2.5 bg-[#a26da8] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-lg shadow-purple-50 flex items-center gap-2"
                           >
                             {isConnecting === tool._id ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
-                            Connect {tool.name.toLowerCase().includes('google') ? 'Google' : 'Microsoft'}
+                            Connect {(tool.name.toLowerCase().includes('google') || tool.name.toLowerCase().includes('gmail')) ? 'Google' : 'Microsoft'}
                           </button>
                         )}
                       </div>
@@ -601,7 +601,7 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ agentId }) => {
                       </div>
                       <div>
                         <h5 className="text-sm font-black text-gray-900 uppercase">Auth Required</h5>
-                        <p className="text-xs font-medium text-gray-500 mt-1">This tool requires secure connection to your {configuringTool.name?.toLowerCase().includes('google') ? 'Google' : 'Microsoft'} account via OAuth.</p>
+                        <p className="text-xs font-medium text-gray-500 mt-1">This tool requires secure connection to your {(configuringTool.name?.toLowerCase().includes('google') || configuringTool.name?.toLowerCase().includes('gmail')) ? 'Google' : 'Microsoft'} account via OAuth.</p>
                       </div>
                     </div>
                   </div>
