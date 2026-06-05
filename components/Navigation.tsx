@@ -226,7 +226,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
 
                 <Link to="/evaluations" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/evaluations' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>MY EVALUATIONS</Link>
                 <div className="relative">
-                  <Link to="/admin/standalone" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.startsWith('/admin/standalone') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>STANDALONE AGENTS</Link>
+                  <Link to="/admin/standalone" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.startsWith('/admin/standalone') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>AGENT BUILDER</Link>
                 </div>
                 <Link to="/admin/orchestration" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/admin/orchestration' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORCHESTRATION</Link>
                 
@@ -503,7 +503,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                         </motion.div>
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
-                          <Link to="/admin/standalone" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Standalone Agents</Link>
+                          <Link to="/admin/standalone" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Agent Builder</Link>
                         </motion.div>
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>

@@ -84,7 +84,7 @@ const StandaloneMarketplace: React.FC = () => {
           className="flex items-center gap-2 text-gray-400 hover:text-gray-900 font-bold text-xs uppercase tracking-widest mb-10 transition-colors"
         >
           <ArrowLeft size={16} />
-          Back to My Agents
+          Back to Agent Builder
         </button>
 
         {/* Header */}

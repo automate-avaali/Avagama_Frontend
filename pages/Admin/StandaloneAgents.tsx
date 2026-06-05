@@ -85,7 +85,7 @@ const StandaloneAgents: React.FC = () => {
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#a26da8] to-[#6fcbbd] flex items-center justify-center text-white">
                 <LayoutGrid size={20} />
               </div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Standalone Agents</h1>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Agent Builder</h1>
             </div>
             <p className="text-gray-500 font-medium tracking-tight">Build, deploy and manage your custom AI agents for any channel.</p>
           </div>
