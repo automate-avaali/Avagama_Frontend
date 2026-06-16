@@ -1848,7 +1848,7 @@ export const AgentOrchestration: React.FC = () => {
                       <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Querying Pipelines Schema...</span>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10">
                       {pipelinesList.map((pl: any) => {
                         const meta = getPipelineMeta(pl);
                         const formatDate = (dateStr: string) => {
@@ -1862,89 +1862,104 @@ export const AgentOrchestration: React.FC = () => {
                         };
 
                         return (
-                          <div 
+                          <motion.div 
                             key={pl._id || pl.id}
-                            className="bg-white border-2 border-slate-50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[40px] p-8 hover:shadow-[0_20px_50px_rgba(162,109,168,0.12)] hover:border-[#a26da8]/20 transition-all duration-700 flex flex-col justify-between group relative overflow-hidden"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            whileHover={{ y: -8 }}
+                            className="bg-white border-2 border-slate-50/50 shadow-[0_8px_40px_rgba(0,0,0,0.02)] rounded-[48px] p-8 md:p-9 hover:shadow-[0_40px_80px_rgba(162,109,168,0.12)] hover:border-[#a26da8]/20 transition-all duration-500 flex flex-col justify-between group relative overflow-hidden h-full"
                           >
-                            {/* Decorative background grid element */}
-                            <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#a26da8]/5 rounded-full blur-3xl group-hover:bg-[#a26da8]/10 transition-all duration-700" />
-                            
-                            <div className="absolute top-0 right-0 p-8 flex gap-2 z-10">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePipeline(pl._id || pl.id);
-                                }}
-                                className="bg-white/90 backdrop-blur-md shadow-sm p-2.5 hover:bg-rose-50 text-rose-400 hover:text-rose-600 transition-all duration-300 rounded-[14px] border border-slate-100/50"
-                                title="Decommission Pipeline"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                              <div className="flex flex-col gap-1.5 items-end">
-                                <span className="bg-slate-900 text-white text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg shadow-slate-200">
-                                  {meta.type}
-                                </span>
-                                <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border shadow-sm ${pl.status === 'active' ? 'bg-[#6fcbbd]/10 text-[#6fcbbd] border-[#6fcbbd]/20' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                  {pl.status || 'draft'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="relative">
-                              <div className="w-16 h-16 bg-white shadow-[0_10px_40px_rgba(162,109,168,0.15)] border border-[#a26da8]/10 rounded-[22px] flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition duration-700">
-                                <Cpu className="w-8 h-8 text-[#a26da8]" />
-                                {pl.status === 'active' && (
-                                  <div className="absolute -top-1 -right-1 flex h-4 w-4">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6fcbbd] opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-[#6fcbbd] border-2 border-white"></span>
+                            <div className="relative z-10">
+                              {/* Header: Branding + Status */}
+                              <div className="flex justify-between items-start mb-10">
+                                <div className="w-16 h-16 bg-slate-50 rounded-[30px] flex items-center justify-center text-2xl font-black text-slate-800 group-hover:bg-[#a26da8] group-hover:text-white transition-all duration-500 shadow-sm">
+                                  {pl.name ? pl.name.charAt(0).toUpperCase() : 'P'}
+                                </div>
+                                <div className="flex flex-col gap-2 items-end">
+                                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border shadow-sm ${pl.status === 'active' ? 'bg-[#6fcbbd]/10 text-[#6fcbbd] border-[#6fcbbd]/20' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                    {pl.status === 'active' ? 'PUBLISHED' : 'DRAFT'}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 text-slate-400">
+                                    <Activity size={10} className="text-[#a26da8] animate-pulse" />
+                                    <span className="text-[9px] font-black uppercase tracking-[0.2em]">{meta.nodes} Modules</span>
                                   </div>
-                                )}
+                                </div>
                               </div>
 
-                              <h3 className="text-xl font-black text-slate-950 uppercase tracking-tight mb-3 truncate group-hover:text-[#a26da8] transition duration-500">
+                              {/* Title & Description */}
+                              <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-4 group-hover:text-[#a26da8] transition-colors duration-300">
                                 {pl.name}
                               </h3>
-                              <p className="text-[11px] font-bold text-slate-400 leading-relaxed mb-8 block min-h-[48px] uppercase tracking-wide">
-                                {pl.description || "Cognitive reasoning architecture focusing on structured data extraction and autonomous routing decisions."}
+                              <p className="text-[13px] font-medium text-slate-400 leading-relaxed mb-10 line-clamp-2">
+                                {pl.description || "Orchestration pipeline for multi-agent autonomous decision making and cognitive execution."}
                               </p>
-                            </div>
 
-                            <div className="border-t border-slate-100/60 pt-6 space-y-6">
-                              <div className="flex justify-between items-center">
-                                <div className="space-y-1">
-                                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] block">Schema State</span>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-[#a26da8]" />
-                                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">{meta.nodes} Agent Modules</span>
+                              {/* Info Badges */}
+                              <div className="grid grid-cols-2 gap-4 mb-10">
+                                <div className="p-4 bg-slate-50/50 rounded-[28px] border border-slate-50 group-hover:border-[#a26da8]/10 transition-colors">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Database size={10} className="text-slate-300" />
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">KNOWLEDGE</span>
                                   </div>
+                                  <p className="text-[11px] font-black text-slate-800 uppercase tracking-wide">Dynamic</p>
                                 </div>
-                                <div className="text-right space-y-1">
-                                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] block">Created On</span>
-                                  <span className="text-[11px] font-black text-slate-600 block uppercase tracking-wider">{formatDate(pl.createdAt || pl.createdOn || pl.date)}</span>
+                                <div className="p-4 bg-slate-50/50 rounded-[28px] border border-slate-50 group-hover:border-[#a26da8]/10 transition-colors">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Clock size={10} className="text-slate-300" />
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">UPDATED</span>
+                                  </div>
+                                  <p className="text-[11px] font-black text-slate-800 uppercase tracking-wide truncate">
+                                    {formatDate(pl.updatedAt || pl.createdAt || pl.createdOn || pl.date)}
+                                  </p>
                                 </div>
                               </div>
+                            </div>
 
-                              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                                <button
-                                  onClick={() => handleOpenDesignerWorkspace(pl)}
-                                  className="flex-1 py-4 border-2 border-slate-50 bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:border-[#a26da8]/20 hover:text-[#a26da8] transition-all duration-300 cursor-pointer text-center shadow-sm"
+                            {/* Actions Footer */}
+                            <div className="flex flex-wrap items-center justify-between gap-4 pt-8 border-t border-slate-50 relative z-10">
+                              <div className="flex items-center gap-2.5">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeletePipeline(pl._id || pl.id);
+                                  }}
+                                  className="w-11 h-11 flex items-center justify-center bg-rose-50 text-rose-400 hover:bg-rose-100 hover:text-rose-600 rounded-2xl transition-all duration-300 shadow-sm"
+                                  title="Delete"
                                 >
-                                  Configure Path
+                                  <Trash2 size={18} />
                                 </button>
-                                <button
+                                <button 
+                                  onClick={() => handleOpenDesignerWorkspace(pl)}
+                                  className="w-11 h-11 flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-purple-50 hover:text-[#a26da8] rounded-2xl transition-all duration-300 shadow-sm"
+                                  title="Settings"
+                                >
+                                  <Settings size={18} />
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <button 
                                   onClick={() => {
                                     setExecuteTargetPipeline(pl);
                                     setShowExecuteInputModal(true);
                                   }}
-                                  className="flex-1 py-4 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-black transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-slate-200 group/btn"
+                                  className="h-11 px-6 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 shadow-sm group/play"
                                 >
-                                  <Play className="w-3.5 h-3.5 fill-[#6fcbbd] text-[#6fcbbd] group-hover/btn:scale-110 transition duration-300" /> 
-                                  <span>Execute Run</span>
+                                  <Play size={12} className="fill-current group-hover/play:scale-110 transition-transform" />
+                                  <span className="hidden sm:inline">Execute</span>
+                                </button>
+                                <button 
+                                  onClick={() => handleOpenDesignerWorkspace(pl)}
+                                  className="h-11 px-7 bg-slate-900 text-white hover:bg-[#a26da8] rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 shadow-lg shadow-slate-100"
+                                >
+                                  Manage
                                 </button>
                               </div>
                             </div>
 
-                          </div>
+                            {/* Accent Background Blob */}
+                            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#a26da8]/5 rounded-full blur-[80px] group-hover:bg-[#a26da8]/10 transition-all duration-700" />
+                          </motion.div>
                         );
                       })}
                     </div>
