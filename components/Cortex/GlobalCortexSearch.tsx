@@ -69,25 +69,12 @@ const GlobalCortexSearch: React.FC = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={openAskPdf}
-        className="fixed bottom-[110px] right-8 z-[150] w-16 h-16 bg-white text-purple-600 rounded-full shadow-2xl flex items-center justify-center group overflow-hidden border border-purple-100"
+        className="fixed bottom-8 right-8 z-[150] w-16 h-16 bg-white text-purple-600 rounded-full shadow-2xl flex items-center justify-center group overflow-hidden border border-purple-100"
         title="Ask PDF"
       >
         <div className="absolute inset-0 bg-purple-50 opacity-0 group-hover:opacity-100 transition-opacity" />
         <svg className="w-7 h-7 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      </motion.button>
-
-      {/* Global Search Floating Trigger Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={openGlobalSearch}
-        className="fixed bottom-8 right-8 z-[150] w-16 h-16 bg-gray-900 text-white rounded-full shadow-2xl flex items-center justify-center group overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <svg className="w-7 h-7 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </motion.button>
 

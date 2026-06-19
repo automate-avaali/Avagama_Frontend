@@ -203,7 +203,13 @@ const StandaloneAgents: React.FC = () => {
           </div>
         )}
       </div>
-      {testingAgentId && <ChatPreview agentId={testingAgentId} />}
+      {testingAgentId && (
+        <ChatPreview 
+          agentId={testingAgentId} 
+          status={agents.find(a => a._id === testingAgentId)?.status || 'draft'}
+          isDirty={false}
+        />
+      )}
     </div>
   );
 };
@@ -216,7 +222,8 @@ const AgentCard: React.FC<{ agent: StandaloneAgent, onDelete: (id: string) => vo
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative bg-white rounded-[32px] border border-gray-100 p-8 shadow-sm hover:shadow-2xl hover:shadow-purple-100/50 hover:border-purple-200 transition-all transition-shadow duration-500 flex flex-col h-full"
+      onClick={() => navigate(`/admin/standalone/builder/${agent._id}`)}
+      className="group relative bg-white rounded-[32px] border border-gray-100 p-8 shadow-sm hover:shadow-2xl hover:shadow-purple-100/50 hover:border-purple-200 transition-all transition-shadow duration-500 flex flex-col h-full cursor-pointer"
     >
       <div className="flex justify-between items-start mb-6">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-50 to-teal-50 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-500">
@@ -236,7 +243,9 @@ const AgentCard: React.FC<{ agent: StandaloneAgent, onDelete: (id: string) => vo
       </div>
 
       <div className="mb-8">
-        <h3 className="text-xl font-black text-gray-900 mb-2 group-hover:text-[#a26da8] transition-colors">{agent.name}</h3>
+        <h3 className="text-xl font-black text-gray-900 mb-2 group-hover:text-[#a26da8] transition-colors">
+          {agent.name}
+        </h3>
         <p className="text-sm font-medium text-gray-500 line-clamp-2 leading-relaxed">{agent.description}</p>
       </div>
 
@@ -267,20 +276,29 @@ const AgentCard: React.FC<{ agent: StandaloneAgent, onDelete: (id: string) => vo
         </div>
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => onDelete(agent._id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(agent._id);
+            }}
             className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
           >
             <Trash2 size={16} />
           </button>
           <button 
-            onClick={() => onTest?.(agent._id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTest?.(agent._id);
+            }}
             className="p-3 text-gray-400 hover:text-[#a26da8] hover:bg-purple-50 rounded-2xl transition-all"
             title="Test Chat"
           >
             <Bot size={18} />
           </button>
           <button 
-            onClick={() => navigate(`/admin/standalone/builder/${agent._id}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/admin/standalone/builder/${agent._id}`);
+            }}
             className="flex items-center gap-2 px-5 py-3 bg-purple-50 text-[#a26da8] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#a26da8] hover:text-white transition-all"
           >
             Manage
@@ -295,14 +313,17 @@ const AgentCard: React.FC<{ agent: StandaloneAgent, onDelete: (id: string) => vo
 const AgentRow: React.FC<{ agent: StandaloneAgent, onDelete: (id: string) => void, onTest?: (id: string) => void }> = ({ agent, onDelete, onTest }) => {
   const navigate = useNavigate();
   return (
-    <tr className="group hover:bg-gray-50/80 transition-colors">
+    <tr 
+      onClick={() => navigate(`/admin/standalone/builder/${agent._id}`)}
+      className="group hover:bg-gray-50/80 transition-colors cursor-pointer"
+    >
       <td className="px-8 py-5">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-50 to-teal-50 flex items-center justify-center text-gray-700 font-bold">
             {agent.name.charAt(0)}
           </div>
           <div>
-            <h4 className="text-sm font-black text-gray-900 mb-0.5">{agent.name}</h4>
+            <h4 className="text-sm font-black text-gray-900 mb-0.5 group-hover:text-[#a26da8] transition-colors">{agent.name}</h4>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{agent.slug}</p>
           </div>
         </div>
@@ -332,20 +353,29 @@ const AgentRow: React.FC<{ agent: StandaloneAgent, onDelete: (id: string) => voi
              <Activity size={14} className="text-green-500 animate-pulse" />
           </div>
           <button 
-            onClick={() => onTest?.(agent._id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTest?.(agent._id);
+            }}
             className="p-3 text-gray-400 hover:text-[#a26da8] hover:bg-purple-100 rounded-xl transition-all"
             title="Test Chat"
           >
             <Bot size={18} />
           </button>
           <button 
-            onClick={() => navigate(`/admin/standalone/builder/${agent._id}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/admin/standalone/builder/${agent._id}`);
+            }}
             className="p-3 text-gray-400 hover:text-[#a26da8] hover:bg-purple-100 rounded-xl transition-all"
           >
             <Settings size={18} />
           </button>
           <button 
-            onClick={() => onDelete(agent._id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(agent._id);
+            }}
             className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
           >
             <Trash2 size={18} />

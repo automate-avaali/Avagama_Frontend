@@ -11,10 +11,7 @@ interface LLMTabProps {
 }
 
 const PROVIDERS = [
-  { id: 'nvidia', name: 'NVIDIA', models: ['nvidia/nemotron-3-super-120b-a12b:free'] },
-  { id: 'openai', name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'o1-mini'] },
-  { id: 'anthropic', name: 'Anthropic', models: ['claude-3-5-sonnet-latest', 'claude-3-haiku-20240307'] },
-  { id: 'google', name: 'Google Gemini', models: ['gemini-1.5-pro', 'gemini-1.5-flash'] }
+  { id: 'nvidia', name: 'NVIDIA', models: ['nvidia/nemotron-3-super-120b-a12b:free'] }
 ];
 
 const LLMTab: React.FC<LLMTabProps> = ({ llm, guardrails, onLLMChange, onGuardrailsChange }) => {
@@ -92,11 +89,10 @@ const LLMTab: React.FC<LLMTabProps> = ({ llm, guardrails, onLLMChange, onGuardra
               </div>
               <input 
                 type="range" 
-                min="0" max="1" step="0.1" 
+                min="0" max="2" step="0.1" 
                 value={llm.temperature}
                 onChange={(e) => updateLLM('temperature', parseFloat(e.target.value))}
-                disabled
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-not-allowed opacity-50 accent-[#a26da8]"
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#a26da8]"
               />
               <div className="flex justify-between text-[8px] font-bold text-gray-400 uppercase tracking-widest">
                 <span>Precise</span>
@@ -111,11 +107,10 @@ const LLMTab: React.FC<LLMTabProps> = ({ llm, guardrails, onLLMChange, onGuardra
               </div>
               <input 
                 type="range" 
-                min="256" max="4096" step="256" 
+                min="256" max="8192" step="256" 
                 value={llm.max_tokens}
                 onChange={(e) => updateLLM('max_tokens', parseInt(e.target.value))}
-                disabled
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-not-allowed opacity-50 accent-[#a26da8]"
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#a26da8]"
               />
             </div>
           </div>

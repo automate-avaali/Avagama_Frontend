@@ -56,7 +56,7 @@ const INITIAL_LLM: AgentLLM = {
   model: 'nvidia/nemotron-3-super-120b-a12b:free',
   temperature: 0.3,
   top_p: 1.0,
-  max_tokens: 1024
+  max_tokens: 5000
 };
 
 const INITIAL_GUARD: AgentGuardrails = {
@@ -139,8 +139,19 @@ const StandaloneAgentBuilder: React.FC = () => {
       description,
       persona,
       system_prompt: systemPrompt,
-      llm,
-      guardrails,
+      llm: {
+        ...llm,
+        provider: llm.provider.toLowerCase(),
+        max_tokens: Math.min(llm.max_tokens, 8192)
+      },
+      guardrails: {
+        ...guardrails,
+        pii_detection: guardrails.pii_detection.toLowerCase(),
+        safety_filter: guardrails.safety_filter.toLowerCase(),
+        forbidden_topics: Array.isArray(guardrails.forbidden_topics) 
+          ? guardrails.forbidden_topics 
+          : String(guardrails.forbidden_topics).split(',').map(s => s.trim()).filter(Boolean)
+      },
       channels: agent?.channels
     };
 
@@ -156,16 +167,26 @@ const StandaloneAgentBuilder: React.FC = () => {
         response = await apiService.standalone.agents.update(id!, payload);
         if (response.success) {
           if (publish) {
-            await apiService.standalone.agents.publish(id!);
-            toast.success('Agent published successfully');
-            setAgent(prev => prev ? ({ ...prev, status: 'published' }) : null);
+            const pubResponse = await apiService.standalone.agents.publish(id!);
+            if (pubResponse.success) {
+              toast.success('Agent published successfully');
+              setAgent(pubResponse.data.agent);
+              if (pubResponse.data.share_url) {
+                window.open(pubResponse.data.share_url, '_blank');
+              }
+            } else {
+              toast.error(pubResponse.message || 'Publish failed');
+            }
           } else {
             toast.success('Configuration saved');
+            setAgent(response.data);
           }
+        } else {
+          toast.error(response.message || 'Failed to save configuration');
         }
       }
-    } catch (error) {
-      toast.error('Failed to save configuration');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to save configuration');
     } finally {
       setSaving(false);
     }
@@ -445,7 +466,20 @@ const StandaloneAgentBuilder: React.FC = () => {
             </div>
          </div>
       </div>
-      <ChatPreview agentId={id!} />
+      <ChatPreview 
+        agentId={id!} 
+        status={agent?.status || 'draft'} 
+        isDirty={
+          name !== (agent?.name || '') ||
+          description !== (agent?.description || '') ||
+          persona.role !== (agent?.persona?.role || '') ||
+          persona.goal !== (agent?.persona?.goal || '') ||
+          persona.instructions !== (agent?.persona?.instructions || '') ||
+          systemPrompt !== (agent?.system_prompt || '') ||
+          JSON.stringify(llm) !== JSON.stringify(agent?.llm || INITIAL_LLM) ||
+          JSON.stringify(guardrails) !== JSON.stringify(agent?.guardrails || INITIAL_GUARD)
+        }
+      />
     </div>
   );
 };

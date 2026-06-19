@@ -53,7 +53,9 @@ const PersonaTab: React.FC<PersonaTabProps> = ({
                   <Sparkles size={24} />
                </div>
                <div>
-                  <h3 className="text-base font-black text-gray-900 uppercase tracking-tight">Describe & Generate</h3>
+                  <h3 className="text-base font-black text-gray-900 uppercase tracking-tight">
+                    {agentName ? 'Describe to Update' : 'Describe & Generate'}
+                  </h3>
                   <p className="text-[10px] font-black text-[#a26da8] uppercase tracking-widest">Let AI build your agent's personality & logic</p>
                </div>
             </div>

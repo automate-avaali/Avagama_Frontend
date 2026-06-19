@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2, Minimize2, Maximize2, RotateCcw, X } from 'lucide-react';
+import { Send, User, Bot, Loader2, Minimize2, Maximize2, RotateCcw, X, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,9 +15,11 @@ interface Message {
 
 interface ChatPreviewProps {
   agentId: string;
+  status: string;
+  isDirty?: boolean;
 }
 
-const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
+const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, status, isDirty }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -65,8 +67,8 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || loading || !agentId || agentId === 'new') {
-      if (agentId === 'new') toast.error('Save the agent first to test chat');
+    if (!input.trim() || loading || !agentId || agentId === 'new' || isDirty) {
+      if (agentId === 'new' || isDirty) toast.error('Save the agent first to test chat');
       return;
     }
 
@@ -116,7 +118,8 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-10 right-32 w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 group"
+        className="fixed bottom-8 right-28 w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 group"
+        title="Open Agent Preview"
       >
         <Bot size={28} className="group-hover:rotate-12 transition-transform" />
         <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#a26da8] rounded-full border-2 border-white animate-pulse" />
@@ -134,7 +137,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
         height: isMinimized ? '80px' : '600px',
         width: isMinimized ? '300px' : '450px'
       }}
-      className="fixed bottom-10 right-32 bg-white rounded-[32px] shadow-2xl border border-gray-100 flex flex-col overflow-hidden z-50 transition-all duration-300"
+      className="fixed bottom-8 right-28 bg-white rounded-[32px] shadow-2xl border border-gray-100 flex flex-col overflow-hidden z-50 transition-all duration-300"
     >
       {/* Header */}
       <div className={`shrink-0 px-6 py-4 flex items-center justify-between border-b border-gray-50 bg-white ${isMinimized ? 'h-full' : ''}`}>
@@ -143,7 +146,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
             <Bot size={20} />
           </div>
           <div>
-            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Test Preview</h3>
+            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Agent Preview</h3>
             <p className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
               <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
               Live Simulation
@@ -155,7 +158,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
             <button 
               onClick={handleReset}
               className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
-              title="Clear chat"
+              title="Reset Conversation"
             >
               <RotateCcw size={16} />
             </button>
@@ -163,12 +166,14 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
           <button 
             onClick={() => setIsMinimized(!isMinimized)}
             className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
+            title={isMinimized ? "Expand Preview" : "Minimize Preview"}
           >
             {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </button>
           <button 
             onClick={() => setIsOpen(false)}
             className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
+            title="Close Preview"
           >
             <X size={16} />
           </button>
@@ -182,7 +187,19 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#fafafa]"
           >
-            {messages.length === 0 && (
+            {(isDirty || agentId === 'new') ? (
+              <div className="h-full flex flex-col items-center justify-center space-y-6 animate-fadeIn py-10">
+                 <div className="w-20 h-20 bg-purple-50 rounded-[28px] flex items-center justify-center text-[#a26da8] shadow-sm ring-4 ring-white">
+                    <Save size={32} className="opacity-80" />
+                 </div>
+                 <div className="text-center space-y-2 px-6">
+                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight">Save first to test</h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-loose max-w-[220px] mx-auto">
+                      You have unsaved configuration changes. Please save your progress to test the updated agent logic.
+                    </p>
+                 </div>
+               </div>
+            ) : messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center opacity-40 grayscale mt-10">
                 <Bot size={48} className="mb-4 text-gray-300" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center max-w-[200px] leading-loose">
@@ -268,13 +285,13 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId }) => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                disabled={agentId === 'new'}
+                placeholder={isDirty || agentId === 'new' ? "Please save to test..." : "Type your message..."}
+                disabled={agentId === 'new' || isDirty}
                 className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-[11px] font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-purple-100 transition-all pr-14"
               />
               <button 
                 type="submit"
-                disabled={!input.trim() || loading || agentId === 'new'}
+                disabled={!input.trim() || loading || agentId === 'new' || isDirty}
                 className="absolute right-2 top-2 w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-gray-200"
               >
                 <Send size={16} />
