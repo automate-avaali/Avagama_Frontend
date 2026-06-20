@@ -28,6 +28,7 @@ import toast from 'react-hot-toast';
 
 interface ToolsTabProps {
   agentId: string;
+  refreshKey?: number;
 }
 
 const TOOL_TYPES = [
@@ -37,7 +38,7 @@ const TOOL_TYPES = [
   { id: 'webhook', name: 'Custom Webhooks', icon: <Globe size={24} />, desc: 'Native API integrations via JSON-REST' }
 ];
 
-const ToolsTab: React.FC<ToolsTabProps> = ({ agentId }) => {
+const ToolsTab: React.FC<ToolsTabProps> = ({ agentId, refreshKey }) => {
   const [tools, setTools] = useState<StandaloneTool[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCatalog, setShowCatalog] = useState(false);
@@ -51,7 +52,7 @@ const ToolsTab: React.FC<ToolsTabProps> = ({ agentId }) => {
       fetchTools();
       fetchCatalog();
     }
-  }, [agentId]);
+  }, [agentId, refreshKey]);
 
   const fetchTools = async () => {
     try {

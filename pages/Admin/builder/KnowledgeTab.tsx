@@ -22,9 +22,10 @@ import toast from 'react-hot-toast';
 
 interface KnowledgeTabProps {
   agentId: string;
+  refreshKey?: number;
 }
 
-const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId }) => {
+const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
   const [sources, setSources] = useState<StandaloneKnowledgeSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingSource, setAddingSource] = useState<'none' | 'file' | 'url' | 'text' | 'qa'>('none');
@@ -40,7 +41,7 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId }) => {
     if (agentId !== 'new') {
       fetchSources();
     }
-  }, [agentId]);
+  }, [agentId, refreshKey]);
 
   const fetchSources = async () => {
     try {

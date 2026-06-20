@@ -17,9 +17,10 @@ interface ChatPreviewProps {
   agentId: string;
   status: string;
   isDirty?: boolean;
+  onTurnComplete?: () => void;
 }
 
-const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, status, isDirty }) => {
+const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, status, isDirty, onTurnComplete }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -99,6 +100,8 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, status, isDirty }) =
           setSessionId(response.data.session_id);
           localStorage.setItem(`agent_chat_${agentId}`, response.data.session_id);
         }
+        // Trigger spontaneous update for tools/actions usage
+        onTurnComplete?.();
       }
     } catch (error) {
       toast.error('Failed to get a response from the agent');

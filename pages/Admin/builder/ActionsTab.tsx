@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 
 interface ActionsTabProps {
   agentId: string;
+  refreshKey?: number;
 }
 
 const TRIGGER_KINDS = [
@@ -45,7 +46,7 @@ const EFFECT_KINDS = [
   { id: 'handoff', name: 'Human Handoff', icon: <ToggleRight size={14} /> }
 ];
 
-const ActionsTab: React.FC<ActionsTabProps> = ({ agentId }) => {
+const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
   const [actions, setActions] = useState<StandaloneAction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -61,7 +62,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId }) => {
 
   useEffect(() => {
     if (agentId !== 'new') fetchActions();
-  }, [agentId]);
+  }, [agentId, refreshKey]);
 
   const fetchActions = async () => {
     try {

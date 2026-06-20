@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
+import toast from 'react-hot-toast';
 import * as d3 from 'd3';
 import { motion } from 'motion/react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
  
 
@@ -79,7 +82,115 @@ const StrategicQuadrant: React.FC = () => {
 
  
 
-  const handlePrint = () => window.print();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handlePrint = async () => {
+    if (!containerRef.current) return;
+    
+    setIsExporting(true);
+    const toastId = toast.loading('Architecting high-fidelity PDF report...');
+    
+    try {
+      // Increase capture width to fit more content and reduce the "overzoomed" look
+      const captureWidth = 1100; 
+      
+      const canvas = await html2canvas(containerRef.current, {
+        scale: 2, // Sufficient high resolution
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: captureWidth,
+        windowWidth: captureWidth,
+        onclone: (clonedDoc) => {
+          const cloneContainer = clonedDoc.querySelector('.min-h-screen') as HTMLElement;
+          if (cloneContainer) {
+            cloneContainer.style.width = `${captureWidth}px`;
+            cloneContainer.style.padding = '40px 20px';
+            cloneContainer.style.margin = '0 auto';
+            cloneContainer.style.background = '#ffffff';
+          }
+
+          // Force the horizontal scroller into a clean vertical stack for the PDF
+          const gridLayer = clonedDoc.querySelector('.min-w-max');
+          if (gridLayer) {
+            const el = gridLayer as HTMLElement;
+            el.style.display = 'flex';
+            el.style.flexDirection = 'column';
+            el.style.alignItems = 'center';
+            el.style.gap = '40px';
+            el.style.width = '100%';
+            el.style.minWidth = 'unset';
+            
+            const wrapper = el.parentElement;
+            if (wrapper) {
+              wrapper.style.overflow = 'visible';
+              wrapper.style.width = '100%';
+              wrapper.style.padding = '0';
+            }
+          }
+
+          // Make cards span the full width with a more balanced scale 
+          const cards = clonedDoc.querySelectorAll('.w-\\[380px\\]');
+          cards.forEach(c => {
+            const el = c as HTMLElement;
+            el.style.width = '100%';
+            el.style.maxWidth = '1000px'; 
+            el.style.flexShrink = '0';
+            el.style.marginBottom = '10px';
+            el.classList.add('shadow-xl');
+            el.style.border = '1px solid #f8fafc';
+          });
+
+          // Stack legend/header vertically for cleaner PDF flow
+          const quadrantBox = clonedDoc.querySelector('.flex.flex-col.lg\\:flex-row.gap-12');
+          if (quadrantBox) {
+            const el = quadrantBox as HTMLElement;
+            el.style.flexDirection = 'column';
+            el.style.alignItems = 'center';
+            el.style.gap = '20px';
+          }
+
+          const hiddenElements = clonedDoc.querySelectorAll('.print\\:hidden');
+          hiddenElements.forEach(el => (el as HTMLElement).style.display = 'none');
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfImgHeight = (imgProps.height * pageWidth) / imgProps.width;
+      
+      let heightLeft = pdfImgHeight;
+      let position = 0;
+
+      // Primary page
+      pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, pdfImgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+
+      // Overflow pages
+      while (heightLeft > 0) {
+        position = heightLeft - pdfImgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, pdfImgHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`Strategic-Quadrant-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Report successfully exported', { id: toastId });
+    } catch (err) {
+      console.error('PDF Export Error:', err);
+      toast.error('High-quality export failed. Falling back to browser print...', { id: toastId });
+      window.print();
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
  
 
@@ -604,7 +715,7 @@ const StrategicQuadrant: React.FC = () => {
  
 
   return (
-<div className="p-10 space-y-10 bg-[#fcfdff] min-h-screen print:p-0 print:bg-white">
+<div ref={containerRef} className="p-10 space-y-10 bg-[#fcfdff] min-h-screen print:p-0 print:bg-white">
 <style dangerouslySetInnerHTML={{
         __html: `
           @media print {
@@ -639,13 +750,23 @@ const StrategicQuadrant: React.FC = () => {
 
         <div className="flex items-start gap-4">
 <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-2xl text-xs font-black tracking-widest uppercase hover:bg-black transition-all shadow-xl shadow-gray-100 print:hidden shrink-0"
+            onClick={handlePrint}
+            disabled={isExporting}
+            className="flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-2xl text-xs font-black tracking-widest uppercase hover:bg-black transition-all shadow-xl shadow-gray-100 print:hidden shrink-0 disabled:opacity-50"
 >
-<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-</svg>
-            Print PDF
+  {isExporting ? (
+    <>
+      <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      Exporting...
+    </>
+  ) : (
+    <>
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+      </svg>
+      Print PDF
+    </>
+  )}
 </button>
 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {items.map((item) => (

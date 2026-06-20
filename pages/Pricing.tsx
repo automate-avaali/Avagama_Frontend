@@ -1,6 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { PricingPlan } from '../types';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const CONVERSION_RATE = 93;
 
@@ -106,9 +108,46 @@ const runPacks = [
 
 const Pricing: React.FC = () => {
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
+  const [isExporting, setIsExporting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!containerRef.current) return;
+    setIsExporting(true);
+    
+    try {
+      const element = containerRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          const hiddenElements = clonedDoc.querySelectorAll('.print\\:hidden');
+          hiddenElements.forEach(el => (el as HTMLElement).style.display = 'none');
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      const pdf = new jsPDF({
+        orientation: imgWidth > imgHeight ? 'l' : 'p',
+        unit: 'px',
+        format: [imgWidth, imgHeight]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Pricing-Prospectus-${new Date().getFullYear()}.pdf`);
+    } catch (err) {
+      console.error('PDF Export Error:', err);
+      window.print();
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -220,7 +259,7 @@ const Pricing: React.FC = () => {
           }
         }
       `}} />
-      <div id="pricing-root">
+      <div id="pricing-root" ref={containerRef}>
         <div className="max-w-5xl mx-auto text-center space-y-6 mb-16 hero-section">
         <div className="inline-flex items-center gap-2 bg-black text-white px-5 py-2 rounded-full text-[10px] font-black tracking-[0.2em] uppercase">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -254,10 +293,15 @@ const Pricing: React.FC = () => {
         
         <button 
           onClick={handlePrint}
-          className="flex items-center gap-2 bg-gray-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase hover:bg-black transition-all shadow-xl shadow-gray-100 print:hidden"
+          disabled={isExporting}
+          className="flex items-center gap-2 bg-gray-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase hover:bg-black transition-all shadow-xl shadow-gray-100 print:hidden disabled:opacity-50"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-          Print Pricing PDF
+          {isExporting ? (
+            <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+          )}
+          {isExporting ? 'Exporting...' : 'Print Pricing PDF'}
         </button>
       </div>
 

@@ -82,6 +82,11 @@ const StandaloneAgentBuilder: React.FC = () => {
   const [llm, setLLM] = useState<AgentLLM>(INITIAL_LLM);
   const [guardrails, setGuardrails] = useState<AgentGuardrails>(INITIAL_GUARD);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -437,13 +442,13 @@ const StandaloneAgentBuilder: React.FC = () => {
                         />
                       )}
                       {activeTab === 'knowledge' && (
-                        <KnowledgeTab agentId={id!} />
+                        <KnowledgeTab agentId={id!} refreshKey={refreshKey} />
                       )}
                       {activeTab === 'actions' && (
-                        <ActionsTab agentId={id!} />
+                        <ActionsTab agentId={id!} refreshKey={refreshKey} />
                       )}
                       {activeTab === 'tools' && (
-                        <ToolsTab agentId={id!} />
+                        <ToolsTab agentId={id!} refreshKey={refreshKey} />
                       )}
                       {activeTab === 'channels' && (
                         <ChannelsTab 
@@ -458,7 +463,7 @@ const StandaloneAgentBuilder: React.FC = () => {
                         />
                       )}
                       {activeTab === 'history' && (
-                         <HistoryTab agentId={id!} />
+                         <HistoryTab agentId={id!} refreshKey={refreshKey} />
                       )}
                     </motion.div>
                   </AnimatePresence>
@@ -469,6 +474,7 @@ const StandaloneAgentBuilder: React.FC = () => {
       <ChatPreview 
         agentId={id!} 
         status={agent?.status || 'draft'} 
+        onTurnComplete={handleRefresh}
         isDirty={
           name !== (agent?.name || '') ||
           description !== (agent?.description || '') ||
