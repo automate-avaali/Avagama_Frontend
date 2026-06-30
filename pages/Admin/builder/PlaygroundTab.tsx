@@ -50,7 +50,9 @@ import {
   PlusCircle,
   PlayCircle,
   GitBranch,
-  Grid
+  Grid,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Markdown from 'react-markdown';
@@ -540,12 +542,12 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
         return (
           <div className="space-y-3 w-full">
             <div className="space-y-1">
-              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest block">Agent Response</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Agent Response</span>
               <RenderValue value={textVal} />
             </div>
             <div className="space-y-1">
-              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest block">Structured Data Outputs</span>
-              <pre className="text-[9px] font-mono p-2.5 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[160px] custom-scrollbar text-gray-700 leading-relaxed">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Structured Data Outputs</span>
+              <pre className="text-[12.5px] font-mono p-4 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[55vh] custom-scrollbar text-gray-700 leading-relaxed">
                 {JSON.stringify(otherData, null, 2)}
               </pre>
             </div>
@@ -554,7 +556,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
       }
 
       return (
-        <pre className="text-[9px] font-mono p-2.5 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[160px] custom-scrollbar text-gray-700 leading-relaxed">
+        <pre className="text-[12.5px] font-mono p-4 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[55vh] custom-scrollbar text-gray-700 leading-relaxed">
           {JSON.stringify(normalizedValue, null, 2)}
         </pre>
       );
@@ -571,16 +573,16 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
                 <span>The agent stopped early (tool limit / fallback) — try again or pick a more reliable model.</span>
               </div>
             )}
-            <div className="prose prose-xs max-w-none text-gray-800 bg-white border border-gray-100 rounded-xl p-3 shadow-sm overflow-x-auto max-h-[180px] custom-scrollbar markdown-body text-[10px] leading-relaxed">
+            <div className="prose prose-sm max-w-none text-gray-800 bg-white border border-gray-100 rounded-xl p-4 shadow-sm overflow-x-auto max-h-[55vh] custom-scrollbar markdown-body text-[13.5px] leading-relaxed">
               <Markdown remarkPlugins={[remarkGfm]}>{normalizedValue}</Markdown>
             </div>
           </div>
         );
       }
-      return <span className="font-mono text-[10px] text-gray-800 break-all leading-relaxed bg-gray-50 px-2 py-1 rounded border border-gray-100 block">{normalizedValue}</span>;
+      return <span className="font-mono text-[13px] text-gray-800 break-all leading-relaxed bg-gray-50 px-3 py-2 rounded border border-gray-100 block">{normalizedValue}</span>;
     }
 
-    return <span className="font-mono text-[10px] text-gray-800 bg-gray-50 px-2 py-1 rounded border border-gray-100 block">{String(normalizedValue)}</span>;
+    return <span className="font-mono text-[13px] text-gray-800 bg-gray-50 px-3 py-2 rounded border border-gray-100 block">{String(normalizedValue)}</span>;
   };
 
   return (
@@ -665,7 +667,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
         .markdown-body h2 { font-size: 1.1rem; }
         .markdown-body h3 { font-size: 1rem; }
       `}} />
-      {label && <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">{label}</div>}
+      {label && <div className="text-[10.5px] font-black text-gray-500 uppercase tracking-widest pl-1 mb-1">{label}</div>}
       <div className="relative group/val">
         {renderContent()}
         {((typeof normalizedValue === 'string' && normalizedValue.length > 100) || typeof normalizedValue === 'object') && (
@@ -681,7 +683,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
 
       {isExpanded && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col">
             <div className="p-6 border-b border-gray-50 flex items-center justify-between shrink-0">
               <span className="text-xs font-black text-gray-900 uppercase tracking-wider">{label || 'Value Detail'}</span>
               <button onClick={() => setIsExpanded(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">
@@ -789,6 +791,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
   const [activeInspectNodeId, setActiveInspectNodeId] = useState<string | null>(null);
   const [runDetailTab, setRunDetailTab] = useState<'flow' | 'data'>('flow');
   const [useRawJson, setUseRawJson] = useState<boolean>(false);
+  const [runFullscreen, setRunFullscreen] = useState<boolean>(true);
 
   const [fetchingRuns, setFetchingRuns] = useState(false);
   const [fetchingSchedules, setFetchingSchedules] = useState(false);
@@ -2525,8 +2528,8 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
 
         {/* Run Details Modal */}
         {selectedRun && (
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-6xl h-[92vh] rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 flex flex-col">
+          <div className={`fixed inset-0 z-[101] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300 ${runFullscreen ? 'p-0' : 'p-4'}`}>
+            <div className={`bg-white flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 shadow-2xl ${runFullscreen ? 'w-screen h-screen rounded-none' : 'w-full max-w-[1400px] h-[94vh] rounded-[40px]'}`}>
               
               {/* Header section */}
               <div className="p-6 border-b border-gray-50 shrink-0 bg-white">
@@ -2600,7 +2603,14 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                         Cancel Run
                       </button>
                     )}
-                    <button 
+                    <button
+                      onClick={() => setRunFullscreen(f => !f)}
+                      className="p-2 hover:bg-gray-50 border border-gray-100 rounded-xl text-gray-500 transition-all"
+                      title={runFullscreen ? 'Exit full screen' : 'Full screen'}
+                    >
+                      {runFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                    </button>
+                    <button
                       onClick={() => setSelectedRun(null)}
                       className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 transition-all"
                     >
@@ -2729,7 +2739,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                 {log.ts ? new Date(log.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : ''}
                               </span>
                             </div>
-                            <div className="font-mono text-[9px] mt-1.5 leading-relaxed break-all whitespace-pre-wrap">
+                            <div className="font-mono text-[11.5px] mt-2 leading-relaxed break-words whitespace-pre-wrap">
                               {log.message}
                             </div>
                           </div>
