@@ -34,6 +34,7 @@ import StandaloneAgents from './pages/Admin/StandaloneAgents';
 import StandaloneAgentBuilder from './pages/Admin/StandaloneAgentBuilder';
 import StandaloneMarketplace from './pages/Admin/StandaloneMarketplace';
 import OAuthHandler from './pages/Admin/builder/OAuthHandler';
+import Playground from './pages/Playground';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -104,7 +105,7 @@ const App: React.FC = () => {
               <Route path="/guided-tour" element={<GuidedTour />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
-              // <Route path="/ceo" element={<CEO />} />
+              {/* <Route path="/ceo" element={<CEO />} /> */}
               <Route path="/pricing" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Pricing />} />
               <Route path="/contact" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Support />} />
               <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={() => setIsAuthenticated(true)} />} />
@@ -125,6 +126,7 @@ const App: React.FC = () => {
               <Route path="/discovery/company" element={<ProtectedRoute isAuthenticated={isAuthenticated}><CompanyDiscovery /></ProtectedRoute>} />
               <Route path="/discovery/domain" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DomainDiscovery /></ProtectedRoute>} />
               <Route path="/discovery/detail/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DiscoveryDetail /></ProtectedRoute>} />
+              <Route path="/playground" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Playground /></ProtectedRoute>} />
               
               {/* Admin Routes */}
               <Route path="/admin/system" element={<ProtectedRoute isAuthenticated={isAuthenticated}><SystemAdmin /></ProtectedRoute>} />

@@ -228,6 +228,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                 <div className="relative">
                   <Link to="/admin/standalone" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.startsWith('/admin/standalone') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>AGENT BUILDER</Link>
                 </div>
+                <Link to="/playground" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/playground' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>AGENT PLAYGROUND</Link>
                 <Link to="/admin/orchestration" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/admin/orchestration' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORCHESTRATION</Link>
                 
                 {userRole === 'TENANT_ADMIN' && (
@@ -504,6 +505,10 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/admin/standalone" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Agent Builder</Link>
+                        </motion.div>
+
+                        <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
+                          <Link to="/playground" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Agent Playground</Link>
                         </motion.div>
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>

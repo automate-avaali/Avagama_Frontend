@@ -1470,5 +1470,121 @@ export const apiService = {
         return handleResponse(response);
       }
     }
+  },
+  playground: {
+    catalog: {
+      getNodeTypes: async () => {
+        const response = await fetch(`${BASE_URL}/playground/catalog/node-types`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      getConnectors: async () => {
+        const response = await fetch(`${BASE_URL}/playground/catalog/connectors`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      getAgents: async () => {
+        const response = await fetch(`${BASE_URL}/playground/catalog/agents`, { headers: getHeaders() });
+        return handleResponse(response);
+      }
+    },
+    flows: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/playground/flows${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${id}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      create: async (data: any) => {
+        const response = await fetch(`${BASE_URL}/playground/flows`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      update: async (id: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      delete: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${id}`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(response);
+      },
+      validate: async (id: string, data?: any) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${id}/validate`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: data ? JSON.stringify(data) : undefined
+        });
+        return handleResponse(response);
+      },
+      run: async (id: string, data?: any) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${id}/run`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: data ? JSON.stringify(data) : undefined
+        });
+        return handleResponse(response);
+      }
+    },
+    runs: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/playground/runs${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/runs/${id}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      approve: async (id: string, decision: 'approved' | 'rejected') => {
+        const response = await fetch(`${BASE_URL}/playground/runs/${id}/approve`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ decision })
+        });
+        return handleResponse(response);
+      },
+      cancel: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/runs/${id}/cancel`, {
+          method: 'POST',
+          headers: getHeaders()
+        });
+        return handleResponse(response);
+      }
+    },
+    schedules: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/playground/schedules${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      create: async (flowId: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${flowId}/schedules`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      update: async (id: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/playground/schedules/${id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      delete: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/schedules/${id}`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(response);
+      }
+    }
   }
 };

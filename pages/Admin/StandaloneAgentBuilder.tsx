@@ -9,6 +9,7 @@ import LLMTab from './builder/LLMTab';
 import KnowledgeTab from './builder/KnowledgeTab';
 import ActionsTab from './builder/ActionsTab';
 import ToolsTab from './builder/ToolsTab';
+import PlaygroundTab from './builder/PlaygroundTab';
 import ChannelsTab from './builder/ChannelsTab';
 import HistoryTab from './builder/HistoryTab';
 import ChatPreview from './builder/ChatPreview';
@@ -38,6 +39,7 @@ const TABS = [
   { id: 'knowledge', name: 'Knowledge Base', icon: <Database size={16} /> },
   { id: 'actions', name: 'Actions', icon: <Zap size={16} /> },
   { id: 'tools', name: 'Tools', icon: <Puzzle size={16} /> },
+  { id: 'playground', name: 'Agent Playground', icon: <Sparkles size={16} /> },
   { id: 'channels', name: 'Channels & Share', icon: <Globe size={16} /> },
   { id: 'history', name: 'Conversations', icon: <History size={16} /> },
 ];
@@ -449,6 +451,9 @@ const StandaloneAgentBuilder: React.FC = () => {
                       )}
                       {activeTab === 'tools' && (
                         <ToolsTab agentId={id!} refreshKey={refreshKey} />
+                      )}
+                      {activeTab === 'playground' && (
+                        <PlaygroundTab agentId={id!} refreshKey={refreshKey} />
                       )}
                       {activeTab === 'channels' && (
                         <ChannelsTab 
