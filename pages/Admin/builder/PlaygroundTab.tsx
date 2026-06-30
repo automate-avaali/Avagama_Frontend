@@ -2528,8 +2528,8 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
 
         {/* Run Details Modal */}
         {selectedRun && (
-          <div className={`fixed inset-0 z-[101] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300 ${runFullscreen ? 'p-0' : 'p-4'}`}>
-            <div className={`bg-white flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 shadow-2xl ${runFullscreen ? 'w-screen h-screen rounded-none' : 'w-full max-w-[1400px] h-[94vh] rounded-[40px]'}`}>
+          <div className={`fixed inset-0 z-[101] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300 ${runFullscreen ? 'p-3 sm:p-5' : 'p-4'}`}>
+            <div className={`bg-white flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 shadow-2xl rounded-[28px] ${runFullscreen ? 'w-full h-full' : 'w-full max-w-[1400px] h-[94vh]'}`}>
               
               {/* Header section */}
               <div className="p-6 border-b border-gray-50 shrink-0 bg-white">
