@@ -1267,6 +1267,13 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
     setShowScheduleModal(true);
   };
 
+  // Schedule a specific flow straight from the Library: make it active, then open the modal.
+  const scheduleFlow = async (flow: any) => {
+    await loadFlow(flow._id);
+    setScheduleForm({ name: '', triggerType: 'interval', cron: '0 9 * * *', everyMinutes: 60, enabled: true });
+    setShowScheduleModal(true);
+  };
+
   const createSchedule = async () => {
     if (!flowId) {
       toast.error('Save the flow first');
@@ -1712,16 +1719,25 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                       >
                         <Trash2 size={16} />
                       </button>
-                      <button
-                        onClick={() => {
-                          loadFlow(flow._id);
-                          setActiveView('builder');
-                          toast.success(`Loaded "${flow.name}"`);
-                        }}
-                        className="px-5 py-2.5 bg-[#a26da8] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-sm flex items-center gap-1.5"
-                      >
-                        Load Flow <ArrowRight size={12} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => scheduleFlow(flow)}
+                          className="px-3 py-2.5 border border-gray-100 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest hover:text-[#a26da8] hover:border-purple-200 hover:bg-purple-50 transition-all flex items-center gap-1.5"
+                          title="Schedule this flow"
+                        >
+                          <Clock size={12} /> Schedule
+                        </button>
+                        <button
+                          onClick={() => {
+                            loadFlow(flow._id);
+                            setActiveView('builder');
+                            toast.success(`Loaded "${flow.name}"`);
+                          }}
+                          className="px-5 py-2.5 bg-[#a26da8] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-sm flex items-center gap-1.5"
+                        >
+                          Load Flow <ArrowRight size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   );
@@ -2369,7 +2385,11 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                             run.status === 'cancelled' ? 'bg-gray-100 text-gray-400' :
                             'bg-blue-50 text-blue-600'
                           }`}>{run.status}</span>
-                          <span className="px-2 py-0.5 bg-gray-50 rounded-md text-[8px] font-black text-gray-400 uppercase tracking-widest">{run.trigger}</span>
+                          {run.trigger === 'schedule' ? (
+                            <span className="px-2 py-0.5 bg-purple-50 text-[#a26da8] rounded-md text-[8px] font-black uppercase tracking-widest flex items-center gap-1"><Clock size={8} /> Scheduled</span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-gray-50 rounded-md text-[8px] font-black text-gray-400 uppercase tracking-widest">{run.trigger}</span>
+                          )}
                           {(run.flow_name || run.metadata?.flow_name) && (
                             <span className="px-2 py-0.5 bg-purple-50 text-[#a26da8] rounded-md text-[8px] font-black uppercase tracking-widest">{run.flow_name || run.metadata?.flow_name}</span>
                           )}
@@ -2400,7 +2420,9 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Scheduled Triggers</h2>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Automated recurring executions</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  {flowId ? <>Schedules for <span className="text-[#a26da8]">{flowName}</span></> : 'Load or save a flow first to schedule it'}
+                </p>
               </div>
               <button
                 onClick={openScheduleModal}
@@ -2469,7 +2491,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
               <div className="p-7 border-b border-gray-50 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">New Schedule</h3>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Automate recurring runs of this flow</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">For flow: <span className="text-[#a26da8]">{flowName}</span></p>
                 </div>
                 <button onClick={() => setShowScheduleModal(false)} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 transition-all">
                   <X size={20} />
@@ -2526,6 +2548,10 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                     <input type="checkbox" checked={scheduleForm.enabled} onChange={(e) => setScheduleForm({ ...scheduleForm, enabled: e.target.checked })} className="sr-only peer" />
                     <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#a26da8]"></div>
                   </label>
+                </div>
+                <div className="flex items-start gap-2.5 p-3 bg-purple-50/50 border border-purple-100 rounded-2xl">
+                  <MessageSquare size={14} className="text-[#a26da8] shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-gray-500 leading-relaxed">On <span className="text-[#7c3a86]">each scheduled run</span> you'll be emailed at start, on approval, and at completion.</p>
                 </div>
               </div>
               <div className="p-7 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
@@ -2692,10 +2718,15 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                     })()}
                   </div>
                 )}
+
+                <div className="flex items-start gap-2.5 p-3 bg-purple-50/50 border border-purple-100 rounded-2xl">
+                  <MessageSquare size={14} className="text-[#a26da8] shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-gray-500 leading-relaxed">You'll be emailed when this flow <span className="text-[#7c3a86]">starts</span>, when it <span className="text-amber-600">needs your approval</span>, and when it <span className="text-green-600">finishes</span>.</p>
+                </div>
               </div>
 
               <div className="p-8 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
-                <button 
+                <button
                   onClick={() => setShowRunModal(false)}
                   className="flex-1 py-4 border border-gray-200 bg-white text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-gray-300"
                 >
