@@ -792,6 +792,15 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
   const [runDetailTab, setRunDetailTab] = useState<'flow' | 'data'>('flow');
   const [useRawJson, setUseRawJson] = useState<boolean>(false);
   const [runFullscreen, setRunFullscreen] = useState<boolean>(true);
+  const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
+  const [savingSchedule, setSavingSchedule] = useState<boolean>(false);
+  const [scheduleForm, setScheduleForm] = useState<{ name: string; triggerType: 'cron' | 'interval'; cron: string; everyMinutes: number; enabled: boolean }>({
+    name: '',
+    triggerType: 'interval',
+    cron: '0 9 * * *',
+    everyMinutes: 60,
+    enabled: true,
+  });
 
   const [fetchingRuns, setFetchingRuns] = useState(false);
   const [fetchingSchedules, setFetchingSchedules] = useState(false);
@@ -1249,6 +1258,77 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
     }
   };
 
+  const openScheduleModal = () => {
+    if (!flowId) {
+      toast.error('Save the flow first, then add a schedule');
+      return;
+    }
+    setScheduleForm({ name: '', triggerType: 'interval', cron: '0 9 * * *', everyMinutes: 60, enabled: true });
+    setShowScheduleModal(true);
+  };
+
+  const createSchedule = async () => {
+    if (!flowId) {
+      toast.error('Save the flow first');
+      return;
+    }
+    if (!scheduleForm.name.trim()) {
+      toast.error('Give the schedule a name');
+      return;
+    }
+    const trigger = scheduleForm.triggerType === 'cron'
+      ? { type: 'cron', cron: scheduleForm.cron.trim() }
+      : { type: 'interval', every_minutes: Number(scheduleForm.everyMinutes) || 60 };
+
+    setSavingSchedule(true);
+    try {
+      const res = await apiService.playground.schedules.create(flowId, {
+        name: scheduleForm.name.trim(),
+        enabled: scheduleForm.enabled,
+        trigger,
+      });
+      if (res && res.success) {
+        toast.success('Schedule created');
+        setShowScheduleModal(false);
+        fetchSchedules();
+      } else {
+        throw new Error(res?.error || 'Failed to create schedule');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to create schedule');
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
+  const toggleSchedule = async (sch: any) => {
+    try {
+      const res = await apiService.playground.schedules.update(sch._id, { enabled: !sch.enabled });
+      if (res && res.success) {
+        fetchSchedules();
+      } else {
+        throw new Error(res?.error || 'Update failed');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update schedule');
+    }
+  };
+
+  const deleteSchedule = (sch: any) => {
+    setConfirmAction({
+      message: `Delete the schedule "${sch.name}"? This stops its automated runs.`,
+      onConfirm: async () => {
+        try {
+          await apiService.playground.schedules.delete(sch._id);
+          setSchedules(prev => prev.filter(s => s._id !== sch._id));
+          toast.success('Schedule removed');
+        } catch (e: any) {
+          toast.error(e.message || 'Failed to delete schedule');
+        }
+      },
+    });
+  };
+
   const runFlow = async () => {
     if (!flowId) return;
     let parsedInput: any = {};
@@ -1575,40 +1655,44 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {flows.map(flow => (
-                  <div key={flow._id} className="p-8 bg-white border border-gray-100 rounded-[32px] hover:border-purple-200 hover:shadow-xl transition-all group flex flex-col gap-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50/20 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
-                    
-                    <div className="flex items-center justify-between relative z-10">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gray-50 rounded-xl text-gray-400 group-hover:bg-purple-50 group-hover:text-purple-500 transition-colors">
-                          <Grid size={18} />
-                        </div>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          {flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString() : 'N/A'}
-                        </div>
+                {flows.map(flow => {
+                  const nodeCount = flow.node_count ?? flow.graph?.nodes?.length ?? flow.nodes?.length ?? 0;
+                  const edgeCount = flow.edge_count ?? flow.graph?.edges?.length ?? flow.edges?.length ?? 0;
+                  const initial = (flow.name || 'F').trim().charAt(0).toUpperCase();
+                  return (
+                  <div key={flow._id} className="p-6 bg-white border border-gray-100 rounded-[28px] hover:border-purple-200 hover:shadow-lg transition-all flex flex-col gap-5">
+                    {/* Top row: avatar + badge */}
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#a26da8] to-[#6fcbbd] text-white flex items-center justify-center text-lg font-black shadow-sm">
+                        {initial}
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="px-2.5 py-1 bg-purple-50 text-[#a26da8] rounded-full text-[8px] font-black uppercase tracking-widest">Flow</span>
+                        <span className="text-[9px] font-bold text-gray-400">{flow.updatedAt ? new Date(flow.updatedAt).toLocaleDateString() : ''}</span>
                       </div>
                     </div>
 
-                    <div className="space-y-1 relative z-10">
-                      <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight group-hover:text-purple-600 transition-colors">{flow.name}</h3>
-                      <p className="text-[10px] font-bold text-gray-400 line-clamp-1 italic">
-                        {flow.node_count ?? flow.graph?.nodes?.length ?? flow.nodes?.length ?? 0} Nodes • {flow.edge_count ?? flow.graph?.edges?.length ?? flow.edges?.length ?? 0} Connections
-                      </p>
+                    {/* Title + description */}
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-gray-900 tracking-tight leading-snug line-clamp-2">{flow.name}</h3>
+                      <p className="text-[11px] font-medium text-gray-400 line-clamp-2 leading-relaxed">{flow.description || 'Multi-step agent workflow'}</p>
                     </div>
 
-                    <div className="flex items-center gap-3 mt-2 relative z-10">
-                      <button 
-                        onClick={() => {
-                          loadFlow(flow._id);
-                          setActiveView('builder');
-                          toast.success(`Loaded "${flow.name}"`);
-                        }}
-                        className="flex-1 py-3 bg-gray-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-purple-600 transition-all"
-                      >
-                        Load Flow
-                      </button>
-                      <button 
+                    {/* Stat sub-cards */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gray-50 rounded-2xl px-3 py-2.5 border border-gray-100">
+                        <div className="flex items-center gap-1.5 text-gray-400"><Layers size={11} /><span className="text-[8px] font-black uppercase tracking-widest">Nodes</span></div>
+                        <div className="text-sm font-black text-gray-900 mt-0.5">{nodeCount}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl px-3 py-2.5 border border-gray-100">
+                        <div className="flex items-center gap-1.5 text-gray-400"><GitBranch size={11} /><span className="text-[8px] font-black uppercase tracking-widest">Connections</span></div>
+                        <div className="text-sm font-black text-gray-900 mt-0.5">{edgeCount}</div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                      <button
                         onClick={() => {
                           setConfirmAction({
                             message: `Are you sure you want to delete the flow configuration "${flow.name}"? This action cannot be undone.`,
@@ -1623,13 +1707,25 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                             }
                           });
                         }}
-                        className="p-3 border border-gray-100 text-gray-300 hover:text-red-500 hover:bg-red-50 hover:border-red-100 rounded-xl transition-all"
+                        className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                        title="Delete flow"
                       >
                         <Trash2 size={16} />
                       </button>
+                      <button
+                        onClick={() => {
+                          loadFlow(flow._id);
+                          setActiveView('builder');
+                          toast.success(`Loaded "${flow.name}"`);
+                        }}
+                        className="px-5 py-2.5 bg-[#a26da8] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-sm flex items-center gap-1.5"
+                      >
+                        Load Flow <ArrowRight size={12} />
+                      </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2306,8 +2402,9 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                 <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Scheduled Triggers</h2>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Automated recurring executions</p>
               </div>
-              <button 
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-[#a26da8] hover:border-purple-200 transition-all shadow-sm"
+              <button
+                onClick={openScheduleModal}
+                className="flex items-center gap-2 px-4 py-2 bg-[#a26da8] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-sm"
               >
                 <Plus size={14} />
                 New Schedule
@@ -2329,28 +2426,119 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
             ) : (
               <div className="grid gap-4">
                 {schedules.map(sch => (
-                  <div key={sch._id} className="p-6 bg-white rounded-[24px] border border-gray-100 shadow-sm flex items-center justify-between">
+                  <div key={sch._id} className="p-6 bg-white rounded-[24px] border border-gray-100 shadow-sm flex items-center justify-between hover:border-purple-100 transition-all">
                     <div className="flex items-center gap-6">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${sch.enabled ? 'bg-purple-50 text-[#a26da8]' : 'bg-gray-50 text-gray-300'}`}>
                         <Clock size={24} />
                       </div>
                       <div>
                         <div className="text-[11px] font-black text-gray-900 uppercase tracking-tight mb-0.5">{sch.name}</div>
-                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{sch.trigger.type === 'cron' ? sch.trigger.cron : `Every ${sch.trigger.every_minutes}m`}</div>
+                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{sch.trigger?.type === 'cron' ? sch.trigger?.cron : `Every ${sch.trigger?.every_minutes ?? '?'}m`}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${sch.enabled ? 'bg-green-50 text-green-500' : 'bg-gray-100 text-gray-400'}`}>
                         {sch.enabled ? 'Active' : 'Paused'}
                       </div>
-                      <button className="p-2 border border-gray-100 rounded-xl text-gray-400 hover:bg-gray-50">
-                        <Settings2 size={16} />
+                      <button
+                        onClick={() => toggleSchedule(sch)}
+                        className="px-3 py-2 border border-gray-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-gray-500 hover:text-[#a26da8] hover:border-purple-200 hover:bg-purple-50 transition-all"
+                        title={sch.enabled ? 'Pause schedule' : 'Activate schedule'}
+                      >
+                        {sch.enabled ? 'Pause' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => deleteSchedule(sch)}
+                        className="p-2 border border-gray-100 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 hover:border-red-100 transition-all"
+                        title="Delete schedule"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* New Schedule Modal */}
+        {showScheduleModal && (
+          <div className="fixed inset-0 z-[105] flex items-center justify-center p-6 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col animate-in zoom-in-95 duration-300">
+              <div className="p-7 border-b border-gray-50 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">New Schedule</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Automate recurring runs of this flow</p>
+                </div>
+                <button onClick={() => setShowScheduleModal(false)} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 transition-all">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-7 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Schedule Name</label>
+                  <input
+                    value={scheduleForm.name}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, name: e.target.value })}
+                    placeholder="e.g. Nightly invoice sweep"
+                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-xs font-bold outline-none focus:bg-white focus:ring-1 focus:ring-purple-200"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Trigger Type</label>
+                  <div className="flex p-1 bg-gray-100 rounded-xl">
+                    <button type="button" onClick={() => setScheduleForm({ ...scheduleForm, triggerType: 'interval' })}
+                      className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${scheduleForm.triggerType === 'interval' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400'}`}>
+                      Interval
+                    </button>
+                    <button type="button" onClick={() => setScheduleForm({ ...scheduleForm, triggerType: 'cron' })}
+                      className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${scheduleForm.triggerType === 'cron' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400'}`}>
+                      Cron
+                    </button>
+                  </div>
+                </div>
+                {scheduleForm.triggerType === 'interval' ? (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Run Every (minutes)</label>
+                    <input type="number" min={1}
+                      value={scheduleForm.everyMinutes}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, everyMinutes: Number(e.target.value) })}
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-xs font-bold outline-none focus:bg-white focus:ring-1 focus:ring-purple-200"
+                    />
+                    <p className="text-[9px] font-bold text-gray-400 pl-1">e.g. 60 = hourly · 1440 = once a day</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Cron Expression</label>
+                    <input
+                      value={scheduleForm.cron}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, cron: e.target.value })}
+                      placeholder="0 9 * * *"
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-xs font-mono font-bold outline-none focus:bg-white focus:ring-1 focus:ring-purple-200"
+                    />
+                    <p className="text-[9px] font-bold text-gray-400 pl-1">min hour day month weekday — "0 9 * * *" = daily at 09:00</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Active on creation</label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={scheduleForm.enabled} onChange={(e) => setScheduleForm({ ...scheduleForm, enabled: e.target.checked })} className="sr-only peer" />
+                    <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#a26da8]"></div>
+                  </label>
+                </div>
+              </div>
+              <div className="p-7 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
+                <button onClick={() => setShowScheduleModal(false)} className="flex-1 py-3.5 border border-gray-200 bg-white text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-gray-300">
+                  Cancel
+                </button>
+                <button onClick={createSchedule} disabled={savingSchedule}
+                  className="flex-[2] py-3.5 bg-[#a26da8] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#8e5a94] flex items-center justify-center gap-2 disabled:opacity-50">
+                  {savingSchedule ? <Loader2 size={16} className="animate-spin" /> : <Clock size={16} />}
+                  Create Schedule
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
