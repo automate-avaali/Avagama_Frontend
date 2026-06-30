@@ -2057,34 +2057,58 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                             </div>
                             <div className="space-y-3 pt-4 border-t border-gray-50">
                               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Decision Options</label>
+                              <p className="text-[9px] font-bold text-gray-400 pl-1 leading-relaxed">Each decision must route to the node it should continue to. Approve sends <code className="text-[#a26da8]">approved</code>, Reject sends <code className="text-[#a26da8]">rejected</code> — name the options to match.</p>
                               {(activeNode.data.config?.outcomes || []).map((oc: any, i: number) => (
-                                <div key={i} className="flex gap-2 items-center group">
-                                  <input 
-                                    className="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-[10px] font-bold outline-none focus:bg-white"
-                                    value={oc.label}
-                                    onChange={(e) => {
-                                      const outcomes = activeNode.data.config?.outcomes || [];
-                                      const next = [...outcomes];
-                                      if (next[i]) {
-                                        next[i] = { ...next[i], label: e.target.value };
-                                        updateNodeData(activeNode.id, { config: { ...activeNode.data.config, outcomes: next } });
-                                      }
-                                    }}
-                                    placeholder="Option Label (e.g. Approved)"
-                                  />
-                                  <button 
+                                <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2 relative group">
+                                  <button
                                     onClick={() => {
                                       const outcomes = activeNode.data.config?.outcomes || [];
                                       const next = outcomes.filter((_: any, idx: number) => idx !== i);
                                       updateNodeData(activeNode.id, { config: { ...activeNode.data.config, outcomes: next } });
                                     }}
-                                    className="p-2 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                    className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                                   >
                                     <Trash2 size={12} />
                                   </button>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Decision</label>
+                                      <input
+                                        className="w-full px-3 py-2 bg-white border border-gray-100 rounded-lg text-[10px] font-bold outline-none"
+                                        value={oc.label}
+                                        onChange={(e) => {
+                                          const outcomes = activeNode.data.config?.outcomes || [];
+                                          const next = [...outcomes];
+                                          if (next[i]) {
+                                            next[i] = { ...next[i], label: e.target.value };
+                                            updateNodeData(activeNode.id, { config: { ...activeNode.data.config, outcomes: next } });
+                                          }
+                                        }}
+                                        placeholder="e.g. approved"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Route To</label>
+                                      <select
+                                        className="w-full px-2 py-2 bg-white border border-gray-100 rounded-lg text-[10px] font-bold outline-none cursor-pointer"
+                                        value={oc.route || ''}
+                                        onChange={(e) => {
+                                          const outcomes = activeNode.data.config?.outcomes || [];
+                                          const next = [...outcomes];
+                                          if (next[i]) {
+                                            next[i] = { ...next[i], route: e.target.value };
+                                            updateNodeData(activeNode.id, { config: { ...activeNode.data.config, outcomes: next } });
+                                          }
+                                        }}
+                                      >
+                                        <option value="">Route To...</option>
+                                        {nodes.filter(n => n.id !== activeNode.id).map(n => <option key={n.id} value={n.id}>{n.data.label}</option>)}
+                                      </select>
+                                    </div>
+                                  </div>
                                 </div>
                               ))}
-                              <button 
+                              <button
                                 onClick={() => {
                                   const next = [...(activeNode.data.config?.outcomes || []), { label: '', route: '' }];
                                   updateNodeData(activeNode.id, { config: { ...activeNode.data.config, outcomes: next } });
