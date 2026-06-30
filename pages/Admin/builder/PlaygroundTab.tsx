@@ -50,7 +50,9 @@ import {
   PlusCircle,
   PlayCircle,
   GitBranch,
-  Grid
+  Grid,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Markdown from 'react-markdown';
@@ -132,13 +134,13 @@ const DataManagerPanel = ({ dataManager, setDataManager }: { dataManager: any; s
 
   const addArgument = () => {
     const args = dataManager?.arguments || [];
-    const newArgs = [...args, { name: `arg${args.length + 1}`, direction: 'in', type: 'string', required: false }];
+    const newArgs = [...args, { name: `arg${args.length + 1}`, direction: 'in', type: 'string', required: false, default: '', description: '' }];
     setDataManager({ ...dataManager, arguments: newArgs });
   };
 
   const addVariable = () => {
     const vars = dataManager?.variables || [];
-    const newVars = [...vars, { name: `var${vars.length + 1}`, type: 'string', default: '' }];
+    const newVars = [...vars, { name: `var${vars.length + 1}`, type: 'string', default: '', description: '' }];
     setDataManager({ ...dataManager, variables: newVars });
   };
 
@@ -251,6 +253,24 @@ const DataManagerPanel = ({ dataManager, setDataManager }: { dataManager: any; s
                     </label>
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Default Value</label>
+                  <input
+                    value={arg.default ?? ''}
+                    onChange={(e) => updateArgument(i, 'default', e.target.value)}
+                    className="w-full bg-white border-none rounded-xl px-3 py-2 text-[10px] font-bold outline-none"
+                    placeholder="Optional default..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Description</label>
+                  <input
+                    value={arg.description ?? ''}
+                    onChange={(e) => updateArgument(i, 'description', e.target.value)}
+                    className="w-full bg-white border-none rounded-xl px-3 py-2 text-[10px] font-bold outline-none"
+                    placeholder="Describe this argument..."
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -302,11 +322,20 @@ const DataManagerPanel = ({ dataManager, setDataManager }: { dataManager: any; s
                 </div>
                 <div className="space-y-1">
                   <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Default Value</label>
-                  <input 
-                    value={v.default}
+                  <input
+                    value={v.default ?? ''}
                     onChange={(e) => updateVariable(i, 'default', e.target.value)}
                     className="w-full bg-white border-none rounded-xl px-3 py-2 text-[10px] font-bold outline-none"
                     placeholder="Set default..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Description</label>
+                  <input
+                    value={v.description ?? ''}
+                    onChange={(e) => updateVariable(i, 'description', e.target.value)}
+                    className="w-full bg-white border-none rounded-xl px-3 py-2 text-[10px] font-bold outline-none"
+                    placeholder="Describe this variable..."
                   />
                 </div>
               </div>
@@ -513,12 +542,12 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
         return (
           <div className="space-y-3 w-full">
             <div className="space-y-1">
-              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest block">Agent Response</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Agent Response</span>
               <RenderValue value={textVal} />
             </div>
             <div className="space-y-1">
-              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest block">Structured Data Outputs</span>
-              <pre className="text-[9px] font-mono p-2.5 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[160px] custom-scrollbar text-gray-700 leading-relaxed">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Structured Data Outputs</span>
+              <pre className="text-[12.5px] font-mono p-4 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[55vh] custom-scrollbar text-gray-700 leading-relaxed">
                 {JSON.stringify(otherData, null, 2)}
               </pre>
             </div>
@@ -527,7 +556,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
       }
 
       return (
-        <pre className="text-[9px] font-mono p-2.5 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[160px] custom-scrollbar text-gray-700 leading-relaxed">
+        <pre className="text-[12.5px] font-mono p-4 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[55vh] custom-scrollbar text-gray-700 leading-relaxed">
           {JSON.stringify(normalizedValue, null, 2)}
         </pre>
       );
@@ -544,16 +573,16 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
                 <span>The agent stopped early (tool limit / fallback) — try again or pick a more reliable model.</span>
               </div>
             )}
-            <div className="prose prose-xs max-w-none text-gray-800 bg-white border border-gray-100 rounded-xl p-3 shadow-sm overflow-x-auto max-h-[180px] custom-scrollbar markdown-body text-[10px] leading-relaxed">
+            <div className="prose prose-sm max-w-none text-gray-800 bg-white border border-gray-100 rounded-xl p-4 shadow-sm overflow-x-auto max-h-[55vh] custom-scrollbar markdown-body text-[13.5px] leading-relaxed">
               <Markdown remarkPlugins={[remarkGfm]}>{normalizedValue}</Markdown>
             </div>
           </div>
         );
       }
-      return <span className="font-mono text-[10px] text-gray-800 break-all leading-relaxed bg-gray-50 px-2 py-1 rounded border border-gray-100 block">{normalizedValue}</span>;
+      return <span className="font-mono text-[13px] text-gray-800 break-all leading-relaxed bg-gray-50 px-3 py-2 rounded border border-gray-100 block">{normalizedValue}</span>;
     }
 
-    return <span className="font-mono text-[10px] text-gray-800 bg-gray-50 px-2 py-1 rounded border border-gray-100 block">{String(normalizedValue)}</span>;
+    return <span className="font-mono text-[13px] text-gray-800 bg-gray-50 px-3 py-2 rounded border border-gray-100 block">{String(normalizedValue)}</span>;
   };
 
   return (
@@ -638,7 +667,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
         .markdown-body h2 { font-size: 1.1rem; }
         .markdown-body h3 { font-size: 1rem; }
       `}} />
-      {label && <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">{label}</div>}
+      {label && <div className="text-[10.5px] font-black text-gray-500 uppercase tracking-widest pl-1 mb-1">{label}</div>}
       <div className="relative group/val">
         {renderContent()}
         {((typeof normalizedValue === 'string' && normalizedValue.length > 100) || typeof normalizedValue === 'object') && (
@@ -654,7 +683,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
 
       {isExpanded && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col">
             <div className="p-6 border-b border-gray-50 flex items-center justify-between shrink-0">
               <span className="text-xs font-black text-gray-900 uppercase tracking-wider">{label || 'Value Detail'}</span>
               <button onClick={() => setIsExpanded(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">
@@ -762,14 +791,28 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
   const [activeInspectNodeId, setActiveInspectNodeId] = useState<string | null>(null);
   const [runDetailTab, setRunDetailTab] = useState<'flow' | 'data'>('flow');
   const [useRawJson, setUseRawJson] = useState<boolean>(false);
+  const [runFullscreen, setRunFullscreen] = useState<boolean>(true);
 
   const [fetchingRuns, setFetchingRuns] = useState(false);
   const [fetchingSchedules, setFetchingSchedules] = useState(false);
   const pollIntervalRef = useRef<any>(null);
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
-  const viewRun = (run: any) => {
+  const viewRun = async (run: any) => {
+    // Open instantly with the lightweight list row so the modal feels responsive.
+    setActiveInspectNodeId(null);
+    setRunDetailTab('flow');
     setSelectedRun(run);
+    // The runs LIST endpoint returns lightweight rows (logs[]/nodes[]/output/context are stripped
+    // for size). Always re-fetch the full run document so the timeline, node trace, data states and
+    // final output actually render. Cache-busted to avoid a frozen 304 response.
+    try {
+      const res = await apiService.playground.runs.get(`${run._id}?_=${Date.now()}`);
+      if (res.success && res.data) setSelectedRun(res.data);
+    } catch (e) {
+      // Keep the lightweight row visible; panels will show whatever is available.
+      console.error('Failed to load full run detail', e);
+    }
   };
 
   const isEmptyValue = (val: any) => {
@@ -2201,33 +2244,51 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
             ) : (
               <div className="grid gap-4">
                 {runs.map(run => (
-                  <div 
-                    key={run._id} 
-                    onClick={() => setSelectedRun(run)}
+                  <div
+                    key={run._id}
+                    onClick={() => viewRun(run)}
                     className="p-6 bg-white rounded-[24px] border border-gray-100 hover:border-purple-100 transition-all shadow-sm flex items-center justify-between group cursor-pointer"
                   >
                     <div className="flex items-center gap-6">
                       <div className={`p-3 rounded-2xl ${
                         run.status === 'completed' ? 'bg-green-50 text-green-500' :
                         run.status === 'failed' ? 'bg-red-50 text-red-500' :
+                        run.status === 'waiting_approval' ? 'bg-amber-50 text-amber-500' :
+                        run.status === 'cancelled' ? 'bg-gray-100 text-gray-400' :
                         'bg-blue-50 text-blue-500'
                       }`}>
                         {run.status === 'completed' ? <CheckCircle2 size={20} /> :
                          run.status === 'failed' ? <AlertCircle size={20} /> :
+                         run.status === 'waiting_approval' ? <Clock size={20} /> :
+                         run.status === 'cancelled' ? <X size={20} /> :
                          <Loader2 size={20} className="animate-spin" />}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Run #{run._id ? run._id.slice(-6).toUpperCase() : 'N/A'}</span>
+                          <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${
+                            run.status === 'completed' ? 'bg-green-50 text-green-600' :
+                            run.status === 'failed' ? 'bg-red-50 text-red-600' :
+                            run.status === 'waiting_approval' ? 'bg-amber-50 text-amber-600' :
+                            run.status === 'cancelled' ? 'bg-gray-100 text-gray-400' :
+                            'bg-blue-50 text-blue-600'
+                          }`}>{run.status}</span>
                           <span className="px-2 py-0.5 bg-gray-50 rounded-md text-[8px] font-black text-gray-400 uppercase tracking-widest">{run.trigger}</span>
                           {(run.flow_name || run.metadata?.flow_name) && (
                             <span className="px-2 py-0.5 bg-purple-50 text-[#a26da8] rounded-md text-[8px] font-black uppercase tracking-widest">{run.flow_name || run.metadata?.flow_name}</span>
                           )}
+                          {run.status === 'waiting_approval' && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[8px] font-black uppercase tracking-widest animate-pulse">Needs Approval</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-4 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                        <div className="flex items-center gap-4 text-[9px] font-bold text-gray-400 uppercase tracking-widest flex-wrap">
                           <span className="flex items-center gap-1"><Clock size={10} /> {new Date(run.createdAt).toLocaleString()}</span>
+                          <span className="flex items-center gap-1"><Activity size={10} /> {run.total_latency_ms ?? 0}ms</span>
                           <span className="flex items-center gap-1"><Zap size={10} /> {run.total_tokens || 0} tokens</span>
                         </div>
+                        {run.status === 'failed' && run.error && (
+                          <div className="mt-1.5 text-[9px] font-bold text-red-500 font-mono break-all line-clamp-2 max-w-md">{run.error}</div>
+                        )}
                       </div>
                     </div>
                     <button className="p-2 border border-gray-100 rounded-xl text-gray-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-gray-50">
@@ -2467,8 +2528,8 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
 
         {/* Run Details Modal */}
         {selectedRun && (
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-6xl h-[92vh] rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 flex flex-col">
+          <div className={`fixed inset-0 z-[101] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300 ${runFullscreen ? 'p-3 sm:p-5' : 'p-4'}`}>
+            <div className={`bg-white flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 shadow-2xl rounded-[28px] ${runFullscreen ? 'w-full h-full' : 'w-full max-w-[1400px] h-[94vh]'}`}>
               
               {/* Header section */}
               <div className="p-6 border-b border-gray-50 shrink-0 bg-white">
@@ -2542,7 +2603,14 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                         Cancel Run
                       </button>
                     )}
-                    <button 
+                    <button
+                      onClick={() => setRunFullscreen(f => !f)}
+                      className="p-2 hover:bg-gray-50 border border-gray-100 rounded-xl text-gray-500 transition-all"
+                      title={runFullscreen ? 'Exit full screen' : 'Full screen'}
+                    >
+                      {runFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                    </button>
+                    <button
                       onClick={() => setSelectedRun(null)}
                       className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 transition-all"
                     >
@@ -2671,7 +2739,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                 {log.ts ? new Date(log.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : ''}
                               </span>
                             </div>
-                            <div className="font-mono text-[9px] mt-1.5 leading-relaxed break-all whitespace-pre-wrap">
+                            <div className="font-mono text-[11.5px] mt-2 leading-relaxed break-words whitespace-pre-wrap">
                               {log.message}
                             </div>
                           </div>
@@ -2754,10 +2822,10 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                   key={idx}
                                   onClick={() => setActiveInspectNodeId(step.node_id)}
                                   className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white text-left ${
-                                    isHighlighted 
-                                      ? 'border-[#a26da8] shadow-md bg-purple-50/20' 
+                                    isHighlighted
+                                      ? 'border-[#a26da8] shadow-md bg-purple-50/20'
                                       : 'border-gray-100 hover:border-gray-200 shadow-sm'
-                                  }`}
+                                  } ${step.status === 'skipped' ? 'opacity-50 border-dashed' : ''}`}
                                 >
                                   <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${config.color}15`, color: config.color }}>
                                     <Icon size={14} />
@@ -2772,12 +2840,18 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                         step.status === 'running' ? 'bg-blue-50 text-blue-600 animate-pulse' :
                                         step.status === 'failed' ? 'bg-red-50 text-red-600 animate-pulse' :
                                         step.status === 'waiting_approval' ? 'bg-amber-50 text-amber-600' :
+                                        step.status === 'skipped' ? 'bg-gray-50 text-gray-400 italic' :
                                         'bg-gray-100 text-gray-400'
                                       }`}>
                                         {step.status}
                                       </span>
                                       {step.latency_ms !== undefined && (
                                         <span className="text-[7.5px] font-bold text-gray-300 font-mono">{step.latency_ms}ms</span>
+                                      )}
+                                      {(step.outcome || step.route) && (
+                                        <span className="text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded bg-purple-50 text-[#a26da8] truncate max-w-[120px]" title={`${step.outcome || ''}${step.route ? ' → ' + step.route : ''}`}>
+                                          {step.outcome || ''}{step.route ? ` → ${step.route}` : ''}
+                                        </span>
                                       )}
                                     </div>
                                   </div>
@@ -2981,6 +3055,35 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                   }
                                 }
                               });
+
+                            // Drop any keys that resolved to nothing so we never render blank rows.
+                            Object.keys(mergedOutput).forEach((k) => {
+                              if (isEmptyValue(mergedOutput[k])) delete mergedOutput[k];
+                            });
+
+                            // Fallback: flows that declare no out-arguments (or where the backend returned
+                            // an empty output map) should still surface a meaningful final result on a
+                            // finished run — never show "no output" for a run that actually completed.
+                            const isFinished = ['completed', 'failed', 'cancelled'].includes(selectedRun.status);
+                            if (Object.keys(mergedOutput).length === 0 && isFinished) {
+                              // 1) Non-empty final variables (run.context.vars)
+                              const finalVars = selectedRun.context?.vars || {};
+                              Object.keys(finalVars).forEach((k) => {
+                                if (!isEmptyValue(finalVars[k])) mergedOutput[k] = finalVars[k];
+                              });
+
+                              // 2) Otherwise the output of the last completed node (typically the END / final step)
+                              if (Object.keys(mergedOutput).length === 0) {
+                                const completedSteps = (selectedRun.nodes || []).filter(
+                                  (n: any) => n.status === 'completed' && !isEmptyValue(n.output)
+                                );
+                                const lastStep = completedSteps[completedSteps.length - 1];
+                                if (lastStep) {
+                                  const lastOut = lastStep.output?.value ?? lastStep.output;
+                                  if (!isEmptyValue(lastOut)) mergedOutput[lastStep.label || 'result'] = lastOut;
+                                }
+                              }
+                            }
 
                             if (Object.keys(mergedOutput).length > 0) {
                               return (
