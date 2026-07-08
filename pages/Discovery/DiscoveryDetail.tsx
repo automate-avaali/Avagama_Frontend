@@ -17,6 +17,7 @@ const DiscoveryDetail: React.FC = () => {
   const [isShortlisting, setIsShortlisting] = useState<Record<string, boolean>>({});
   const [agentStatuses, setAgentStatuses] = useState<Record<string, any>>({});
   const [hoveredFeasibility, setHoveredFeasibility] = useState<{idx: number, rect: DOMRect, scoring: any[]} | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { openChat } = useCortex();
@@ -314,7 +315,9 @@ const DiscoveryDetail: React.FC = () => {
            </div>
            
            <div className="grid grid-cols-1 gap-8 md:gap-12">
-              {data.use_cases?.filter((uc: any) => filter === 'all' || uc.shortlisted).map((uc: any, idx: number) => (
+              {data.use_cases?.filter((uc: any) => filter === 'all' || uc.shortlisted).map((uc: any, idx: number) => {
+                const totalParamWeight = (uc.parameter_scoring || []).reduce((acc: number, p: any) => acc + (p.weight || 0), 0);
+                return (
                 <div key={idx} className={`bg-white rounded-[32px] md:rounded-[56px] border border-gray-100 shadow-sm overflow-hidden group transition-all ${discoveryType === 'domain' ? 'hover:border-[#4db6ac]/20' : 'hover:border-[#9d7bb0]/20'}`}>
                   <div className="grid grid-cols-1 lg:grid-cols-12">
                     
@@ -376,6 +379,7 @@ const DiscoveryDetail: React.FC = () => {
                           <div 
                             className={`flex justify-between items-center bg-white p-5 md:p-8 lg:p-10 rounded-[24px] md:rounded-[40px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all cursor-help hover:border-[#9d7bb0]/30`}
                             onMouseEnter={(e) => {
+                              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
                               const rect = e.currentTarget.getBoundingClientRect();
                               setHoveredFeasibility({
                                 idx,
@@ -383,7 +387,11 @@ const DiscoveryDetail: React.FC = () => {
                                 scoring: uc.technical_scoring || []
                               });
                             }}
-                            onMouseLeave={() => setHoveredFeasibility(null)}
+                            onMouseLeave={() => {
+                              hoverTimeoutRef.current = setTimeout(() => {
+                                setHoveredFeasibility(null);
+                              }, 2500);
+                            }}
                           >
                              <div className="space-y-1">
                                 <p className="text-[9px] md:text-[11px] font-bold text-gray-400 uppercase tracking-widest">FEASIBILITY SCORE</p>
@@ -436,9 +444,9 @@ const DiscoveryDetail: React.FC = () => {
                                   <div className="text-right shrink-0 flex flex-col items-end">
                                      <div className="flex items-baseline gap-1">
                                         <span className={`text-sm md:text-lg font-black ${discoveryType === 'domain' ? 'text-[#4db6ac]' : 'text-[#9d7bb0]'}`}>{param.score}</span>
-                                        <span className="text-[8px] md:text-[10px] font-bold text-gray-300">/{param.weight || 10}</span>
+                                        <span className="text-[8px] md:text-[10px] font-bold text-gray-300">/5</span>
                                      </div>
-                                     {param.weight && (
+                                     {param.weight && discoveryType !== 'company' && discoveryType !== 'domain' && (
                                        <div className="text-[7px] md:text-[8px] font-black text-gray-400 uppercase tracking-tighter">
                                           Weight: {param.weight}
                                        </div>
@@ -446,7 +454,7 @@ const DiscoveryDetail: React.FC = () => {
                                   </div>
                                </div>
                                <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
-                                  <div className={`h-full transition-all duration-1000 ease-out ${discoveryType === 'domain' ? 'bg-[#4db6ac]' : 'bg-[#9d7bb0]'}`} style={{width: `${(param.score / (param.weight || 10)) * 100}%`}}></div>
+                                  <div className={`h-full transition-all duration-1000 ease-out ${discoveryType === 'domain' ? 'bg-[#4db6ac]' : 'bg-[#9d7bb0]'}`} style={{width: `${(param.score / 5) * 100}%`}}></div>
                                </div>
                             </div>
                           ))}
@@ -586,7 +594,8 @@ const DiscoveryDetail: React.FC = () => {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
            </div>
         </div>
       </div>
@@ -594,9 +603,17 @@ const DiscoveryDetail: React.FC = () => {
       {/* Technical Feasibility Tooltip Portal */}
       {hoveredFeasibility && createPortal(
         <div 
-          className="fixed z-[9999] pointer-events-none animate-in fade-in zoom-in duration-200"
+          className="fixed z-[9999] pointer-events-auto animate-in fade-in zoom-in duration-200"
+          onMouseEnter={() => {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+          }}
+          onMouseLeave={() => {
+            hoverTimeoutRef.current = setTimeout(() => {
+              setHoveredFeasibility(null);
+            }, 2500);
+          }}
           style={{
-            top: hoveredFeasibility.rect.top - 4,
+            top: hoveredFeasibility.rect.top + 130,
             left: hoveredFeasibility.rect.left + hoveredFeasibility.rect.width / 2,
             transform: 'translate(-50%, -100%)'
           }}
@@ -607,44 +624,47 @@ const DiscoveryDetail: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-xs">⚙️</div>
             </div>
             <div className="space-y-5 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-              {hoveredFeasibility.scoring.length > 0 ? (
-                hoveredFeasibility.scoring.map((ts, i) => (
-                  <div key={i} className="space-y-2 group/item">
-                    <div className="flex justify-between items-end gap-4">
-                      <div className="space-y-1 flex-1">
-                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-tight">{ts.parameter}</p>
-                        <div className="text-[9px] font-medium text-gray-500 leading-snug">
-                          <ReactMarkdown components={{
-                            p: ({node, ...props}) => <p className="m-0" {...props} />,
-                            strong: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />
-                          }}>
-                            {formatJustification(ts.justification)}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0 flex flex-col items-end">
-                        <div className="flex items-baseline gap-1">
-                          <span className={`text-sm font-black ${discoveryType === 'domain' ? 'text-[#4db6ac]' : 'text-[#9d7bb0]'}`}>{ts.score}</span>
-                          <span className="text-[8px] font-bold text-gray-300">/{ts.weight || 10}</span>
-                        </div>
-                        {ts.weight && (
-                          <div className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">
-                            Weight: {ts.weight}
+              {(() => {
+                const totalTechWeight = (hoveredFeasibility.scoring || []).reduce((acc: number, p: any) => acc + (p.weight || 0), 0);
+                return hoveredFeasibility.scoring.length > 0 ? (
+                  hoveredFeasibility.scoring.map((ts: any, i: number) => (
+                    <div key={i} className="space-y-2 group/item">
+                      <div className="flex justify-between items-end gap-4">
+                        <div className="space-y-1 flex-1">
+                          <p className="text-[10px] font-black text-gray-800 uppercase tracking-tight">{ts.parameter}</p>
+                          <div className="text-[9px] font-medium text-gray-500 leading-snug">
+                            <ReactMarkdown components={{
+                              p: ({node, ...props}) => <p className="m-0" {...props} />,
+                              strong: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />
+                            }}>
+                              {formatJustification(ts.justification)}
+                            </ReactMarkdown>
                           </div>
-                        )}
+                        </div>
+                        <div className="text-right shrink-0 flex flex-col items-end">
+                          <div className="flex items-baseline gap-1">
+                            <span className={`text-sm font-black ${discoveryType === 'domain' ? 'text-[#4db6ac]' : 'text-[#9d7bb0]'}`}>{ts.score}</span>
+                            <span className="text-[8px] font-bold text-gray-300">/5</span>
+                          </div>
+                          {ts.weight && discoveryType !== 'company' && discoveryType !== 'domain' && (
+                            <div className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">
+                              Weight: {ts.weight}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-1000 ease-out ${discoveryType === 'domain' ? 'bg-[#4db6ac]' : 'bg-[#9d7bb0]'}`} 
+                          style={{width: `${(ts.score / 5) * 100}%`}}
+                        ></div>
                       </div>
                     </div>
-                    <div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-1000 ease-out ${discoveryType === 'domain' ? 'bg-[#4db6ac]' : 'bg-[#9d7bb0]'}`} 
-                        style={{width: `${(ts.score / (ts.weight || 10)) * 100}%`}}
-                      ></div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-[10px] font-bold text-gray-400 uppercase text-center py-4">No parameters available</p>
-              )}
+                  ))
+                ) : (
+                  <p className="text-[10px] font-bold text-gray-400 uppercase text-center py-4">No parameters available</p>
+                );
+              })()}
             </div>
             <div className="pt-1 flex justify-center">
                <div className="w-1.5 h-1.5 rounded-full bg-gray-200"></div>
