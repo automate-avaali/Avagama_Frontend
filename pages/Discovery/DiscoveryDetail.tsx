@@ -426,16 +426,16 @@ const DiscoveryDetail: React.FC = () => {
                                            {param.justification}
                                          </ReactMarkdown>
                                       </div>
-                                      {(param.source_type || param.source_details) && (
+                                      {(param.source_type || param.source_details || param.source) && (
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
                                           {param.source_type && (
                                             <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[8px] font-black uppercase tracking-tighter">
                                               {param.source_type}
                                             </span>
                                           )}
-                                          {param.source_details && (
-                                            <span className="text-[8px] md:text-[9px] text-gray-400 font-medium italic">
-                                              {param.source_details}
+                                          {(param.source_details || param.source) && (
+                                            <span className="text-[8px] md:text-[9px] text-gray-400 font-medium italic leading-tight">
+                                              {param.source_details || param.source}
                                             </span>
                                           )}
                                         </div>
@@ -640,6 +640,13 @@ const DiscoveryDetail: React.FC = () => {
                               {formatJustification(ts.justification)}
                             </ReactMarkdown>
                           </div>
+                          {ts.source && (
+                            <div className="mt-1">
+                              <span className="text-[8px] text-gray-400 font-medium italic leading-none">
+                                {ts.source}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right shrink-0 flex flex-col items-end">
                           <div className="flex items-baseline gap-1">
