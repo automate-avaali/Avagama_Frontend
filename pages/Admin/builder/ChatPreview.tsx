@@ -15,12 +15,13 @@ interface Message {
 
 interface ChatPreviewProps {
   agentId: string;
+  agentName: string;
   status: string;
   isDirty?: boolean;
   onTurnComplete?: () => void;
 }
 
-const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, status, isDirty, onTurnComplete }) => {
+const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, isDirty, onTurnComplete }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -149,7 +150,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, status, isDirty, onT
             <Bot size={20} />
           </div>
           <div>
-            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Agent Preview</h3>
+            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">{agentName || 'Agent Preview'}</h3>
             <p className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
               <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
               Live Simulation

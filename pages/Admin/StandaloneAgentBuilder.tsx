@@ -167,8 +167,21 @@ const StandaloneAgentBuilder: React.FC = () => {
       if (id === 'new') {
         response = await apiService.standalone.agents.create(payload);
         if (response.success) {
+          const newId = response.data._id;
+          if (publish) {
+            try {
+              const pubResponse = await apiService.standalone.agents.publish(newId);
+              if (pubResponse.success) {
+                toast.success('Agent published successfully');
+                navigate(`/admin/standalone/builder/${newId}`, { replace: true });
+                return;
+              }
+            } catch (e) {
+              console.error('Initial publish failed:', e);
+            }
+          }
           toast.success('Agent initialized successfully');
-          navigate(`/admin/standalone/builder/${response.data._id}`);
+          navigate(`/admin/standalone/builder/${newId}`, { replace: true });
         }
       } else {
         response = await apiService.standalone.agents.update(id!, payload);
@@ -177,10 +190,7 @@ const StandaloneAgentBuilder: React.FC = () => {
             const pubResponse = await apiService.standalone.agents.publish(id!);
             if (pubResponse.success) {
               toast.success('Agent published successfully');
-              setAgent(pubResponse.data.agent);
-              if (pubResponse.data.share_url) {
-                window.open(pubResponse.data.share_url, '_blank');
-              }
+              fetchAgent();
             } else {
               toast.error(pubResponse.message || 'Publish failed');
             }
@@ -478,6 +488,7 @@ const StandaloneAgentBuilder: React.FC = () => {
       </div>
       <ChatPreview 
         agentId={id!} 
+        agentName={name}
         status={agent?.status || 'draft'} 
         onTurnComplete={handleRefresh}
         isDirty={

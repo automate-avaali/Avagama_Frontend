@@ -232,7 +232,10 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                 <Link to="/admin/orchestration" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/admin/orchestration' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORCHESTRATION</Link>
                 
                 {userRole === 'TENANT_ADMIN' && (
-                  <Link to="/admin/system" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/system') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>SYSTEM ADMIN</Link>
+                  <>
+                    <Link to="/admin/console" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/console') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ADMIN CONSOLE</Link>
+                    <Link to="/admin/system" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/system') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>SYSTEM ADMIN</Link>
+                  </>
                 )}
                 {userRole === 'SUPER_ADMIN_ROLE' && (
                   <Link to="/admin/org" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/org') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORG ADMIN</Link>
@@ -523,6 +526,11 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                           <Link to="/demo" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Demo</Link>
                         </motion.div> */}
 
+                        {userRole === 'TENANT_ADMIN' && (
+                          <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
+                            <Link to="/admin/console" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Admin Console</Link>
+                          </motion.div>
+                        )}
                         {userRole === 'TENANT_ADMIN' && (
                           <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                             <Link to="/admin/system" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">System Admin</Link>

@@ -33,6 +33,8 @@ const StandaloneAgents: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'published' | 'draft'>('all');
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchAgents();
@@ -58,14 +60,18 @@ const StandaloneAgents: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    setIsDeleting(true);
     try {
       const response = await apiService.standalone.agents.delete(id);
       if (response.success) {
         toast.success('Agent deleted');
+        setConfirmDeleteId(null);
         fetchAgents();
       }
     } catch (error) {
       toast.error('Failed to delete agent');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -165,7 +171,7 @@ const StandaloneAgents: React.FC = () => {
           viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
               {filteredAgents.map((agent) => (
-                <AgentCard key={agent._id} agent={agent} onDelete={handleDelete} onTest={setTestingAgentId} />
+                <AgentCard key={agent._id} agent={agent} onDelete={setConfirmDeleteId} onTest={setTestingAgentId} />
               ))}
             </div>
           ) : (
@@ -181,7 +187,7 @@ const StandaloneAgents: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {filteredAgents.map((agent) => (
-                    <AgentRow key={agent._id} agent={agent} onDelete={handleDelete} onTest={setTestingAgentId} />
+                    <AgentRow key={agent._id} agent={agent} onDelete={setConfirmDeleteId} onTest={setTestingAgentId} />
                   ))}
                 </tbody>
               </table>
@@ -206,10 +212,66 @@ const StandaloneAgents: React.FC = () => {
       {testingAgentId && (
         <ChatPreview 
           agentId={testingAgentId} 
+          agentName={agents.find(a => a._id === testingAgentId)?.name || 'Agent Preview'}
           status={agents.find(a => a._id === testingAgentId)?.status || 'draft'}
           isDirty={false}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {confirmDeleteId && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isDeleting && setConfirmDeleteId(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white rounded-[32px] shadow-2xl border border-gray-100 p-8 md:p-10 max-w-md w-full overflow-hidden"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                  <Trash2 className="w-8 h-8 text-red-500" />
+                </div>
+                
+                <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight uppercase">Delete Agent?</h3>
+                <p className="text-gray-500 font-medium leading-relaxed mb-8">
+                  Are you sure you want to delete this agent? This action cannot be undone and all associated data will be permanently removed.
+                </p>
+                <div className="flex flex-col w-full gap-3">
+                  <button 
+                    onClick={() => handleDelete(confirmDeleteId)}
+                    disabled={isDeleting}
+                    className="w-full py-4 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      'Confirm Deletion'
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setConfirmDeleteId(null)}
+                    disabled={isDeleting}
+                    className="w-full py-4 bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

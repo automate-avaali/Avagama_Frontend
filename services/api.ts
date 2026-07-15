@@ -1586,5 +1586,117 @@ export const apiService = {
         return handleResponse(response);
       }
     }
+  },
+  adminConsole: {
+    getMeta: async () => {
+      const response = await fetch(`${BASE_URL}/v4/admin/meta`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    blueprints: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/agent-blueprints${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      create: async (data: any) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/agent-blueprints`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      update: async (id: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/agent-blueprints/${id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      publish: async (id: string, isPublished: boolean) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/agent-blueprints/${id}/publish`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ is_published: isPublished })
+        });
+        return handleResponse(response);
+      },
+      delete: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/agent-blueprints/${id}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        return handleResponse(response);
+      }
+    },
+    solutions: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/solutions${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/solutions/${id}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      create: async (data: any) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/solutions`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      update: async (id: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/solutions/${id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+      },
+      publish: async (id: string, isPublished: boolean) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/solutions/${id}/publish`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ is_published: isPublished })
+        });
+        return handleResponse(response);
+      },
+      delete: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/v4/admin/solutions/${id}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        return handleResponse(response);
+      }
+    },
+    audit: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/audit${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      }
+    }
+  },
+  solutions: {
+    list: async (params?: any) => {
+      const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+      const response = await fetch(`${BASE_URL}/v4/solutions${query}`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    get: async (id: string) => {
+      const response = await fetch(`${BASE_URL}/v4/solutions/${id}`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    instantiate: async (id: string, data?: { name: string }) => {
+      const response = await fetch(`${BASE_URL}/v4/solutions/${id}/instantiate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: data ? JSON.stringify(data) : undefined
+      });
+      return handleResponse(response);
+    }
   }
 };

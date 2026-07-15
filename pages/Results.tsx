@@ -267,7 +267,7 @@ const Results: React.FC = () => {
            <div className="bg-white p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-gray-100 shadow-sm relative overflow-hidden group">
               <div className="relative z-10 space-y-4">
                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Feasibility Score</span>
+                    <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Business Benefit Score</span>
                     <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center text-[#4db6ac]">📈</div>
                  </div>
                  <div className="flex items-baseline gap-2">
