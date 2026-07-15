@@ -33,6 +33,7 @@ import AgentOrchestration from './pages/Admin/AgentOrchestration';
 import StandaloneAgents from './pages/Admin/StandaloneAgents';
 import StandaloneAgentBuilder from './pages/Admin/StandaloneAgentBuilder';
 import StandaloneMarketplace from './pages/Admin/StandaloneMarketplace';
+import AdminConsole from './pages/Admin/AdminConsole';
 import OAuthHandler from './pages/Admin/builder/OAuthHandler';
 import Playground from './pages/Playground';
 import Navigation from './components/Navigation';
@@ -129,6 +130,7 @@ const App: React.FC = () => {
               <Route path="/playground" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Playground /></ProtectedRoute>} />
               
               {/* Admin Routes */}
+              <Route path="/admin/console" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AdminConsole /></ProtectedRoute>} />
               <Route path="/admin/system" element={<ProtectedRoute isAuthenticated={isAuthenticated}><SystemAdmin /></ProtectedRoute>} />
               <Route path="/admin/org" element={<ProtectedRoute isAuthenticated={isAuthenticated}><OrgAdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/dept" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DeptAdminDashboard /></ProtectedRoute>} />
