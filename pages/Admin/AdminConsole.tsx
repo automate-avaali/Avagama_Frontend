@@ -22,9 +22,10 @@ import toast from 'react-hot-toast';
 import BlueprintGallery from './console/BlueprintGallery';
 import SolutionsLab from './console/SolutionsLab';
 import AuditLogs from './console/AuditLogs';
+import TokenUsage from './console/TokenUsage';
 
 const AdminConsole: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'agents' | 'solutions' | 'api' | 'overview' | 'orgs' | 'audit'>('agents');
+  const [activeTab, setActiveTab] = useState<'agents' | 'solutions' | 'api' | 'overview' | 'orgs' | 'audit' | 'usage'>('agents');
   const [userRole, setUserRole] = useState('');
   const [meta, setMeta] = useState<AdminMeta | null>(null);
   const [loadingMeta, setLoadingMeta] = useState(true);
@@ -49,10 +50,11 @@ const AdminConsole: React.FC = () => {
     }
   };
 
-  const menuItems = [
+  const menuItems: { id: string; label: string; icon: any; group: string; disabled?: boolean }[] = [
     { id: 'agents', label: 'Agent Blueprints', icon: Puzzle, group: 'Manage' },
     { id: 'solutions', label: 'Solutions Lab', icon: Settings, group: 'Manage' },
     { id: 'audit', label: 'Audit Log', icon: History, group: 'Platform' },
+    { id: 'usage', label: 'Token Usage', icon: BarChart3, group: 'Platform' },
   ];
 
   return (
@@ -108,6 +110,7 @@ const AdminConsole: React.FC = () => {
           {activeTab === 'agents' && <BlueprintGallery meta={meta} />}
           {activeTab === 'solutions' && <SolutionsLab meta={meta} />}
           {activeTab === 'audit' && <AuditLogs />}
+          {activeTab === 'usage' && <TokenUsage />}
         </main>
       </div>
     </div>

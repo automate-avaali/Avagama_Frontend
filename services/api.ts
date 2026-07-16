@@ -1697,6 +1697,37 @@ export const apiService = {
         const response = await fetch(`${BASE_URL}/v4/admin/audit${query}`, { headers: getHeaders() });
         return handleResponse(response);
       }
+    },
+    usage: {
+      modules: async () => {
+        const response = await fetch(`${BASE_URL}/v4/admin/usage/modules`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      summary: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/usage/summary${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      byUser: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/usage/by-user${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      byModule: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/usage/by-module${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      timeseries: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/usage/timeseries${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      user: async (userId: string, params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/v4/admin/usage/user/${userId}${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      }
     }
   },
   solutions: {
