@@ -117,8 +117,11 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
 
   const copyText = (t: string) => { navigator.clipboard.writeText(t); toast.success('Copied!'); };
 
+  // When deployed, the public chat is keyed by the DEPLOYMENT slug (not the agent's internal slug).
+  const shareSlug = (deployment?.is_deployed && deployment?.slug) ? deployment.slug : slug;
+
   const copyShareLink = (urlToCopy?: string) => {
-    const url = urlToCopy || deployment?.public_url || `${PUBLIC_APP_URL}/chat/${slug}${shareToken ? `?token=${shareToken}` : ''}`;
+    const url = urlToCopy || deployment?.public_url || `${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`;
     navigator.clipboard.writeText(url);
     toast.success('Link copied!');
   };
@@ -167,7 +170,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                      <div className="relative">
                         <input 
                            readOnly 
-                           value={`${PUBLIC_APP_URL}/chat/${slug}${shareToken ? `?token=${shareToken}` : ''}`}
+                           value={`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`}
                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-xs font-mono text-gray-600 outline-none pr-12"
                         />
                         <button 
@@ -182,7 +185,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
 
                <div className="mt-8 flex gap-3">
                   <button 
-                     onClick={() => window.open(`${PUBLIC_APP_URL}/chat/${slug}${shareToken ? `?token=${shareToken}` : ''}`, '_blank')}
+                     onClick={() => window.open(`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`, '_blank')}
                      className="flex-1 py-4 bg-gray-50 text-gray-900 rounded-[20px] font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
                   >
                      <ExternalLink size={14} />
