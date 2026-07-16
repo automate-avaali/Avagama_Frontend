@@ -34,7 +34,9 @@ const PublicChat: React.FC = () => {
     (async () => {
       setLoadingInfo(true);
       try {
-        const res = await apiService.deployedAgent.info(slug, token);
+        const res = token
+          ? await apiService.deployedAgent.publicInfo(token)   // published (preview) agent via share_token
+          : await apiService.deployedAgent.info(slug);          // deployed agent via deployment slug
         if (cancelled) return;
         if (res.success && res.data) {
           const d = res.data;
@@ -68,7 +70,9 @@ const PublicChat: React.FC = () => {
     setMessages(prev => [...prev, { role: 'user', text }]);
     setSending(true);
     try {
-      const res = await apiService.deployedAgent.chat(slug, { session_id: sessionId, message: text }, token);
+      const res = token
+        ? await apiService.deployedAgent.publicChat(token, { session_id: sessionId, message: text })
+        : await apiService.deployedAgent.chat(slug, { session_id: sessionId, message: text });
       const reply = res?.data?.reply ?? res?.reply ?? "Sorry, I couldn't generate a response.";
       if (res?.data?.session_id) setSessionId(res.data.session_id);
       setMessages(prev => [...prev, { role: 'assistant', text: reply }]);

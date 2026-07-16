@@ -1750,14 +1750,26 @@ export const apiService = {
     }
   },
   deployedAgent: {
-    info: async (slug: string, token?: string) => {
-      const q = token ? `?token=${encodeURIComponent(token)}` : '';
-      const response = await fetch(`${BASE_URL}/v3/standalone/deployed/${slug}/info${q}`, { headers: getHeaders() });
+    // Published (preview) agent — keyed by the publish share_token.
+    publicInfo: async (shareToken: string) => {
+      const response = await fetch(`${BASE_URL}/v3/standalone/public/agent/${shareToken}`, { headers: getHeaders() });
       return handleResponse(response);
     },
-    chat: async (slug: string, body: { session_id?: string; message: string }, token?: string) => {
-      const q = token ? `?token=${encodeURIComponent(token)}` : '';
-      const response = await fetch(`${BASE_URL}/v3/standalone/deployed/${slug}/chat${q}`, {
+    publicChat: async (shareToken: string, body: { session_id?: string; message: string }) => {
+      const response = await fetch(`${BASE_URL}/v3/standalone/public/chat/${shareToken}`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(body)
+      });
+      return handleResponse(response);
+    },
+    // Deployed agent — keyed by deployment slug.
+    info: async (slug: string) => {
+      const response = await fetch(`${BASE_URL}/v3/standalone/deployed/${slug}/info`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    chat: async (slug: string, body: { session_id?: string; message: string }) => {
+      const response = await fetch(`${BASE_URL}/v3/standalone/deployed/${slug}/chat`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(body)
