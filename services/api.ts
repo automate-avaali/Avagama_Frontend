@@ -1748,5 +1748,44 @@ export const apiService = {
       });
       return handleResponse(response);
     }
+  },
+  deployedAgent: {
+    info: async (slug: string, token?: string) => {
+      const q = token ? `?token=${encodeURIComponent(token)}` : '';
+      const response = await fetch(`${BASE_URL}/v3/standalone/deployed/${slug}/info${q}`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    chat: async (slug: string, body: { session_id?: string; message: string }, token?: string) => {
+      const q = token ? `?token=${encodeURIComponent(token)}` : '';
+      const response = await fetch(`${BASE_URL}/v3/standalone/deployed/${slug}/chat${q}`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(body)
+      });
+      return handleResponse(response);
+    }
+  },
+  agentApi: {
+    keys: {
+      list: async (agentId: string) => {
+        const response = await fetch(`${BASE_URL}/v3/agent-api/agents/${agentId}/keys`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      create: async (agentId: string, data: { name?: string; rate_limit_per_min?: number }) => {
+        const response = await fetch(`${BASE_URL}/v3/agent-api/agents/${agentId}/keys`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data || {})
+        });
+        return handleResponse(response);
+      },
+      revoke: async (agentId: string, keyId: string) => {
+        const response = await fetch(`${BASE_URL}/v3/agent-api/agents/${agentId}/keys/${keyId}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        return handleResponse(response);
+      }
+    }
   }
 };

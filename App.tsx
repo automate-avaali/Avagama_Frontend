@@ -36,6 +36,7 @@ import StandaloneMarketplace from './pages/Admin/StandaloneMarketplace';
 import AdminConsole from './pages/Admin/AdminConsole';
 import OAuthHandler from './pages/Admin/builder/OAuthHandler';
 import Playground from './pages/Playground';
+import PublicChat from './pages/PublicChat';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -100,6 +101,7 @@ const App: React.FC = () => {
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/chat/:slug" element={<PublicChat />} />
               <Route path="/about" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <About />} />
               <Route path="/support" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Support />} />
 {/* <Route path="/demo" element={<Demo />} /> */}
