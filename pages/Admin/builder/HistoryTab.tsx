@@ -131,7 +131,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ agentId, refreshKey }) => {
                    <Loader2 className="w-6 h-6 text-gray-200 animate-spin" />
                 </div>
               ) : sessions.length > 0 ? (
-                sessions.map((s) => (
+                sessions.map((s, i) => (
                   <div 
                     key={s._id || s.session_id} 
                     onClick={() => fetchMessages(s._id || s.session_id)}
@@ -146,7 +146,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ agentId, refreshKey }) => {
                         </div>
                         <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                      </div>
-                     <p className="text-[11px] font-medium text-gray-500 line-clamp-1 mb-3">{s.last_message || s.lastMessage || 'Empty conversation'}</p>
+                     <p className="text-[11px] font-medium text-gray-500 line-clamp-1 mb-3">{s.last_message || s.lastMessage || `Conversation - ${i + 1}`}</p>
                      <div className="flex items-center justify-between">
                         <div className="flex gap-1">
                            {s.tags?.map((t: string) => (

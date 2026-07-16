@@ -1476,21 +1476,6 @@ export const AgentOrchestration: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom User profile card in premium light-aesthetic style */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#a26da8] to-[#6fcbbd] flex items-center justify-center p-[1.5px]">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center text-[#a26da8] text-xs font-bold">
-              {profileName.charAt(0).toUpperCase()}
-            </div>
-          </div>
-          <div className="flex-grow min-w-0">
-            <h4 className="text-xs font-black text-slate-800 truncate uppercase tracking-widest leading-none">{profileName}</h4>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1 inline-block">
-              {profileRole} · {profileCompany}
-            </span>
-          </div>
-        </div>
-
       </aside>
 
       {/* 2. MAIN ACTIVE LAYOUT WRAPPER */}

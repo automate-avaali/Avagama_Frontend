@@ -500,6 +500,49 @@ const MappingTable = ({
   );
 };
 
+// Some reasoning models emit chain-of-thought prose before the JSON they were asked to return.
+// Pull out the JSON payload so the run view shows the actual result, not the model's thinking.
+const extractJsonFromText = (text: string): any | null => {
+  if (typeof text !== 'string' || text.trim().length < 2) return null;
+  const tryParse = (s: string) => { try { return JSON.parse(s.trim()); } catch { return undefined; } };
+  const whole = tryParse(text);
+  if (whole !== undefined && typeof whole === 'object' && whole !== null) return whole;
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) { const p = tryParse(fence[1]); if (p !== undefined && typeof p === 'object' && p !== null) return p; }
+  for (const [open, close] of [['{', '}'], ['[', ']']] as const) {
+    const start = text.indexOf(open);
+    if (start === -1) continue;
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+      if (ch === '"') inStr = true;
+      else if (ch === open) depth++;
+      else if (ch === close) { depth--; if (depth === 0) { const p = tryParse(text.slice(start, i + 1)); if (p !== undefined && typeof p === 'object' && p !== null) return p; break; } }
+    }
+  }
+  return null;
+};
+
+// Walk an object/array and replace any reasoning-prose string field (thinking + JSON) with the extracted JSON,
+// so nested fields like `validation` show the real result instead of the model's chain-of-thought.
+const cleanReasoningDeep = (v: any): any => {
+  if (typeof v === 'string') {
+    if (!/^\s*[[{]/.test(v)) {
+      const j = extractJsonFromText(v);
+      if (j && typeof j === 'object') return cleanReasoningDeep(j);
+    }
+    return v;
+  }
+  if (Array.isArray(v)) return v.map(cleanReasoningDeep);
+  if (v && typeof v === 'object') {
+    const out: any = {};
+    for (const k of Object.keys(v)) out[k] = cleanReasoningDeep(v[k]);
+    return out;
+  }
+  return v;
+};
+
 const RenderValue = ({ value, label }: { value: any; label?: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -548,7 +591,7 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
             <div className="space-y-1">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Structured Data Outputs</span>
               <pre className="text-[12.5px] font-mono p-4 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[55vh] custom-scrollbar text-gray-700 leading-relaxed">
-                {JSON.stringify(otherData, null, 2)}
+                {JSON.stringify(cleanReasoningDeep(otherData), null, 2)}
               </pre>
             </div>
           </div>
@@ -557,12 +600,30 @@ const RenderValue = ({ value, label }: { value: any; label?: string }) => {
 
       return (
         <pre className="text-[12.5px] font-mono p-4 bg-gray-50 border border-gray-100 rounded-xl overflow-x-auto max-h-[55vh] custom-scrollbar text-gray-700 leading-relaxed">
-          {JSON.stringify(normalizedValue, null, 2)}
+          {JSON.stringify(cleanReasoningDeep(normalizedValue), null, 2)}
         </pre>
       );
     }
 
     if (typeof normalizedValue === 'string') {
+      // Reasoning models sometimes wrap the requested JSON in "thinking" prose.
+      // Surface the JSON result and hide the reasoning behind a toggle.
+      const structured = extractJsonFromText(normalizedValue);
+      if (structured && typeof structured === 'object') {
+        const trimmed = normalizedValue.trim();
+        const hasReasoning = !/^[[{]/.test(trimmed) && !/^```/.test(trimmed);
+        return (
+          <div className="space-y-2">
+            <RenderValue value={structured} />
+            {hasReasoning && (
+              <details className="group/think">
+                <summary className="cursor-pointer text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-[#a26da8] select-none">Show model reasoning</summary>
+                <div className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-3 overflow-x-auto max-h-[40vh] custom-scrollbar text-[12px] leading-relaxed text-gray-500 whitespace-pre-wrap">{normalizedValue}</div>
+              </details>
+            )}
+          </div>
+        );
+      }
       const isMarkdown = normalizedValue.includes('#') || normalizedValue.includes('|') || normalizedValue.includes('**') || normalizedValue.includes('- ') || normalizedValue.length > 50;
       if (isMarkdown) {
         return (
@@ -767,7 +828,10 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
     agents: any[];
   }>({ nodeTypes: [], connectors: [], agents: [] });
 
-  const [activeView, setActiveView] = useState<'builder' | 'runs' | 'schedules' | 'library'>('builder');
+  const [activeView, setActiveView] = useState<'builder' | 'runs' | 'schedules' | 'library' | 'solutions'>('builder');
+  const [pgSolutions, setPgSolutions] = useState<any[]>([]);
+  const [fetchingPgSolutions, setFetchingPgSolutions] = useState(false);
+  const [cloningId, setCloningId] = useState<string | null>(null);
   const [flows, setFlows] = useState<any[]>([]);
   const [fetchingFlows, setFetchingFlows] = useState(false);
   const [addingField, setAddingField] = useState<{ type: 'input_schema' | 'param' | 'mutation', value: string } | null>(null);
@@ -926,6 +990,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
     if (activeView === 'runs') fetchRuns();
     if (activeView === 'schedules') fetchSchedules();
     if (activeView === 'library') fetchFlows();
+    if (activeView === 'solutions') fetchPlaygroundSolutions();
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
@@ -1258,6 +1323,38 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
     }
   };
 
+  const fetchPlaygroundSolutions = async () => {
+    setFetchingPgSolutions(true);
+    try {
+      const res = await apiService.playground.solutions.list();
+      if (res.success) setPgSolutions(res.data || []);
+    } catch (e: any) {
+      toast.error(e?.message ? `Solutions: ${e.message}` : 'Failed to load solutions');
+    } finally {
+      setFetchingPgSolutions(false);
+    }
+  };
+
+  // "Use this solution": clone it into a runnable flow in the user's org, then open it in the builder.
+  const cloneSolution = async (sol: any) => {
+    setCloningId(sol._id);
+    try {
+      const res = await apiService.playground.solutions.clone(sol._id, { name: sol.name });
+      if (res.success && res.data?._id) {
+        toast.success('Solution added to your flows');
+        await loadFlow(res.data._id);
+        setActiveView('builder');
+        fetchFlows();
+      } else {
+        throw new Error(res?.message || 'Clone failed');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to use this solution');
+    } finally {
+      setCloningId(null);
+    }
+  };
+
   const openScheduleModal = () => {
     if (!flowId) {
       toast.error('Save the flow first, then add a schedule');
@@ -1476,7 +1573,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
   return (
     <div className="flex flex-col h-full min-h-[800px] overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4 border-b border-gray-100 bg-gray-50/50">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100">
             <Sparkles size={16} className="text-[#a26da8]" />
@@ -1487,10 +1584,10 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
           </div>
         </div>
 
-        <div className="flex bg-white/50 backdrop-blur-sm border border-gray-100 rounded-2xl p-1 shadow-sm items-center">
+        <div className="flex bg-white/50 backdrop-blur-sm border border-gray-100 rounded-2xl p-1 shadow-sm items-center shrink-0">
           <button 
             onClick={() => setActiveView('builder')} 
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               activeView === 'builder' ? 'bg-[#a26da8] text-white shadow-lg shadow-purple-100' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -1499,7 +1596,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
           </button>
           <button 
             onClick={() => setActiveView('library')} 
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               activeView === 'library' ? 'bg-[#a26da8] text-white shadow-lg shadow-purple-100' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -1508,7 +1605,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
           </button>
           <button 
             onClick={() => setActiveView('runs')} 
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               activeView === 'runs' ? 'bg-[#a26da8] text-white shadow-lg shadow-purple-100' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -1517,36 +1614,26 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
           </button>
           <button 
             onClick={() => setActiveView('schedules')} 
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               activeView === 'schedules' ? 'bg-[#a26da8] text-white shadow-lg shadow-purple-100' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <Clock size={14} />
             Schedules
           </button>
-
-          {activeView === 'builder' && (
-            <div className="h-4 w-px bg-gray-100 mx-3" />
-          )}
-          
-          {activeView === 'builder' && (
-            <div className="px-5 py-1 flex items-center gap-3 border-l border-gray-100 ml-2 animate-in fade-in slide-in-from-left-2">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse shadow-sm shadow-green-200" />
-              <div className="flex flex-col">
-                <span className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mb-1">Active Configuration</span>
-                <input 
-                  value={flowName}
-                  onChange={(e) => setFlowName(e.target.value)}
-                  className="text-[10px] font-black text-gray-900 uppercase tracking-widest bg-transparent outline-none border-none p-0 h-4 focus:ring-0 w-48"
-                  placeholder="Name your flow..."
-                />
-              </div>
-            </div>
-          )}
+          <button
+            onClick={() => setActiveView('solutions')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              activeView === 'solutions' ? 'bg-[#a26da8] text-white shadow-lg shadow-purple-100' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <Sparkles size={14} />
+            Solutions
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button 
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end ml-auto">
+          <button
             onClick={() => {
               setFlowId(null);
               setFlowName('Untitled Flow');
@@ -1627,6 +1714,19 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
           </button>
         </div>
       </div>
+
+      {activeView === 'builder' && (
+        <div className="flex items-center gap-3 px-5 py-2 border-b border-gray-100 bg-white animate-in fade-in duration-200">
+          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse shadow-sm shadow-green-200 shrink-0" />
+          <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] shrink-0">Active Configuration</span>
+          <input
+            value={flowName}
+            onChange={(e) => setFlowName(e.target.value)}
+            className="text-[11px] font-black text-gray-900 uppercase tracking-widest bg-transparent outline-none border-none p-0 focus:ring-0 flex-1 max-w-sm"
+            placeholder="Name your flow..."
+          />
+        </div>
+      )}
 
       <div className="flex flex-1 min-h-0 relative">
         {activeView === 'library' && (
@@ -2439,7 +2539,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
               </div>
             )}
           </div>
-        ) : (
+        ) : activeView === 'schedules' ? (
           <div className="flex-1 bg-gray-50 flex flex-col p-8 overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -2501,6 +2601,69 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                         <Trash2 size={16} />
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {activeView === 'solutions' && (
+          <div className="flex-1 bg-gray-50 flex flex-col p-8 overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Solutions Gallery</h2>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Ready-to-run automations — clone one into your flows</p>
+              </div>
+              <button onClick={fetchPlaygroundSolutions} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all shadow-sm">
+                <RotateCcw size={18} />
+              </button>
+            </div>
+
+            {fetchingPgSolutions ? (
+              <div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-gray-300" size={32} /></div>
+            ) : pgSolutions.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <div className="p-6 bg-white rounded-3xl shadow-sm border border-gray-100 mb-4"><Sparkles size={32} className="text-gray-200" /></div>
+                <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">No solutions published yet</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-1 max-w-[240px]">Published solutions from the Admin console appear here to clone.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {pgSolutions.map((sol: any) => (
+                  <div key={sol._id} className="bg-white border border-gray-100 rounded-[28px] p-6 shadow-sm hover:shadow-lg hover:border-purple-100 transition-all flex flex-col gap-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#a26da8] to-[#6fcbbd] text-white flex items-center justify-center text-base font-black shadow-sm">{(sol.name || 'S').charAt(0).toUpperCase()}</div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="px-2.5 py-1 bg-teal-50 text-teal-600 rounded-full text-[8px] font-black uppercase tracking-widest">{sol.category}</span>
+                        {sol.has_human_approval && <span className="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full text-[8px] font-black uppercase tracking-widest">Approval</span>}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-gray-900 leading-snug line-clamp-1">{sol.name}</h3>
+                      <p className="text-[11px] font-medium text-gray-400 line-clamp-2 leading-relaxed mt-1">{sol.summary || sol.description}</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                      {(sol.steps || []).slice(0, 5).map((st: any, i: number, arr: any[]) => {
+                        const human = st.type === 'human_approval' || st.type === 'human_task';
+                        return (
+                          <React.Fragment key={i}>
+                            <span className={`px-2 py-1 rounded-lg text-[7.5px] font-black uppercase tracking-widest border ${human ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border-gray-200 text-gray-600'}`}>{st.label}</span>
+                            {i < Math.min(arr.length, 5) - 1 && <ArrowRight className="text-gray-300" size={10} />}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                    {sol.kpis?.[0] && (
+                      <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest">
+                        <span className="text-gray-400 truncate mr-2">{sol.kpis[0].metric}</span>
+                        <span className="text-[#a26da8] shrink-0">{sol.kpis[0].impact}</span>
+                      </div>
+                    )}
+                    <button onClick={() => cloneSolution(sol)} disabled={cloningId === sol._id} className="mt-1 w-full py-3 bg-[#a26da8] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                      {cloningId === sol._id ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
+                      Use this Solution
+                    </button>
                   </div>
                 ))}
               </div>
@@ -3149,6 +3312,24 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                 </div>
                               )}
 
+                              {/* Decision / routing outcome (human tasks & gateways carry their result here, not in output.value) */}
+                              {(step.decision || step.outcome || step.route) && (
+                                <div className="flex flex-wrap items-center gap-2 p-3 bg-purple-50/40 border border-purple-100 rounded-xl">
+                                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Decision</span>
+                                  {step.decision && (
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${/reject/i.test(String(step.decision)) ? 'bg-red-50 border-red-100 text-red-600' : /approv/i.test(String(step.decision)) ? 'bg-green-50 border-green-100 text-green-600' : 'bg-white border-purple-200 text-[#8e5a94]'}`}>
+                                      {step.decision}
+                                    </span>
+                                  )}
+                                  {step.outcome && step.outcome !== step.decision && (
+                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-white border border-gray-200 text-gray-600">{step.outcome}</span>
+                                  )}
+                                  {step.route && (
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">&rarr; routed to {step.route}</span>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                   {(() => {
@@ -3174,6 +3355,10 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                 <div className="space-y-1.5">
                                   {(() => {
                                     let outputVal = step.output?.value ?? step.output;
+                                    // Human/gateway nodes carry their result in decision/outcome, not output.value
+                                    if (isEmptyValue(outputVal) && (step.decision || step.outcome)) {
+                                      outputVal = { decision: step.decision || step.outcome };
+                                    }
                                     // If output is null but it's an END node or similar, try resolving from context
                                     if (isEmptyValue(outputVal) && (step.type === 'results' || step.node_id === 'END')) {
                                        const resolvedOutput: Record<string, any> = {};

@@ -25,22 +25,31 @@ const AuditLogs: React.FC = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, search]);
+  }, [page]);
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await apiService.adminConsole.audit.list({ page, search });
+      // The audit endpoint filters by resource/action/page (no free-text search),
+      // so we fetch the page and filter it client-side below.
+      const response = await apiService.adminConsole.audit.list({ page });
       if (response.success) {
         setLogs(response.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch logs:', error);
-      toast.error('Failed to load audit logs');
+      toast.error(error?.message ? `Audit: ${error.message}` : 'Failed to load audit logs');
     } finally {
       setLoading(false);
     }
   };
+
+  const q = search.trim().toLowerCase();
+  const visibleLogs = q
+    ? logs.filter(l =>
+        [l.actor_email, l.action, l.resource, l.resource_name]
+          .some(v => (v || '').toString().toLowerCase().includes(q)))
+    : logs;
 
   return (
     <div className="animate-fadeIn">
@@ -100,8 +109,8 @@ const AuditLogs: React.FC = () => {
                          <td colSpan={6} className="px-8 py-6 h-16 bg-gray-50/20" />
                       </tr>
                     ))
-                 ) : logs.length > 0 ? (
-                    logs.map(log => (
+                 ) : visibleLogs.length > 0 ? (
+                    visibleLogs.map(log => (
                        <tr key={log._id} className="hover:bg-gray-50/50 transition-colors group">
                           <td className="px-8 py-5 whitespace-nowrap">
                              <div className="text-xs font-bold text-gray-900">{format(new Date(log.createdAt), 'MMM dd, yyyy')}</div>
@@ -109,12 +118,12 @@ const AuditLogs: React.FC = () => {
                           </td>
                           <td className="px-8 py-5">
                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-[#f3effe] text-[#4c1d95] flex items-center justify-center text-[10px] font-black">
+                                <div className="w-8 h-8 rounded-full bg-[#f5f0fa] text-[#8e5a94] flex items-center justify-center text-[10px] font-black">
                                    {log.actor_email.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
                                    <div className="text-xs font-black text-gray-900">{log.actor_email}</div>
-                                   <div className="text-[9px] font-black text-[#6d28d9] uppercase tracking-widest">{log.actor_role}</div>
+                                   <div className="text-[9px] font-black text-[#a26da8] uppercase tracking-widest">{log.actor_role}</div>
                                 </div>
                              </div>
                           </td>

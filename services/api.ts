@@ -1585,6 +1585,25 @@ export const apiService = {
         const response = await fetch(`${BASE_URL}/playground/schedules/${id}`, { method: 'DELETE', headers: getHeaders() });
         return handleResponse(response);
       }
+    },
+    solutions: {
+      list: async (params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${BASE_URL}/playground/solutions${query}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/solutions/${id}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      clone: async (id: string, data?: { name?: string }) => {
+        const response = await fetch(`${BASE_URL}/playground/solutions/${id}/clone`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: data ? JSON.stringify(data) : undefined
+        });
+        return handleResponse(response);
+      }
     }
   },
   adminConsole: {
