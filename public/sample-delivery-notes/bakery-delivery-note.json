@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "content": {
+    "line_items": [
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "TUR21", "PRODUCTCODE": "TUR21", "DESCRIPTION": "1KG Turkish Pide", "QTY": 4, "NETPRICE": 7.12, "AMOUNT": 28.48, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "MUE12", "PRODUCTCODE": "MUE12", "DESCRIPTION": "2 kg Whole Cranberry & Pistachio", "QTY": 1, "NETPRICE": 38.78, "AMOUNT": 38.78, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "CRN12", "PRODUCTCODE": "CRN12", "DESCRIPTION": "Loaf-Nut Vanilla Custard", "QTY": 8, "NETPRICE": 3.12, "AMOUNT": 24.96, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "CHO11", "PRODUCTCODE": "CHO11", "DESCRIPTION": "Pain au Chocolate 100g", "QTY": 8, "NETPRICE": 2.16, "AMOUNT": 17.28, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "CRN13", "PRODUCTCODE": "CRN13", "DESCRIPTION": "Salted Caramel Loaf-Nut", "QTY": 8, "NETPRICE": 3.12, "AMOUNT": 24.96, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "CRO12", "PRODUCTCODE": "CRO12", "DESCRIPTION": "LARGE ALMOND Danish", "QTY": 12, "NETPRICE": 2.96, "AMOUNT": 35.52, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "PAN11", "PRODUCTCODE": "PAN11", "DESCRIPTION": "Panini", "QTY": 10, "NETPRICE": 0.89, "AMOUNT": 8.9, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "BAP11", "PRODUCTCODE": "BAP11", "DESCRIPTION": "76.5g Bap", "QTY": "F", "NETPRICE": 0.96, "AMOUNT": 10.56, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600067757", "PO_ITEM": "DOU11", "PRODUCTCODE": "DOU11", "DESCRIPTION": "Boysenberry Doughnuts", "QTY": 5, "NETPRICE": 2.47, "AMOUNT": 12.35, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null }
+    ]
+  }
+}

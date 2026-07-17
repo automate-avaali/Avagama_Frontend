@@ -37,6 +37,8 @@ import AdminConsole from './pages/Admin/AdminConsole';
 import OAuthHandler from './pages/Admin/builder/OAuthHandler';
 import Playground from './pages/Playground';
 import PublicChat from './pages/PublicChat';
+import AgentSolutions from './pages/AgentSolutions/AgentSolutions';
+import AgentSolutionDetail from './pages/AgentSolutions/AgentSolutionDetail';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -130,6 +132,8 @@ const App: React.FC = () => {
               <Route path="/discovery/domain" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DomainDiscovery /></ProtectedRoute>} />
               <Route path="/discovery/detail/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DiscoveryDetail /></ProtectedRoute>} />
               <Route path="/playground" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Playground /></ProtectedRoute>} />
+              <Route path="/agent-solutions" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentSolutions /></ProtectedRoute>} />
+              <Route path="/agent-solutions/:agentId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentSolutionDetail /></ProtectedRoute>} />
               
               {/* Admin Routes */}
               <Route path="/admin/console" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AdminConsole /></ProtectedRoute>} />

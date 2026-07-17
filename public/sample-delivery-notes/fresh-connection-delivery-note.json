@@ -1,0 +1,34 @@
+{
+  "status": "completed",
+  "content": {
+    "line_items": [
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "1", "PRODUCTCODE": null, "DESCRIPTION": "BANANA KG", "QTY": 60.14, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "2", "PRODUCTCODE": null, "DESCRIPTION": "TOMATO CHERRY RED PUNNET", "QTY": 12, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "3", "PRODUCTCODE": null, "DESCRIPTION": "CHIVES 100GM BAG", "QTY": 3, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "4", "PRODUCTCODE": null, "DESCRIPTION": "CORIANDER 100GM BAG", "QTY": 4, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "5", "PRODUCTCODE": null, "DESCRIPTION": "CURRY LEAVES 50GM BAG", "QTY": 6, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "6", "PRODUCTCODE": null, "DESCRIPTION": "MINT 100GM BUNCH", "QTY": 1, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "7", "PRODUCTCODE": null, "DESCRIPTION": "FENNEL BULB KG", "QTY": 10.12, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "8", "PRODUCTCODE": null, "DESCRIPTION": "GINGER KG", "QTY": 1.04, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "9", "PRODUCTCODE": null, "DESCRIPTION": "PEAR GREEN KG", "QTY": 20.01, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "10", "PRODUCTCODE": null, "DESCRIPTION": "ORANGE IMPORTED KG", "QTY": 20.16, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "11", "PRODUCTCODE": null, "DESCRIPTION": "PARSLEY ITALIAN (FLAT LEAF) 100GM BAG", "QTY": 1, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "12", "PRODUCTCODE": null, "DESCRIPTION": "KIWIFRUIT GREEN KG", "QTY": 4.07, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "13", "PRODUCTCODE": null, "DESCRIPTION": "LEMON STANDARD KG", "QTY": 2.12, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "14", "PRODUCTCODE": null, "DESCRIPTION": "LETTUCE MESCLUN 500GM BAG", "QTY": 16, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "15", "PRODUCTCODE": null, "DESCRIPTION": "MUSHROOM MARKET MIX KG", "QTY": 6.12, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "16", "PRODUCTCODE": null, "DESCRIPTION": "MICRO COMBI PUNNET", "QTY": 9, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "17", "PRODUCTCODE": null, "DESCRIPTION": "APPLE MEDIUM TAG 1 KG", "QTY": 50.25, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "18", "PRODUCTCODE": null, "DESCRIPTION": "GRAPES RED SEEDLESS KG", "QTY": 6.08, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "19", "PRODUCTCODE": null, "DESCRIPTION": "ROSEMARY 100GM BAG", "QTY": 1, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "20", "PRODUCTCODE": null, "DESCRIPTION": "MUSHROOM SLICED KG", "QTY": 15.2, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "21", "PRODUCTCODE": null, "DESCRIPTION": "SPINACH BABY 500GM BAG", "QTY": 4, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "22", "PRODUCTCODE": null, "DESCRIPTION": "SPRING ONION LOOSE KG", "QTY": 0.99, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "23", "PRODUCTCODE": null, "DESCRIPTION": "PINEAPPLE SUPER SWEET EACH", "QTY": 4, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "24", "PRODUCTCODE": null, "DESCRIPTION": "CUCUMBER TELEGRAPH EACH", "QTY": 16, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "25", "PRODUCTCODE": null, "DESCRIPTION": "CRATES", "QTY": 13, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "26", "PRODUCTCODE": null, "DESCRIPTION": "BOXES", "QTY": 4, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null },
+      { "PO_NUMBER": "8600051266", "PO_ITEM": "27", "PRODUCTCODE": null, "DESCRIPTION": "TIE", "QTY": 1, "NETPRICE": null, "AMOUNT": null, "TAX_CODE": null, "TAX_RATE": null, "TAX_AMOUNT": null, "HSN_CODE": null }
+    ]
+  }
+}
