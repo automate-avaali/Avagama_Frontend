@@ -19,6 +19,11 @@ const handleResponse = async (response: Response) => {
   if (!response.ok) {
     const error: any = new Error(data.message || data.error || `Server Error: ${response.status}`);
     error.status = response.status;
+    // Additive only: some endpoints (e.g. Agent Playground flow validate/run) return a
+    // structured `issues[]` array alongside the message. Nothing previously read these
+    // fields off the thrown error, so exposing them here is backward compatible.
+    if (Array.isArray(data.issues)) error.issues = data.issues;
+    error.data = data;
     throw error;
   }
   return data;

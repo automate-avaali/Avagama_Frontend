@@ -30,9 +30,10 @@ import {
   Terminal, 
   Database, 
   Cpu, 
-  ChevronRight, 
-  ArrowRight, 
-  RefreshCw, 
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+  RefreshCw,
   Clock, 
   Calendar,
   ExternalLink, 
@@ -52,7 +53,8 @@ import {
   PlusCircle,
   PlayCircle,
   Send,
-  MessageSquare
+  MessageSquare,
+  Menu
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -127,6 +129,30 @@ export const AgentOrchestration: React.FC = () => {
   const [selectedMenu, setSelectedMenu] = useState<
     'agent-orchestra' | 'proposal-forge' | 'process-intelligence' | 'document-studio' | 'execution-hub' | 'approval-inbox' | 'workflow-library' | 'integration-lab' | 'observability' | 'access-roles' | 'execution-detail'
   >(location.state?.selectedMenu || 'agent-orchestra');
+
+  // Collapsible left sidebar (icon rail ↔ full) on desktop. Persisted so it stays where the user left it.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem('orchestraSidebarCollapsed') === '1'; } catch { return false; }
+  });
+  const toggleSidebar = () => setSidebarCollapsed(prev => {
+    const next = !prev;
+    try { localStorage.setItem('orchestraSidebarCollapsed', next ? '1' : '0'); } catch {}
+    return next;
+  });
+
+  // On tablet/mobile the sidebar becomes an off-canvas drawer instead of an inline rail.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = () => { setIsDesktop(mq.matches); if (mq.matches) setMobileSidebarOpen(false); };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  // The icon-rail collapse only applies on desktop; the mobile drawer always shows full labels.
+  const railCollapsed = isDesktop && sidebarCollapsed;
 
   // Loading indicator
   const [loading, setLoading] = useState(false);
@@ -1326,7 +1352,7 @@ export const AgentOrchestration: React.FC = () => {
   }, [selectedMenu]);
 
   return (
-    <div className="flex h-[calc(100vh-76px)] bg-[#fafafc] text-gray-800 overflow-hidden" id="orchestration-panel-container">
+    <div className="flex flex-1 min-h-[520px] bg-[#fafafc] text-gray-800 overflow-hidden" id="orchestration-panel-container">
       
       {/* 4-Minute Premium Pipeline Creation Progress Loader Overlay */}
       {/* Live execution manual input modal */}
@@ -1464,167 +1490,126 @@ export const AgentOrchestration: React.FC = () => {
         )}
       </AnimatePresence>
       
-      {/* 1. LEFT SIDEBAR - Clean Light High-Contrast (Restyled to fit Avagama theme perfectly) */}
-      <aside className="w-[280px] bg-white flex flex-col justify-between shrink-0 select-none border-r border-slate-200/60 shadow-sm" id="enterprise-agentic-sidebar">
-        
-        {/* Upper Sidebar items Container */}
-        <div className="flex flex-col">
-          {/* Logo & Platform Header */}
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/40">
-            <div className="w-8 h-8 bg-gradient-to-tr from-[#a26da8] to-[#6fcbbd] rounded-xl flex items-center justify-center shadow-sm">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black text-slate-900 tracking-tighter uppercase">Studio Orchestrator</span>
+      {/* Mobile drawer backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] animate-in fade-in duration-200"
+        />
+      )}
+
+      {/* 1. LEFT SIDEBAR - off-canvas drawer on mobile, collapsible icon rail on desktop */}
+      <aside
+        className={`bg-white flex flex-col shrink-0 select-none border-r border-slate-200/60 transition-[width,transform] duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-[65] w-[280px] shadow-2xl
+          ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:static lg:z-auto lg:translate-x-0 lg:shadow-sm ${railCollapsed ? 'lg:w-[76px]' : 'lg:w-[280px]'}`}
+        id="enterprise-agentic-sidebar"
+      >
+        {/* Logo & Platform Header + collapse/close toggle */}
+        <div className={`h-[68px] shrink-0 border-b border-slate-100 flex items-center bg-slate-50/40 ${railCollapsed ? 'lg:justify-center lg:px-0' : ''} justify-between px-5`}>
+          {!railCollapsed && (
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 bg-gradient-to-tr from-[#a26da8] to-[#6fcbbd] rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                <Zap className="w-4 h-4 text-white" />
               </div>
+              <span className="text-sm font-black text-slate-900 tracking-tighter uppercase truncate">Studio Orchestrator</span>
             </div>
-          </div>
-
-          {/* Menus Categories */}
-          <div className="p-4 space-y-6">
-            
-            {/* Category 1: BUILD */}
-            <div className="space-y-1">
-              <span className="px-4 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">BUILD</span>
-              
-              {/* Agent Orchestration Link */}
-              <button 
-                onClick={() => { setSelectedMenu('agent-orchestra'); setShowDesigner(false); loadAllBackendState(); }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'agent-orchestra' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Workflow className="w-4 h-4" />
-                  <span>AGENT ORCHESTRATION</span>
-                </div>
-                <span className="bg-[#a26da8] text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                  {pipelinesList.length}
-                </span>
-              </button>
-
-              {/* RFP Creation Link */}
-              <button 
-                onClick={() => { setSelectedMenu('proposal-forge'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'proposal-forge' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-4 h-4" />
-                  <span>RFP CREATION</span>
-                </div>
-              </button>
-
-              {/* Process Intelligence Link */}
-              <button 
-                onClick={() => { setSelectedMenu('process-intelligence'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'process-intelligence' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Layers className="w-4 h-4" />
-                  <span>PROCESS INTELLIGENCE</span>
-                </div>
-              </button>
-
-              {/* Document Studio Link */}
-              <button 
-                onClick={() => { setSelectedMenu('document-studio'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'document-studio' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Database className="w-4 h-4" />
-                  <span>DOCUMENT STUDIO</span>
-                </div>
-              </button>
-            </div>
-
-            {/* Category 2: OPERATE */}
-            <div className="space-y-1">
-              <span className="px-4 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">OPERATE</span>
-
-              {/* Execution Hub Link */}
-              <button 
-                onClick={() => { setSelectedMenu('execution-hub'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'execution-hub' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Play className="w-4 h-4" />
-                  <span>EXECUTION HUB</span>
-                </div>
-              </button>
-
-              {/* Approval Inbox Link */}
-              <button 
-                onClick={() => { setSelectedMenu('approval-inbox'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'approval-inbox' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Check className="w-4 h-4" />
-                  <span>APPROVAL INBOX</span>
-                </div>
-                {approvalsList.length > 0 && (
-                  <span className="bg-[#a26da8] text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                    {approvalsList.length}
-                  </span>
-                )}
-              </button>
-
-              {/* Workflow Library Link */}
-              <button 
-                onClick={() => { setSelectedMenu('workflow-library'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'workflow-library' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Zap className="w-4 h-4" />
-                  <span>CREATE PIPELINE</span>
-                </div>
-              </button>
-            </div>
-
-            {/* Category 3: GOVERN */}
-            <div className="space-y-1">
-              <span className="px-4 text-[9px] font-extrabold text-[#94a3b8] uppercase tracking-widest block mb-2">GOVERN</span>
-
-              {/* Integration Lab Link */}
-              <button 
-                onClick={() => { setSelectedMenu('integration-lab'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'integration-lab' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Settings className="w-4 h-4" />
-                  <span>INTEGRATION LAB</span>
-                </div>
-              </button>
-
-              {/* Observability Link */}
-              <button 
-                onClick={() => { setSelectedMenu('observability'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'observability' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Activity className="w-4 h-4" />
-                  <span>OBSERVABILITY</span>
-                </div>
-              </button>
-
-              {/* Access & Roles Link */}
-              <button 
-                onClick={() => { setSelectedMenu('access-roles'); setShowDesigner(false); }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition text-xs font-bold uppercase tracking-wider ${selectedMenu === 'access-roles' ? 'bg-[#a26da8]/10 text-[#a26da8] font-black border-l-4 border-[#a26da8]' : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <User className="w-4 h-4" />
-                  <span>ACCESS & ROLES</span>
-                </div>
-              </button>
-            </div>
-
-          </div>
+          )}
+          {/* Desktop collapse toggle */}
+          <button
+            onClick={toggleSidebar}
+            title={railCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden lg:flex w-9 h-9 rounded-xl items-center justify-center text-slate-400 hover:text-[#a26da8] hover:bg-[#a26da8]/10 transition-all shrink-0"
+          >
+            {railCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+          {/* Mobile close */}
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            title="Close menu"
+            className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#a26da8] hover:bg-[#a26da8]/10 transition-all shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
+        {/* Scrollable menu region — never clips GOVERN, regardless of viewport height */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-6 scrollbar-thin">
+          {(() => {
+            const sections: { title: string; items: { key: any; icon: any; label: string; badge?: number | null; extra?: () => void }[] }[] = [
+              { title: 'BUILD', items: [
+                { key: 'agent-orchestra', icon: Workflow, label: 'Agent Orchestration', badge: pipelinesList.length, extra: () => loadAllBackendState() },
+                { key: 'proposal-forge', icon: Sparkles, label: 'RFP Creation' },
+                { key: 'process-intelligence', icon: Layers, label: 'Process Intelligence' },
+                { key: 'document-studio', icon: Database, label: 'Document Studio' },
+              ]},
+              { title: 'OPERATE', items: [
+                { key: 'execution-hub', icon: Play, label: 'Execution Hub' },
+                { key: 'approval-inbox', icon: Check, label: 'Approval Inbox', badge: approvalsList.length > 0 ? approvalsList.length : null },
+                { key: 'workflow-library', icon: Zap, label: 'Create Pipeline' },
+              ]},
+              { title: 'GOVERN', items: [
+                { key: 'integration-lab', icon: Settings, label: 'Integration Lab' },
+                { key: 'observability', icon: Activity, label: 'Observability' },
+                { key: 'access-roles', icon: User, label: 'Access & Roles' },
+              ]},
+            ];
+            return sections.map(section => (
+              <div key={section.title} className="space-y-1">
+                {railCollapsed
+                  ? <div className="mx-2 mb-2 border-t border-slate-100" />
+                  : <span className="px-4 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">{section.title}</span>}
+                {section.items.map(item => {
+                  const Icon = item.icon;
+                  const active = selectedMenu === item.key;
+                  const hasBadge = item.badge != null && item.badge > 0;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => { setSelectedMenu(item.key); setShowDesigner(false); item.extra?.(); setMobileSidebarOpen(false); }}
+                      title={railCollapsed ? item.label : undefined}
+                      className={`w-full flex items-center rounded-2xl transition text-xs font-bold uppercase tracking-wider ${railCollapsed ? 'justify-center px-0 py-3' : 'justify-between px-4 py-3'} ${active ? `bg-[#a26da8]/10 text-[#a26da8] font-black ${railCollapsed ? '' : 'border-l-4 border-[#a26da8]'}` : 'text-slate-600 hover:text-[#a26da8] hover:bg-[#a26da8]/5'}`}
+                    >
+                      <div className="flex items-center gap-3 relative">
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {!railCollapsed && <span>{item.label}</span>}
+                        {railCollapsed && hasBadge && (
+                          <span className="absolute -top-2 -right-2 min-w-[15px] h-[15px] px-1 bg-[#a26da8] text-white text-[8px] font-black rounded-full flex items-center justify-center leading-none">{item.badge}</span>
+                        )}
+                      </div>
+                      {!railCollapsed && hasBadge && (
+                        <span className="bg-[#a26da8] text-white text-[9px] font-black px-2 py-0.5 rounded-full">{item.badge}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ));
+          })()}
+        </nav>
       </aside>
 
       {/* 2. MAIN ACTIVE LAYOUT WRAPPER */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
+
+        {/* Mobile top bar — opens the sidebar drawer */}
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-slate-100 bg-white shrink-0">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            title="Open menu"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-[#a26da8] hover:bg-[#a26da8]/10 border border-slate-200 transition-all shrink-0"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 bg-gradient-to-tr from-[#a26da8] to-[#6fcbbd] rounded-lg flex items-center justify-center shadow-sm shrink-0">
+              <Zap className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-[11px] font-black text-slate-900 uppercase tracking-wider truncate">Studio Orchestrator</span>
+          </div>
+        </div>
+
         {/* Dynamic Trace Logs Console Overlay */}
         <AnimatePresence>
           {showRunConsole && (
@@ -1632,7 +1617,8 @@ export const AgentOrchestration: React.FC = () => {
               initial={{ opacity: 0, y: 150 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 150 }}
-              className="fixed bottom-0 left-[280px] right-0 h-80 bg-slate-950 border-t border-slate-900 text-slate-100 z-50 flex flex-col font-mono text-xs shadow-2xl"
+              className="fixed bottom-0 right-0 h-80 bg-slate-950 border-t border-slate-900 text-slate-100 z-50 flex flex-col font-mono text-xs shadow-2xl transition-[left] duration-300"
+              style={{ left: isDesktop ? (railCollapsed ? 76 : 280) : 0 }}
             >
               <div className="h-12 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-8 select-none">
                 <div className="flex items-center gap-3">

@@ -20,8 +20,12 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
   const [showConsumption, setShowConsumption] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [showDiscoveryMenu, setShowDiscoveryMenu] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [showAgentsMenu, setShowAgentsMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownTimeoutRef = useRef<number | null>(null);
+  const adminDropdownTimeoutRef = useRef<number | null>(null);
+  const agentsDropdownTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -120,6 +124,12 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
       if (dropdownTimeoutRef.current) {
         window.clearTimeout(dropdownTimeoutRef.current);
       }
+      if (adminDropdownTimeoutRef.current) {
+        window.clearTimeout(adminDropdownTimeoutRef.current);
+      }
+      if (agentsDropdownTimeoutRef.current) {
+        window.clearTimeout(agentsDropdownTimeoutRef.current);
+      }
     };
   }, [isAuthenticated, location.pathname]); // Added location.pathname to re-check on navigation just in case
 
@@ -141,6 +151,32 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
     dropdownTimeoutRef.current = window.setTimeout(() => {
       setShowDiscoveryMenu(false);
     }, 400); // 400ms delay to give user time to move mouse into the menu
+  };
+
+  const openAdminDropdown = () => {
+    if (adminDropdownTimeoutRef.current) {
+      window.clearTimeout(adminDropdownTimeoutRef.current);
+    }
+    setShowAdminMenu(true);
+  };
+
+  const closeAdminDropdown = () => {
+    adminDropdownTimeoutRef.current = window.setTimeout(() => {
+      setShowAdminMenu(false);
+    }, 400);
+  };
+
+  const openAgentsDropdown = () => {
+    if (agentsDropdownTimeoutRef.current) {
+      window.clearTimeout(agentsDropdownTimeoutRef.current);
+    }
+    setShowAgentsMenu(true);
+  };
+
+  const closeAgentsDropdown = () => {
+    agentsDropdownTimeoutRef.current = window.setTimeout(() => {
+      setShowAgentsMenu(false);
+    }, 400);
   };
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
@@ -225,23 +261,100 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                 </div>
 
                 <Link to="/evaluations" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/evaluations' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>MY EVALUATIONS</Link>
-                <div className="relative">
-                  <Link to="/admin/standalone" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.startsWith('/admin/standalone') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>AGENT BUILDER</Link>
+                {/* Agents dropdown — groups Agent Builder, Agent Playground and Agent
+                    Solutions under one "AGENTS" tab. Same routes/visibility as before,
+                    only the top-nav presentation changed. */}
+                <div
+                  className="relative"
+                  onMouseEnter={openAgentsDropdown}
+                  onMouseLeave={closeAgentsDropdown}
+                >
+                  <button className={`text-sm font-bold tracking-wide flex items-center gap-1 transition-colors ${(location.pathname.startsWith('/admin/standalone') || location.pathname === '/playground' || location.pathname.startsWith('/agent-solutions')) ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>
+                    AGENTS
+                    <svg className={`w-4 h-4 transition-transform duration-300 ${showAgentsMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+
+                  {showAgentsMenu && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-2 w-56 bg-transparent z-[60]">
+                      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 overflow-hidden animate-fadeIn">
+                        <Link
+                          to="/admin/standalone"
+                          className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-[#a26da8] transition-all"
+                          onClick={() => setShowAgentsMenu(false)}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-[#a26da8]"></span>
+                          Agent Builder
+                        </Link>
+                        <Link
+                          to="/playground"
+                          className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-teal-50 hover:text-[#4db6ac] transition-all"
+                          onClick={() => setShowAgentsMenu(false)}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-[#4db6ac]"></span>
+                          Agent Playground
+                        </Link>
+                        <Link
+                          to="/agent-solutions"
+                          className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-[#a26da8] transition-all"
+                          onClick={() => setShowAgentsMenu(false)}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-[#a26da8]"></span>
+                          Agent Solutions
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <Link to="/playground" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/playground' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>AGENT PLAYGROUND</Link>
-                <Link to="/agent-solutions" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.startsWith('/agent-solutions') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>AGENT SOLUTIONS</Link>
                 <Link to="/admin/orchestration" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/admin/orchestration' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORCHESTRATION</Link>
                 
+                {/* Admin Console — a single top-level tab. The other admin destinations
+                    (System Admin, etc.) now live inside the Admin Console page's left
+                    sidebar, role-gated. Org/Dept Admin keep their own tabs for the roles
+                    that had them — no role/authorization change, only tab placement. */}
                 {userRole === 'TENANT_ADMIN' && (
-                  <>
-                    <Link to="/admin/console" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/console') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ADMIN CONSOLE</Link>
-                    <Link to="/admin/system" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/system') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>SYSTEM ADMIN</Link>
-                  </>
+                  <Link to="/admin/console" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/console') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ADMIN CONSOLE</Link>
                 )}
+                {/* Organization Admin (SUPER_ADMIN_ROLE) can reach BOTH Org Admin and
+                    Dept Admin, so those two collapse into one "ADMIN" dropdown instead of
+                    two piled tabs. Department Admin (ADMIN_ROLE) can only reach Dept Admin,
+                    so that role keeps its single tab. Same destinations, same access — only
+                    the top-nav presentation changed. */}
                 {userRole === 'SUPER_ADMIN_ROLE' && (
-                  <Link to="/admin/org" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/org') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORG ADMIN</Link>
+                  <div
+                    className="relative"
+                    onMouseEnter={openAdminDropdown}
+                    onMouseLeave={closeAdminDropdown}
+                  >
+                    <button className={`text-sm font-bold tracking-wide flex items-center gap-1 transition-colors ${(location.pathname === '/admin/org' || location.pathname.startsWith('/admin/org/') || location.pathname.includes('/admin/dept')) ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>
+                      ADMIN
+                      <svg className={`w-4 h-4 transition-transform duration-300 ${showAdminMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+
+                    {showAdminMenu && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-2 w-56 bg-transparent z-[60]">
+                        <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 overflow-hidden animate-fadeIn">
+                          <Link
+                            to="/admin/org"
+                            className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-[#a26da8] transition-all"
+                            onClick={() => setShowAdminMenu(false)}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-[#a26da8]"></span>
+                            Org Admin
+                          </Link>
+                          <Link
+                            to="/admin/dept"
+                            className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-teal-50 hover:text-[#4db6ac] transition-all"
+                            onClick={() => setShowAdminMenu(false)}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-[#4db6ac]"></span>
+                            Dept Admin
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-                {(userRole === 'ADMIN_ROLE' || userRole === 'SUPER_ADMIN_ROLE') && (
+                {userRole === 'ADMIN_ROLE' && (
                   <Link to="/admin/dept" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname.includes('/admin/dept') ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>DEPT ADMIN</Link>
                 )}
               </>
@@ -531,14 +644,11 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                           <Link to="/demo" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Demo</Link>
                         </motion.div> */}
 
+                        {/* Admin destinations — single links per role. System Admin now lives
+                            inside the Admin Console page's sidebar. Role-gating unchanged. */}
                         {userRole === 'TENANT_ADMIN' && (
                           <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                             <Link to="/admin/console" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Admin Console</Link>
-                          </motion.div>
-                        )}
-                        {userRole === 'TENANT_ADMIN' && (
-                          <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
-                            <Link to="/admin/system" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">System Admin</Link>
                           </motion.div>
                         )}
                         {userRole === 'SUPER_ADMIN_ROLE' && (

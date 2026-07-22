@@ -56,6 +56,15 @@ const ProtectedRoute = ({ children, isAuthenticated }: { children: React.ReactNo
   return <>{children}</>;
 };
 
+// The footer is hidden ONLY on these full-screen app-shell routes (Admin Console,
+// Orchestration). Every other page renders the footer exactly as before.
+const FOOTER_HIDDEN_ROUTES = ['/admin/console', '/admin/orchestration'];
+const FooterGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const hide = FOOTER_HIDDEN_ROUTES.some(p => location.pathname.startsWith(p));
+  return hide ? null : <>{children}</>;
+};
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!sessionStorage.getItem('token'));
 
@@ -101,7 +110,7 @@ const App: React.FC = () => {
         />
         <div className="min-h-screen flex flex-col">
           <Navigation isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
-          <main className="flex-grow">
+          <main className="flex-grow flex flex-col">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/chat/:slug" element={<PublicChat />} />
@@ -152,24 +161,26 @@ const App: React.FC = () => {
             </Routes>
           </main>
           
-          <footer className="bg-white border-t border-gray-100 py-10">
-            <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex items-center">
-                <div className="flex items-start">
-                  <img
-                    src="/Avagama.AI_Logo.jpg"
-                    alt="Avagama AI"
-                    className="h-6 object-contain"
-                  />
+          <FooterGate>
+            <footer className="bg-white border-t border-gray-100 py-10">
+              <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center">
+                  <div className="flex items-start">
+                    <img
+                      src="/Avagama.AI_Logo.jpg"
+                      alt="Avagama AI"
+                      className="h-6 object-contain"
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400 font-medium">© 2026 Avagama.ai Powered by Avaali. All Rights Reserved.</p>
+                <div className="flex gap-8">
+                  <Link to="/privacy" className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors">Privacy Policy</Link>
+                  <Link to="/terms" className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors">Terms of Service</Link>
                 </div>
               </div>
-              <p className="text-sm text-gray-400 font-medium">© 2026 Avagama.ai Powered by Avaali. All Rights Reserved.</p>
-              <div className="flex gap-8">
-                <Link to="/privacy" className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors">Privacy Policy</Link>
-                <Link to="/terms" className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors">Terms of Service</Link>
-              </div>
-            </div>
-          </footer>
+            </footer>
+          </FooterGate>
         </div>
         {isAuthenticated && (
           <>

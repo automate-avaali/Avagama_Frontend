@@ -52,7 +52,8 @@ import {
   GitBranch,
   Grid,
   Maximize2,
-  Minimize2
+  Minimize2,
+  AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Markdown from 'react-markdown';
@@ -69,6 +70,21 @@ const NODE_TYPES_CONFIG: Record<string, { icon: any; color: string; name: string
   join: { icon: Grid, color: '#8b5cf6', name: 'Join', description: 'Wait for branches' },
   api_call: { icon: Zap, color: '#ff7b9c', name: 'API Call', description: 'HTTP request' },
   end: { icon: Info, color: '#f85149', name: 'End', description: 'Terminate flow' },
+};
+
+// Compact relative-time label for "last run" style stats — e.g. "3m ago", "2d ago".
+const timeAgo = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Never';
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  if (isNaN(diffMs)) return 'Never';
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
 };
 
 const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
@@ -505,23 +521,49 @@ const MappingTable = ({
 const extractJsonFromText = (text: string): any | null => {
   if (typeof text !== 'string' || text.trim().length < 2) return null;
   const tryParse = (s: string) => { try { return JSON.parse(s.trim()); } catch { return undefined; } };
+
   const whole = tryParse(text);
-  if (whole !== undefined && typeof whole === 'object' && whole !== null) return whole;
-  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) { const p = tryParse(fence[1]); if (p !== undefined && typeof p === 'object' && p !== null) return p; }
+  if (whole !== undefined && whole !== null && typeof whole === 'object') return whole;
+
+  // Collect every candidate JSON span (fenced code blocks + raw {..}/[..] spans anywhere in
+  // the text) and keep the LARGEST one that actually parses — never just the first bracket
+  // we happen to find. A model's response can easily contain an incidental small array/object
+  // before the real structured payload (e.g. an "extracted": [1] field, or a stray brace in
+  // prose that fails to parse) — bailing out on the first attempt silently returns that
+  // fragment (like `[1]`) instead of the real, larger result. This previously showed up as
+  // "Node Output (Actual)" rendering a meaningless `[1]` while the real extraction only
+  // appeared inside the collapsed "Show model reasoning" section.
+  let best: any = null;
+  let bestLen = -1;
+  const consider = (candidate: string) => {
+    const parsed = tryParse(candidate);
+    if (parsed !== undefined && parsed !== null && typeof parsed === 'object' && candidate.length > bestLen) {
+      best = parsed;
+      bestLen = candidate.length;
+    }
+  };
+
+  const fenceRe = /```(?:json)?\s*([\s\S]*?)```/gi;
+  let fenceMatch: RegExpExecArray | null;
+  while ((fenceMatch = fenceRe.exec(text)) !== null) consider(fenceMatch[1]);
+
   for (const [open, close] of [['{', '}'], ['[', ']']] as const) {
-    const start = text.indexOf(open);
-    if (start === -1) continue;
-    let depth = 0, inStr = false, esc = false;
-    for (let i = start; i < text.length; i++) {
-      const ch = text[i];
-      if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
-      if (ch === '"') inStr = true;
-      else if (ch === open) depth++;
-      else if (ch === close) { depth--; if (depth === 0) { const p = tryParse(text.slice(start, i + 1)); if (p !== undefined && typeof p === 'object' && p !== null) return p; break; } }
+    for (let start = text.indexOf(open); start !== -1; start = text.indexOf(open, start + 1)) {
+      let depth = 0, inStr = false, esc = false;
+      for (let i = start; i < text.length; i++) {
+        const ch = text[i];
+        if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+        if (ch === '"') inStr = true;
+        else if (ch === open) depth++;
+        else if (ch === close) {
+          depth--;
+          if (depth === 0) { consider(text.slice(start, i + 1)); break; }
+        }
+      }
     }
   }
-  return null;
+
+  return best;
 };
 
 // Walk an object/array and replace any reasoning-prose string field (thinking + JSON) with the extracted JSON,
@@ -871,6 +913,16 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
   const pollIntervalRef = useRef<any>(null);
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
+  // Runs tab is decoupled from "whichever flow happens to be loaded in the Builder" —
+  // it always reads straight from the database, defaulting to every flow so a run
+  // never silently "disappears" just because a different flow got auto-loaded.
+  const [runsFlowFilter, setRunsFlowFilter] = useState<string>('all');
+  // Sample test cases shipped on the currently loaded flow (from Solutions Lab clone).
+  const [flowTestCases, setFlowTestCases] = useState<any[]>([]);
+  // Flow validation — surfaces the backend's itemized issues[] (e.g. "agent not published yet"),
+  // triggered either proactively (Validate button) or reactively (a run gets rejected as unrunnable).
+  const [validationModal, setValidationModal] = useState<{ ok: boolean; issues: string[]; node_count?: number; edge_count?: number; entry?: string } | null>(null);
+
   const viewRun = async (run: any) => {
     // Open instantly with the lightweight list row so the modal feels responsive.
     setActiveInspectNodeId(null);
@@ -987,7 +1039,13 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
       fetchInitialData();
       initialLoadDone.current = true;
     }
-    if (activeView === 'runs') fetchRuns();
+    if (activeView === 'runs') {
+      // Always hit the database fresh — never depends on whether a flow happens
+      // to be loaded in the Builder right now. Also warm the flow picker so the
+      // user can switch which flow's history they're looking at.
+      fetchRuns();
+      fetchFlows();
+    }
     if (activeView === 'schedules') fetchSchedules();
     if (activeView === 'library') fetchFlows();
     if (activeView === 'solutions') fetchPlaygroundSolutions();
@@ -1073,6 +1131,9 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
       setFlowId(res.data._id);
       setFlowName(res.data.name || 'Untitled Flow');
       setDataManager(res.data.data_manager || { arguments: [], variables: [] });
+      // Solutions Lab clones (and any flow an admin has annotated) can ship ready-to-run
+      // sample inputs — surfaced as a "Run with sample data" quick-pick in the Run modal.
+      setFlowTestCases(Array.isArray(res.data.test_cases) ? res.data.test_cases : []);
       setSelectedNode(null);
       setSelectedEdge(null);
       setAddingField(null);
@@ -1297,14 +1358,22 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
     }
   };
 
-  const fetchRuns = async () => {
-    if (!flowId) return;
+  // Execution history is always read straight from the database — it never depends on
+  // whether a flow happens to be loaded in the Builder. Pass an explicit flowId to
+  // switch/refresh a specific flow's history (e.g. from the flow-picker or a Library
+  // card's "View Runs" action); otherwise it uses whatever filter is currently selected.
+  const fetchRuns = async (overrideFlowId?: string) => {
+    const targetFilter = overrideFlowId !== undefined ? overrideFlowId : runsFlowFilter;
+    if (overrideFlowId !== undefined) setRunsFlowFilter(overrideFlowId);
     setFetchingRuns(true);
     try {
-      const res = await apiService.playground.runs.list({ flow_id: flowId });
-      if (res.success) setRuns(res.data);
-    } catch (e) {
-      console.error('Failed to fetch runs');
+      const params: any = {};
+      if (targetFilter && targetFilter !== 'all') params.flow_id = targetFilter;
+      const res = await apiService.playground.runs.list(params);
+      if (res.success) setRuns(res.data || []);
+    } catch (e: any) {
+      console.error('Failed to fetch runs', e);
+      toast.error(e?.message || 'Failed to load run history');
     } finally {
       setFetchingRuns(false);
     }
@@ -1466,10 +1535,46 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
         toast.success('Flow run initiated');
         setSelectedRun(runRes.data); // Open run detail instantly!
         startPolling(runRes.data._id);
+        // The backend now bumps run_count/last_run_at the instant a run starts (not just on
+        // completion) — refresh in the background so the Runs tab / Library are current the
+        // moment the user looks, even if they never manually hit refresh.
+        fetchRuns();
+        fetchFlows();
       }
     } catch (error: any) {
+      // A flow that fails validation (e.g. an agent node isn't published yet) is rejected
+      // with a 400 and an itemized issues[] array — surface it as an actionable checklist
+      // instead of a single flat toast.
+      if (Array.isArray(error.issues) && error.issues.length > 0) {
+        setValidationModal({ ok: false, issues: error.issues });
+      }
       toast.error(error.message || 'Failed to run flow');
       setRunning(false);
+    }
+  };
+
+  const handleValidate = async () => {
+    if (!flowId) return;
+    setValidating(true);
+    try {
+      const res = await apiService.playground.flows.validate(flowId);
+      const result = res?.data || res || {};
+      setValidationModal({
+        ok: !!result.ok,
+        issues: Array.isArray(result.issues) ? result.issues : [],
+        node_count: result.node_count,
+        edge_count: result.edge_count,
+        entry: result.entry,
+      });
+      if (result.ok) toast.success('Flow is runnable');
+    } catch (error: any) {
+      if (Array.isArray(error.issues) && error.issues.length > 0) {
+        setValidationModal({ ok: false, issues: error.issues });
+      } else {
+        toast.error(error.message || 'Validation failed');
+      }
+    } finally {
+      setValidating(false);
     }
   };
 
@@ -1527,6 +1632,10 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
             } else {
               toast.error(`Execution ${run.status}`, { icon: '❌' });
             }
+            // Reached a terminal state — refresh the Runs list / Library run counts in the
+            // background so they're already current the moment the user looks.
+            fetchRuns();
+            fetchFlows();
           }
         }
       } catch (e) {
@@ -1640,6 +1749,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
               setNodes([]);
               setEdges([]);
               setDataManager({ arguments: [], variables: [] });
+              setFlowTestCases([]);
               setSelectedNode(null);
               setSelectedEdge(null);
               setAddingField(null);
@@ -1704,12 +1814,23 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
               <PlusCircle size={18} />
             </button>
           )}
-          <button 
+          {!flowId ? null : (
+            <button
+              onClick={handleValidate}
+              disabled={validating || running}
+              title="Check the flow is runnable — flags issues like an unpublished agent before you run it"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-purple-200 hover:text-[#a26da8] transition-all disabled:opacity-50"
+            >
+              {validating ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+              Validate
+            </button>
+          )}
+          <button
             onClick={handleRun}
             disabled={running || validating}
             className="flex items-center gap-2 px-5 py-2 bg-[#a26da8] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-lg shadow-purple-100 disabled:opacity-50"
           >
-            {validating ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
             Run Flow
           </button>
         </div>
@@ -1794,6 +1915,18 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                       <div className="bg-gray-50 rounded-2xl px-3 py-2.5 border border-gray-100">
                         <div className="flex items-center gap-1.5 text-gray-400"><GitBranch size={11} /><span className="text-[8px] font-black uppercase tracking-widest">Connections</span></div>
                         <div className="text-sm font-black text-gray-900 mt-0.5">{edgeCount}</div>
+                      </div>
+                      <button
+                        onClick={() => { setActiveView('runs'); fetchRuns(flow._id); }}
+                        className="text-left bg-gray-50 hover:bg-purple-50 rounded-2xl px-3 py-2.5 border border-gray-100 hover:border-purple-200 transition-all"
+                        title="View this flow's execution history"
+                      >
+                        <div className="flex items-center gap-1.5 text-gray-400"><History size={11} /><span className="text-[8px] font-black uppercase tracking-widest">Runs</span></div>
+                        <div className="text-sm font-black text-gray-900 mt-0.5">{flow.run_count ?? 0}</div>
+                      </button>
+                      <div className="bg-gray-50 rounded-2xl px-3 py-2.5 border border-gray-100">
+                        <div className="flex items-center gap-1.5 text-gray-400"><Clock size={11} /><span className="text-[8px] font-black uppercase tracking-widest">Last Run</span></div>
+                        <div className="text-sm font-black text-gray-900 mt-0.5">{timeAgo(flow.last_run_at)}</div>
                       </div>
                     </div>
 
@@ -2452,17 +2585,36 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
       </>
     ) : activeView === 'runs' ? (
           <div className="flex-1 bg-gray-50 flex flex-col p-8 overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
               <div>
                 <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Execution History</h2>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Audit trail for flow runs</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  {runsFlowFilter === 'all'
+                    ? 'Audit trail across every flow — always live from the database'
+                    : <>Audit trail for <span className="text-[#a26da8]">{flows.find(f => f._id === runsFlowFilter)?.name || flowName}</span></>}
+                </p>
               </div>
-              <button 
-                onClick={fetchRuns}
-                className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all shadow-sm"
-              >
-                <RotateCcw size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Filter size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <select
+                    value={runsFlowFilter}
+                    onChange={(e) => fetchRuns(e.target.value)}
+                    className="pl-9 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-700 outline-none focus:border-purple-200 appearance-none cursor-pointer shadow-sm"
+                  >
+                    <option value="all">All Flows</option>
+                    {flows.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
+                  </select>
+                  <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+                <button
+                  onClick={() => fetchRuns()}
+                  className="p-2.5 bg-white border border-gray-200 hover:border-purple-200 rounded-xl text-gray-400 hover:text-gray-900 transition-all shadow-sm"
+                  title="Refresh from database"
+                >
+                  <RotateCcw size={16} className={fetchingRuns ? 'animate-spin' : ''} />
+                </button>
+              </div>
             </div>
 
             {fetchingRuns ? (
@@ -2475,7 +2627,11 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                   <History size={32} className="text-gray-200" />
                 </div>
                 <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">No runs recorded</h3>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-1 max-w-[200px]">Initial runs will appear here once triggered</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-1 max-w-[240px]">
+                  {runsFlowFilter === 'all'
+                    ? 'Run a flow from the Builder, or clone a solution, to see history here'
+                    : 'This flow has no runs yet — try "All Flows" or run it from the Builder'}
+                </p>
               </div>
             ) : (
               <div className="grid gap-4">
@@ -2660,6 +2816,29 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                         <span className="text-[#a26da8] shrink-0">{sol.kpis[0].impact}</span>
                       </div>
                     )}
+
+                    {/* Fine-print row: difficulty, setup time, agents provisioned, sample test cases */}
+                    {(sol.difficulty || sol.estimated_setup || sol.agents_used?.length || sol.test_cases?.length) && (
+                      <div className="flex items-center gap-1.5 flex-wrap text-[8px] font-black uppercase tracking-widest">
+                        {sol.difficulty && (
+                          <span className={`px-2 py-1 rounded-md border ${
+                            /beginner|easy/i.test(sol.difficulty) ? 'bg-green-50 border-green-100 text-green-600' :
+                            /advanced|hard/i.test(sol.difficulty) ? 'bg-red-50 border-red-100 text-red-600' :
+                            'bg-amber-50 border-amber-100 text-amber-600'
+                          }`}>{sol.difficulty}</span>
+                        )}
+                        {sol.estimated_setup && (
+                          <span className="px-2 py-1 rounded-md bg-gray-50 border border-gray-100 text-gray-500 flex items-center gap-1"><Clock size={9} /> {sol.estimated_setup}</span>
+                        )}
+                        {!!sol.agents_used?.length && (
+                          <span className="px-2 py-1 rounded-md bg-gray-50 border border-gray-100 text-gray-500 flex items-center gap-1"><Brain size={9} /> {sol.agents_used.length} agent{sol.agents_used.length === 1 ? '' : 's'}</span>
+                        )}
+                        {!!sol.test_cases?.length && (
+                          <span className="px-2 py-1 rounded-md bg-purple-50 border border-purple-100 text-[#8e5a94] flex items-center gap-1"><PlayCircle size={9} /> {sol.test_cases.length} sample{sol.test_cases.length === 1 ? '' : 's'}</span>
+                        )}
+                      </div>
+                    )}
+
                     <button onClick={() => cloneSolution(sol)} disabled={cloningId === sol._id} className="mt-1 w-full py-3 bg-[#a26da8] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all flex items-center justify-center gap-2 disabled:opacity-50">
                       {cloningId === sol._id ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
                       Use this Solution
@@ -2770,8 +2949,37 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
               </div>
               
               <div className="p-8 space-y-6">
+                {flowTestCases.length > 0 && (
+                  <div className="space-y-2.5 -mt-2">
+                    <div className="flex items-center gap-1.5 pl-1">
+                      <PlayCircle size={12} className="text-[#a26da8]" />
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Run With Sample Data</label>
+                    </div>
+                    <div className="grid gap-2">
+                      {flowTestCases.map((tc: any, i: number) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setUseRawJson(true);
+                            setRunInput(JSON.stringify(tc.input || {}, null, 2));
+                            toast.success(`Loaded sample: ${tc.name || `Test case ${i + 1}`}`);
+                          }}
+                          className="text-left p-3.5 bg-purple-50/40 border border-purple-100 rounded-2xl hover:bg-purple-50 hover:border-purple-200 transition-all group"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-black text-gray-900">{tc.name || `Test case ${i + 1}`}</span>
+                            <span className="text-[8px] font-black text-[#a26da8] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity shrink-0">Use this →</span>
+                          </div>
+                          {tc.description && <p className="text-[10px] font-medium text-gray-400 mt-0.5 leading-snug">{tc.description}</p>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex p-1 bg-gray-100 rounded-xl mb-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setUseRawJson(false)}
                     className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
@@ -2957,6 +3165,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                           selectedRun.status === 'failed' ? 'bg-red-50 text-red-600 border border-red-100 animate-pulse' :
                           selectedRun.status === 'waiting_approval' ? 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse' :
                           selectedRun.status === 'running' ? 'bg-blue-50 text-blue-600 border border-blue-100 animate-pulse' :
+                          selectedRun.status === 'cancelled' ? 'bg-slate-100 text-slate-500 border border-slate-200' :
                           'bg-gray-100 text-gray-500'
                         }`}>
                           {selectedRun.status}
@@ -2997,6 +3206,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                   toast.success('Run cancelled successfully');
                                   const updated = await apiService.playground.runs.get(selectedRun._id);
                                   if (updated.success) setSelectedRun(updated.data);
+                                  fetchRuns(); // keep the Runs list in sync — its status just changed
                                 }
                               } catch (e: any) {
                                 toast.error(e.message || 'Failed to cancel run');
@@ -3036,6 +3246,21 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                   </div>
                 )}
 
+                {/* Cancelled / rejected banner — a rejection surfaces as status "cancelled" with
+                    the reason in run.error (e.g. 'Rejected at "<node>" by <userId>'); every
+                    not-yet-run node is swept to "skipped" so the canvas reads as cleanly finished. */}
+                {selectedRun.status === 'cancelled' && (
+                  <div className="mt-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-start gap-3 text-slate-700 animate-in slide-in-from-top-2 duration-200">
+                    <X size={16} className="shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-800">
+                        {selectedRun.error?.toLowerCase().startsWith('rejected') ? 'Execution Rejected' : 'Execution Cancelled'}
+                      </div>
+                      {selectedRun.error && <p className="text-xs font-medium font-mono mt-1 break-all">{selectedRun.error}</p>}
+                    </div>
+                  </div>
+                )}
+
                 {/* Paused approval banner */}
                 {selectedRun.status === 'waiting_approval' && (
                   <div className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-amber-800 animate-in slide-in-from-top-2 duration-200">
@@ -3057,6 +3282,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                               toast.success('Execution approved & resumed');
                               const updated = await apiService.playground.runs.get(selectedRun._id + `?_=${Date.now()}`);
                               if (updated.success) setSelectedRun(updated.data);
+                              fetchRuns();
                             }
                           } catch (e: any) {
                             toast.error(e.message || 'Approval failed');
@@ -3074,6 +3300,7 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                               toast.success('Execution rejected & terminated');
                               const updated = await apiService.playground.runs.get(selectedRun._id + `?_=${Date.now()}`);
                               if (updated.success) setSelectedRun(updated.data);
+                              fetchRuns();
                             }
                           } catch (e: any) {
                             toast.error(e.message || 'Rejection failed');
@@ -3578,6 +3805,67 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm transition-all"
                 >
                   Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Flow Validation Modal — proactive (Validate button) or reactive (a Run got rejected) */}
+        {validationModal && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="p-7 border-b border-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-2xl ${validationModal.ok ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'}`}>
+                    {validationModal.ok ? <ShieldCheck size={20} /> : <AlertTriangle size={20} />}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                      {validationModal.ok ? 'Flow is runnable' : 'Flow is not runnable'}
+                    </h3>
+                    {validationModal.ok ? (
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                        {validationModal.entry ? `Entry: ${validationModal.entry} · ` : ''}
+                        {validationModal.node_count ?? nodes.length} nodes · {validationModal.edge_count ?? edges.length} connections
+                      </p>
+                    ) : (
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                        {validationModal.issues.length} issue{validationModal.issues.length === 1 ? '' : 's'} found
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button onClick={() => setValidationModal(null)} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 transition-all">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {!validationModal.ok && validationModal.issues.length > 0 && (
+                <div className="p-6 space-y-3 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                  {validationModal.issues.map((issue, i) => {
+                    const isPublishIssue = /not published|does not exist/i.test(issue);
+                    return (
+                      <div key={i} className={`flex items-start gap-3 p-4 rounded-2xl border ${isPublishIssue ? 'bg-amber-50/60 border-amber-100' : 'bg-red-50/60 border-red-100'}`}>
+                        <AlertTriangle size={15} className={`shrink-0 mt-0.5 ${isPublishIssue ? 'text-amber-500' : 'text-red-500'}`} />
+                        <p className={`text-[12px] font-semibold leading-relaxed ${isPublishIssue ? 'text-amber-800' : 'text-red-800'}`}>{issue}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                {!validationModal.ok && (
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mr-auto">
+                    Fix these in the Builder or in Agent Builder, then try again
+                  </span>
+                )}
+                <button
+                  onClick={() => setValidationModal(null)}
+                  className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
+                >
+                  Got it
                 </button>
               </div>
             </div>
