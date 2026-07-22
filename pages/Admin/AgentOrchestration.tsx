@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -121,11 +121,12 @@ export const AgentOrchestration: React.FC = () => {
     }
   };
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Left Sidebar Selections to match screen layout requests
   const [selectedMenu, setSelectedMenu] = useState<
     'agent-orchestra' | 'proposal-forge' | 'process-intelligence' | 'document-studio' | 'execution-hub' | 'approval-inbox' | 'workflow-library' | 'integration-lab' | 'observability' | 'access-roles' | 'execution-detail'
-  >('agent-orchestra');
+  >(location.state?.selectedMenu || 'agent-orchestra');
 
   // Loading indicator
   const [loading, setLoading] = useState(false);
@@ -167,6 +168,12 @@ export const AgentOrchestration: React.FC = () => {
   const [proposalTopic, setProposalTopic] = useState('Standard Invoice Extraction Pipeline');
   const [generatedProposalText, setGeneratedProposalText] = useState('');
   const [forging, setForging] = useState(false);
+
+  // New RFP Creation States
+  const [rfpUsecases, setRfpUsecases] = useState<any[]>([]);
+  const [loadingRfpUsecases, setLoadingRfpUsecases] = useState(false);
+  const [rfpUsecasesError, setRfpUsecasesError] = useState<string | null>(null);
+  const [generatingRfpId, setGeneratingRfpId] = useState<string | null>(null);
 
   // React Flow Designer Canvas State
   const [showDesigner, setShowDesigner] = useState(false);
@@ -1181,6 +1188,143 @@ export const AgentOrchestration: React.FC = () => {
     }
   };
 
+  // Action 1: LOAD SHORTLISTED EVALUATIONS
+  const loadShortlistedEvaluations = async () => {
+    setLoadingRfpUsecases(true);
+    setRfpUsecasesError(null);
+    try {
+      const token = sessionStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch('https://avagama-backend-ckm9.onrender.com/api/rfp/shortlisted-usecases', {
+        method: 'GET',
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+      const data = await response.json();
+      const items = Array.isArray(data) ? data : (data.data && Array.isArray(data.data)) ? data.data : [];
+      setRfpUsecases(items);
+    } catch (err: any) {
+      console.error('Error loading shortlisted usecases:', err);
+      setRfpUsecasesError(err.message || 'Failed to load shortlisted usecases');
+      toast.error(err.message || 'Failed to load shortlisted usecases');
+    } finally {
+      setLoadingRfpUsecases(false);
+    }
+  };
+
+  // Action 2: GENERATE RFP DOCUMENT FOR THIS USE CASE
+  const generateRfpDocument = async (item: any) => {
+    const usecaseId = item.usecaseId || item._id || item.id;
+    if (!usecaseId) {
+      toast.error('Missing usecaseId or ID for this item');
+      return;
+    }
+
+    setGeneratingRfpId(usecaseId);
+    const toastId = toast.loading('Initiating RFP document generation pipeline...');
+    try {
+      const token = sessionStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 1) POST /api/rfp/from-usecase (body: { type, entityId, usecaseId })
+      const payload = {
+        type: item.type || item.source || 'domain',
+        entityId: item.entityId || item.documentId || item._id || item.id,
+        usecaseId: usecaseId
+      };
+
+      const resFromUsecase = await fetch('https://avagama-backend-ckm9.onrender.com/api/rfp/from-usecase', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!resFromUsecase.ok) {
+        const errText = await resFromUsecase.text().catch(() => '');
+        throw new Error(`Step 1 (From Usecase) Failed: ${resFromUsecase.status} ${errText}`);
+      }
+
+      const resData = await resFromUsecase.json();
+      const rfpId = resData.rfp?._id || resData.rfp?.id || resData._id || resData.id || resData.data?._id || resData.data?.id;
+
+      if (!rfpId) {
+        throw new Error('Failed to retrieve RFP ID from generation initial step.');
+      }
+
+      // 2) POST /api/rfp/:id/generate (show spinner, disable button, no timeout)
+      toast.loading('Generating RFP document content. This may take a minute...', { id: toastId });
+      const resGenerate = await fetch(`https://avagama-backend-ckm9.onrender.com/api/rfp/${rfpId}/generate`, {
+        method: 'POST',
+        headers
+      });
+
+      if (!resGenerate.ok) {
+        const errText = await resGenerate.text().catch(() => '');
+        throw new Error(`Step 2 (Generate) Failed: ${resGenerate.status} ${errText}`);
+      }
+
+      // 3) GET /api/rfp/:id/download/docx (fetch as blob, trigger download)
+      toast.loading('Downloading generated .docx file...', { id: toastId });
+      const resDownload = await fetch(`https://avagama-backend-ckm9.onrender.com/api/rfp/${rfpId}/download/docx`, {
+        method: 'GET',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+
+      if (!resDownload.ok) {
+        throw new Error(`Step 3 (Download) Failed with status ${resDownload.status}`);
+      }
+
+      const blob = await resDownload.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      let filename = `${item.title || 'rfp-document'}.docx`.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const disposition = resDownload.headers.get('Content-Disposition');
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('RFP Document generated and downloaded successfully!', { id: toastId });
+    } catch (err: any) {
+      console.error('Error generating RFP:', err);
+      toast.error(err.message || 'Error occurred during RFP generation process', { id: toastId });
+    } finally {
+      setGeneratingRfpId(null);
+    }
+  };
+
+  // Auto load shortlisted evaluations when navigating to proposal-forge
+  useEffect(() => {
+    if (selectedMenu === 'proposal-forge') {
+      loadShortlistedEvaluations();
+    }
+  }, [selectedMenu]);
+
   return (
     <div className="flex h-[calc(100vh-76px)] bg-[#fafafc] text-gray-800 overflow-hidden" id="orchestration-panel-container">
       
@@ -1958,112 +2102,145 @@ export const AgentOrchestration: React.FC = () => {
                   initial={{ opacity: 0, y: 15 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   exit={{ opacity: 0, y: -15 }}
-                  className="grid grid-cols-1 lg:grid-cols-5 gap-8"
+                  className="space-y-8 max-w-5xl mx-auto"
                 >
-                  <div className="lg:col-span-2 bg-white border border-slate-100 p-8 rounded-[32px] shadow-sm space-y-6">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="w-6 h-6 text-[#6fcbbd]" />
-                      <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">System RFP Creation</h3>
+                  {/* Visual Header Panel */}
+                  <div className="bg-white border border-slate-100 p-8 rounded-[32px] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="w-6 h-6 text-[#a26da8]" />
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Enterprise RFP Creation</h3>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide leading-relaxed max-w-xl">
+                        Access and generate official RFP documents directly from your shortlisted process evaluation use cases. Reuses your secure session authorization.
+                      </p>
                     </div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide leading-relaxed">
-                      Enter customized parameter metrics. Let the generative system create detailed agentic design outlines.
-                    </p>
 
-                    <div className="space-y-4 pt-4 border-t border-slate-50">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Client Name</label>
-                        <input 
-                          type="text" 
-                          value={proposalClient} 
-                          onChange={(e) => setProposalClient(e.target.value)} 
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-800 outline-none hover:border-slate-300 transition"
-                        />
-                      </div>
+                    <button
+                      onClick={loadShortlistedEvaluations}
+                      disabled={loadingRfpUsecases}
+                      className="px-6 py-3 bg-[#a26da8] hover:bg-[#8e5c94] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition shadow-md flex items-center gap-2 cursor-pointer shrink-0 animate-fade-in"
+                    >
+                      {loadingRfpUsecases ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Syncing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          <span>Load shortlisted evaluations</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Process Objective</label>
-                        <input 
-                          type="text" 
-                          value={proposalTopic} 
-                          onChange={(e) => setProposalTopic(e.target.value)} 
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-800 outline-none hover:border-slate-300 transition"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono font-bold block">Cognitive Model</label>
-                        <select className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 outline-none hover:border-slate-300 transition">
-                          <option>google/gemini-2.0-pro-001</option>
-                          <option>nvidia/nemotron-3-super-120b</option>
-                          <option>anthropic/claude-3.5-sonnet</option>
-                        </select>
-                      </div>
-
-                      <button
-                        onClick={handleForgeProposal}
-                        className="w-full py-4.5 bg-slate-950 text-white leading-none text-xs font-black uppercase tracking-widest rounded-xl hover:bg-black transition flex items-center justify-center gap-2 cursor-pointer pt-4.5"
+                  {/* Main content conditional rendering */}
+                  {loadingRfpUsecases && rfpUsecases.length === 0 ? (
+                    <div className="bg-white border border-slate-100 p-16 rounded-[32px] text-center space-y-4">
+                      <div className="w-12 h-12 border-4 border-slate-100 border-t-[#a26da8] rounded-full animate-spin mx-auto mb-2" />
+                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest font-mono">Querying shortlist ledger...</h4>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-tight">Syncing with remote secure microservices</p>
+                    </div>
+                  ) : rfpUsecasesError ? (
+                    <div className="bg-rose-50/50 border border-rose-100 p-12 rounded-[32px] text-center max-w-2xl mx-auto space-y-4">
+                      <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto" />
+                      <h4 className="text-sm font-black text-rose-800 uppercase tracking-widest">Synchronization Interrupted</h4>
+                      <p className="text-xs text-rose-600/80 font-semibold leading-relaxed max-w-md mx-auto">
+                        {rfpUsecasesError}
+                      </p>
+                      <button 
+                        onClick={loadShortlistedEvaluations}
+                        className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
                       >
-                        {forging ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Generating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
-                            <span>Generate RFP Document</span>
-                          </>
-                        )}
+                        Retry Load
                       </button>
                     </div>
-                  </div>
-
-                  <div className="lg:col-span-3 bg-white border border-slate-100 p-8 rounded-[32px] shadow-sm flex flex-col justify-between min-h-[500px]">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center pb-4 border-b border-slate-50 select-none">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Generated Output</span>
-                        {generatedProposalText && (
-                          <span className="text-[9px] font-mono font-black text-[#6fcbbd] uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md animate-pulse">
-                            Ready to Export
-                          </span>
-                        )}
+                  ) : rfpUsecases.length === 0 ? (
+                    <div className="bg-white border border-slate-100 p-16 rounded-[32px] text-center space-y-6 max-w-2xl mx-auto">
+                      <div className="relative w-16 h-16 mx-auto">
+                        <FileText className="w-16 h-16 text-slate-200" />
+                        <Sparkles className="w-6 h-6 text-[#6fcbbd] absolute -bottom-1 -right-1 animate-pulse" />
                       </div>
-
-                      {generatedProposalText ? (
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[360px]">
-                          {generatedProposalText}
-                        </div>
-                      ) : (
-                        <div className="h-80 flex flex-col items-center justify-center text-center text-slate-400">
-                          <FileText className="w-12 h-12 text-slate-200 mb-4 animate-bounce" />
-                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-700">RFP Pending</p>
-                          <p className="text-[10px] text-slate-400 uppercase tracking-tight max-w-[280px] mt-1">Specify parameters on the left and trigger compilation</p>
-                        </div>
-                      )}
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">No Shortlisted RFP Evaluations Found</h4>
+                        <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-md mx-auto">
+                          There are currently no shortlisted use-case items registered under the custom RFP evaluation endpoint. Click load to fetch or check the Evaluations tab.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={loadShortlistedEvaluations}
+                        className="px-6 py-3 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition cursor-pointer inline-flex items-center gap-2"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" /> Force Fetch Shortlist
+                      </button>
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-6">
+                      {rfpUsecases.map((item: any, idx: number) => {
+                        const usecaseId = item.usecaseId || item._id || item.id;
+                        const isGenerating = generatingRfpId === usecaseId;
+                        const company = item.company_name || item.company || '';
+                        const industry = item.industry || item.domain || '';
+                        const score = item.totalWeightedScore !== undefined ? item.totalWeightedScore : (item.weighted_score !== undefined ? item.weighted_score : item.score);
 
-                    {generatedProposalText && (
-                      <div className="flex gap-4 pt-4 border-t border-slate-50">
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(generatedProposalText);
-                            toast.success('RFP copied to clipboard!');
-                          }}
-                          className="flex-1 py-3 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-50 transition cursor-pointer text-center"
-                        >
-                          Copy Clipboard
-                        </button>
-                        <button
-                          onClick={() => {
-                            toast.success('Document pipeline synchronized to ERP system!');
-                          }}
-                          className="flex-1 py-3 bg-[#a26da8] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#8e5c94] transition cursor-pointer text-center"
-                        >
-                          Deploy ERP Workflow
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                        return (
+                          <motion.div
+                            key={usecaseId || idx}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="bg-white border border-slate-150 rounded-[32px] p-8 hover:shadow-lg transition flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+                          >
+                            <div className="space-y-4 flex-1">
+                              {/* Metadata Tags */}
+                              <div className="flex flex-wrap items-center gap-2">
+                                {company && (
+                                  <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-pink-50 text-pink-700 border border-pink-100">
+                                    {company}
+                                  </span>
+                                )}
+                                {industry && (
+                                  <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    {industry}
+                                  </span>
+                                )}
+                                <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
+                                  Use Case
+                                </span>
+                              </div>
+
+                              <div className="space-y-1">
+                                <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">{item.title}</h4>
+                                <p className="text-xs font-semibold text-slate-400 leading-relaxed max-w-3xl">{item.description}</p>
+                              </div>
+                            </div>
+
+                            {/* Score + Action side panel */}
+                            <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-6 w-full md:w-auto shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
+                              {score !== undefined && score !== null && (
+                                <div className="text-left md:text-right">
+                                  <span className="text-[8px] font-mono font-black text-slate-400 uppercase tracking-widest block">Weighted Score</span>
+                                  <span className="text-sm font-black text-[#6fcbbd]">{Number(score).toFixed(2)} / 10.00</span>
+                                </div>
+                              )}
+                              
+                              <button
+                                onClick={() => {
+                                  const usecaseId = item.usecaseId || item._id || item.id;
+                                  navigate(`/rfp/from-usecase/${usecaseId}`);
+                                }}
+                                className="px-5 py-2.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
+                                <span>Generate RFP Document</span>
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </motion.div>
               )}
 

@@ -319,7 +319,7 @@ const AgentSolutionDetail: React.FC = () => {
             >
               <div className="h-24 sm:h-28 shrink-0 relative flex items-center justify-center" style={{ background: gradient }}>
                 <span className="text-4xl sm:text-5xl drop-shadow-sm">{solution.emoji}</span>
-                <button onClick={dismissWelcome} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/40 hover:bg-white/60 flex items-center justify-center transition-all" style={{ color: accentText }}>
+                <button onClick={dismissWelcome} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-all">
                   <X size={18} />
                 </button>
               </div>
@@ -442,7 +442,7 @@ const AgentSolutionDetail: React.FC = () => {
               </div>
             </div>
           ) : (
-            <LaunchPanel gradient={gradient} emoji={solution.emoji} name={solution.name} accentText={accentText} onLaunch={openInNewTab} />
+            <LaunchPanel gradient={gradient} emoji={solution.emoji} name={solution.name} onLaunch={openInNewTab} />
           )}
         </div>
 
@@ -547,22 +547,19 @@ const AgentSolutionDetail: React.FC = () => {
             {solution.sampleInputs && solution.sampleInputs.length > 0 && (
               <div className="mb-5 p-5 bg-white rounded-[24px] border border-gray-100 shadow-sm">
                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                  <Download size={12} /> {solution.sampleInputsTitle || 'Sample inputs to try'}
+                  <Download size={12} /> Sample delivery notes to try
                 </div>
                 <div className="space-y-2">
-                  {[...solution.sampleInputs].sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended)).map(si => (
+                  {solution.sampleInputs.map(si => (
                     <a
                       key={si.id}
-                      href={si.url}
+                      href={`/sample-delivery-notes/${si.fileName}`}
                       download
-                      className="flex items-start gap-2.5 px-3 py-2.5 bg-[#fbfbfe] border border-gray-100 rounded-xl hover:border-gray-200 transition-all"
+                      className="flex items-start gap-2.5 px-3 py-2.5 bg-[#fbfbfe] border border-gray-100 rounded-xl hover:border-purple-200 transition-all"
                     >
-                      <Download size={14} className="shrink-0 mt-0.5" style={{ color: solution.accentText && solution.accentText !== '#ffffff' ? solution.accentText : solution.accentFrom }} />
+                      <Download size={14} className="shrink-0 mt-0.5" style={{ color: solution.accentFrom }} />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-black text-gray-800">{si.label}</span>
-                          {si.recommended && <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shrink-0" style={{ background: gradient, color: accentText }}>Try first</span>}
-                        </div>
+                        <div className="text-[12px] font-black text-gray-800">{si.label}</div>
                         <div className="text-[10.5px] font-medium text-gray-400 leading-snug">{si.description}</div>
                       </div>
                     </a>
@@ -638,70 +635,40 @@ const GuidedWalkthrough: React.FC<{
   };
 
   // Spotlight + tip-card positioning against the real on-page target.
-  // IMPORTANT: index.html sets `zoom` on <body>. getBoundingClientRect() returns
-  // VISUAL (zoomed) coordinates, but top/left set on elements inside the zoomed
-  // body are multiplied by the zoom again when rendered — so every measurement
-  // must be divided by the effective zoom or the ring/card land offset.
   useLayoutEffect(() => {
-    const pageZoom = () => {
-      const read = (el: Element | null) => {
-        if (!el) return 1;
-        const v = parseFloat(((getComputedStyle(el) as any).zoom ?? '1') as string);
-        return isNaN(v) || v <= 0 ? 1 : v;
-      };
-      return read(document.documentElement) * read(document.body);
-    };
-    const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max));
     const place = () => {
-      const z = pageZoom();
-      const vw = window.innerWidth / z, vh = window.innerHeight / z;
-      const gap = 20;
-      const cardW = Math.min(400, vw - 24);
-      const cardH = cardRef.current?.offsetHeight || 360;
       const el = anchors[anchorKey]?.current || null;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const cardW = Math.min(384, vw - 24);
+      const cardH = cardRef.current?.offsetHeight || 340;
       if (!el) {
         setRing(null);
         setCardPos({ left: Math.max(12, (vw - cardW) / 2), top: Math.max(12, vh - cardH - 24), width: cardW, opacity: 1 });
         return;
       }
-      const r0 = el.getBoundingClientRect();
-      // convert visual px -> local (zoomed-subtree) px so applied styles line up
-      const r = { top: r0.top / z, left: r0.left / z, width: r0.width / z, height: r0.height / z, right: r0.right / z, bottom: r0.bottom / z };
+      const r = el.getBoundingClientRect();
       const pad = 8;
       setRing({
         position: 'fixed', top: r.top - pad, left: r.left - pad,
         width: r.width + pad * 2, height: r.height + pad * 2,
         borderRadius: 26,
-        boxShadow: `0 0 0 3px ${solution.accentFrom}, 0 0 0 99999px rgba(15,23,42,0.55)`,
+        boxShadow: `0 0 0 3px ${solution.accentFrom}, 0 0 0 9999px rgba(15,23,42,0.55)`,
         pointerEvents: 'none', zIndex: 121,
       });
-      // Prefer the side gutters so the card NEVER covers the highlighted agent.
-      let left: number, top: number;
-      if (vw - r.right >= cardW + gap + 12) {          // right gutter
-        left = r.right + gap;
-        top = clamp(r.top, 12, vh - cardH - 12);
-      } else if (r.left >= cardW + gap + 12) {         // left gutter
-        left = r.left - cardW - gap;
-        top = clamp(r.top, 12, vh - cardH - 12);
-      } else if (vh - r.bottom >= cardH + gap + 12) {  // below
-        top = r.bottom + gap;
-        left = clamp(r.left + r.width / 2 - cardW / 2, 12, vw - cardW - 12);
-      } else if (r.top >= cardH + gap + 12) {          // above
-        top = r.top - cardH - gap;
-        left = clamp(r.left + r.width / 2 - cardW / 2, 12, vw - cardW - 12);
-      } else {                                         // fallback: bottom-left corner
-        left = 12;
-        top = Math.max(12, vh - cardH - 12);
-      }
+      const tall = r.height > vh * 0.6;
+      let left = Math.min(Math.max(r.left + r.width / 2 - cardW / 2, 12), vw - cardW - 12);
+      let top: number;
+      if (!tall && vh - r.bottom > cardH + 28) top = r.bottom + 16;
+      else if (!tall && r.top > cardH + 28) top = r.top - cardH - 16;
+      else { top = vh - cardH - 20; left = Math.min(Math.max((vw - cardW) / 2, 12), vw - cardW - 12); }
       setCardPos({ left, top: Math.max(12, top), width: cardW, opacity: 1 });
     };
     place();
     anchors[anchorKey]?.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    const t1 = window.setTimeout(place, 350);
-    const t2 = window.setTimeout(place, 800); // after smooth-scroll settles
+    const t = window.setTimeout(place, 400);
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
-    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
+    return () => { window.clearTimeout(t); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, anchorKey, uploadedName]);
 
@@ -776,21 +743,18 @@ const GuidedWalkthrough: React.FC<{
                   <div className="mt-5">
                     {solution.sampleInputs && solution.sampleInputs.length > 0 && (
                       <>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pick a sample — one is recommended, all cases available</div>
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Grab a sample delivery note</div>
                         <div className="space-y-2 mb-4">
-                          {[...solution.sampleInputs].sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended)).map(si => (
+                          {solution.sampleInputs.map(si => (
                             <a
                               key={si.id}
-                              href={si.url}
+                              href={`/sample-delivery-notes/${si.fileName}`}
                               download
-                              className={`flex items-start gap-2.5 px-3 py-2.5 bg-white border rounded-xl transition-all ${si.recommended ? 'border-gray-200 bg-gray-50/60' : 'border-gray-100 hover:border-gray-200'}`}
+                              className="flex items-start gap-2.5 px-3 py-2.5 bg-white border border-gray-100 rounded-xl hover:border-purple-200 transition-all"
                             >
-                              <Download size={14} className="shrink-0 mt-0.5" style={{ color: solution.accentText && solution.accentText !== '#ffffff' ? solution.accentText : solution.accentFrom }} />
+                              <Download size={14} className="shrink-0 mt-0.5" style={{ color: solution.accentFrom }} />
                               <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12px] font-black text-gray-800">{si.label}</span>
-                                  {si.recommended && <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shrink-0" style={{ background: gradient, color: accentText }}>Try first</span>}
-                                </div>
+                                <div className="text-[12px] font-black text-gray-800">{si.label}</div>
                                 <div className="text-[10.5px] font-medium text-gray-400 leading-snug">{si.description}</div>
                               </div>
                             </a>
@@ -804,7 +768,7 @@ const GuidedWalkthrough: React.FC<{
                       onDragLeave={() => setDragOver(false)}
                       onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); }}
                       className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
-                        uploadedName ? 'border-green-300 bg-green-50' : dragOver ? 'bg-gray-50' : 'border-gray-200 hover:border-gray-300 bg-[#fbfbfe]'
+                        uploadedName ? 'border-green-300 bg-green-50' : dragOver ? 'bg-purple-50/60' : 'border-gray-200 hover:border-purple-200 bg-[#fbfbfe]'
                       }`}
                       style={dragOver && !uploadedName ? { borderColor: solution.accentFrom } : undefined}
                     >
@@ -824,13 +788,13 @@ const GuidedWalkthrough: React.FC<{
                       ) : (
                         <>
                           <UploadCloud size={26} className="mx-auto text-gray-300 mb-2" />
-                          <div className="text-[13px] font-black text-gray-700">Drop the downloaded file here or click to upload</div>
+                          <div className="text-[13px] font-black text-gray-700">Drop your delivery note here or click to upload</div>
                           <div className="text-[11px] font-medium text-gray-400 mt-1">We’ll move to the next step automatically once you add a file</div>
                         </>
                       )}
                     </div>
                     <p className="text-[11px] font-medium text-gray-400 mt-3 leading-snug">
-                      Tip: upload the <span className="font-black text-gray-500">same file</span> into the agent window to see it processed for real.
+                      Tip: upload the <span className="font-black text-gray-500">same file</span> into the agent window on the page to see it parsed and matched.
                     </p>
                   </div>
                 )}
@@ -918,7 +882,7 @@ const GuidedWalkthrough: React.FC<{
   );
 };
 
-const LaunchPanel: React.FC<{ gradient: string; emoji: string; name: string; accentText: string; onLaunch: () => void }> = ({ gradient, emoji, name, accentText, onLaunch }) => (
+const LaunchPanel: React.FC<{ gradient: string; emoji: string; name: string; onLaunch: () => void }> = ({ gradient, emoji, name, onLaunch }) => (
   <div className="relative bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden" style={{ minHeight: 420 }}>
     <div className="absolute inset-0 opacity-[0.06]" style={{ background: gradient }} />
     <div className="relative h-full flex flex-col items-center justify-center text-center px-8 py-16">
@@ -929,7 +893,7 @@ const LaunchPanel: React.FC<{ gradient: string; emoji: string; name: string; acc
       <p className="text-[14px] font-medium text-gray-500 max-w-md leading-relaxed mb-8">
         This agent opens in its own secure window. Click below to launch it in a new tab, then follow the tutorial steps here.
       </p>
-      <button onClick={onLaunch} className="flex items-center gap-2 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all" style={{ background: gradient, color: accentText }}>
+      <button onClick={onLaunch} className="flex items-center gap-2 px-8 py-4 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-purple-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all" style={{ background: gradient }}>
         <ExternalLink size={15} /> Open the Agent
       </button>
     </div>

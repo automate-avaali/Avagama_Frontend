@@ -39,6 +39,7 @@ import Playground from './pages/Playground';
 import PublicChat from './pages/PublicChat';
 import AgentSolutions from './pages/AgentSolutions/AgentSolutions';
 import AgentSolutionDetail from './pages/AgentSolutions/AgentSolutionDetail';
+import RfpDetail from './pages/RfpDetail';
 import Navigation from './components/Navigation';
 
 import { CortexProvider } from './context/CortexContext';
@@ -134,6 +135,7 @@ const App: React.FC = () => {
               <Route path="/playground" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Playground /></ProtectedRoute>} />
               <Route path="/agent-solutions" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentSolutions /></ProtectedRoute>} />
               <Route path="/agent-solutions/:agentId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentSolutionDetail /></ProtectedRoute>} />
+              <Route path="/rfp/from-usecase/:usecaseId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><RfpDetail /></ProtectedRoute>} />
               
               {/* Admin Routes */}
               <Route path="/admin/console" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AdminConsole /></ProtectedRoute>} />
