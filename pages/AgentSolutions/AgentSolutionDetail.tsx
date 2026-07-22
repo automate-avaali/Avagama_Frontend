@@ -591,7 +591,7 @@ const GuidedWalkthrough: React.FC<{
   featured?: SampleFile;
   gradient: string;
   accentText: string;
-  anchors: Record<'agent' | 'usecases', React.RefObject<HTMLElement>>;
+  anchors: Record<'agent' | 'usecases', React.RefObject<HTMLDivElement | null>>;
   onClose: () => void;
   onStepComplete: (i: number) => void;
   onFinish: () => void;

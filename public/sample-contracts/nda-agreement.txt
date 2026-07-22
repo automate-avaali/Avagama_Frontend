@@ -1,0 +1,50 @@
+MUTUAL NON-DISCLOSURE AGREEMENT
+
+This Mutual Non-Disclosure Agreement ("Agreement") is entered into as of 10 January 2026 ("Effective Date") between Adventure Works Ltd. ("Party A") and Wingtip Toys Pvt. Ltd. ("Party B").
+
+1. Purpose
+The parties wish to exchange confidential information for the purpose of evaluating a potential business relationship.
+
+2. Confidentiality
+Each party shall keep the other party's Confidential Information secret and use it solely for the Purpose. The confidentiality obligations shall survive for three (3) years after termination.
+
+3. Intellectual Property
+Each party retains ownership of its own pre-existing intellectual property. No license is granted under this Agreement except as strictly necessary for the Purpose.
+
+4. Limitation of Liability
+Each party's aggregate liability under this Agreement is capped at the fees or consideration exchanged in the twelve (12) months preceding a claim.
+
+5. Indemnification
+Each party shall indemnify the other, on a mutual basis, against claims arising from its own breach of confidentiality.
+
+6. Warranties
+Each party represents and warrants that it has full authority to enter into this Agreement.
+
+7. Term and Termination
+Either party may terminate this Agreement on thirty (30) days' written notice, or immediately for a material breach that is not cured within thirty (30) days of notice.
+
+8. Payment Terms
+Any fees payable under this Agreement shall be due within thirty (30) days of the invoice date (Net 30).
+
+9. Auto-Renewal
+This Agreement renews for successive one-year terms unless either party gives sixty (60) days' written notice before the renewal date.
+
+10. Governing Law and Venue
+This Agreement shall be governed by the laws of England and Wales, and the courts of London shall have exclusive jurisdiction.
+
+11. Force Majeure
+Neither party shall be liable for any delay or failure caused by events beyond its reasonable control.
+
+12. Data Privacy
+Each party shall comply with applicable data protection laws, and a Data Processing Addendum applies where personal data is shared.
+
+13. Dispute Resolution and Audit
+The parties shall resolve disputes through good-faith negotiation and then binding arbitration, and each party may, on reasonable prior notice, audit the other's compliance with this Agreement.
+
+14. Insurance
+Each party shall maintain insurance coverage adequate to its obligations under this Agreement.
+
+15. Assignment
+Neither party may assign this Agreement without the other party's prior written consent.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
