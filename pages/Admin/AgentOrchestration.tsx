@@ -200,6 +200,45 @@ export const AgentOrchestration: React.FC = () => {
   const [loadingRfpUsecases, setLoadingRfpUsecases] = useState(false);
   const [rfpUsecasesError, setRfpUsecasesError] = useState<string | null>(null);
   const [generatingRfpId, setGeneratingRfpId] = useState<string | null>(null);
+  const [generatedRfpMap, setGeneratedRfpMap] = useState<Record<string, boolean>>({});
+
+  const isRfpAlreadyGenerated = (item: any) => {
+    if (!item) return false;
+    const uId = item.usecaseId || item._id || item.id;
+    if (uId && generatedRfpMap[uId]) return true;
+
+    if (item.rfpGenerated === true || item.isGenerated === true || item.hasRfp === true || item.rfp_generated === true) {
+      return true;
+    }
+
+    const statusCandidates = [
+      item.rfpStatus,
+      item.rfp_status,
+      item.status,
+      item.usecaseStatus,
+      item.rfpState,
+      item.state,
+      item.rfp?.status
+    ];
+
+    for (const st of statusCandidates) {
+      if (typeof st === 'string') {
+        const lower = st.toLowerCase();
+        if (lower === 'generated' || lower === 'completed' || lower === 'rfp_generated' || lower === 'generated_rfp' || lower === 'done') {
+          return true;
+        }
+      }
+    }
+
+    if (item.rfpId || item.rfp_id || (item.rfp && (item.rfp._id || item.rfp.id))) {
+      const rfpStatus = (item.rfp?.status || item.rfpStatus || '').toLowerCase();
+      if (rfpStatus !== 'draft' && rfpStatus !== 'failed' && rfpStatus !== 'pending') {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   // React Flow Designer Canvas State
   const [showDesigner, setShowDesigner] = useState(false);
@@ -1236,6 +1275,36 @@ export const AgentOrchestration: React.FC = () => {
       const data = await response.json();
       const items = Array.isArray(data) ? data : (data.data && Array.isArray(data.data)) ? data.data : [];
       setRfpUsecases(items);
+
+      // Verify RFP generation status for each use case asynchronously
+      items.forEach(async (item: any) => {
+        const uId = item.usecaseId || item._id || item.id;
+        if (!uId) return;
+
+        if (item.rfpStatus === 'generated' || item.status === 'generated' || item.rfpGenerated === true || item.rfp_status === 'generated') {
+          setGeneratedRfpMap(prev => ({ ...prev, [uId]: true }));
+          return;
+        }
+
+        try {
+          const res = await fetch(`https://avagama-backend-ckm9.onrender.com/api/rfp/from-usecase/${uId}`, {
+            method: 'GET',
+            headers,
+          });
+          if (res.ok) {
+            const resData = await res.json();
+            const record = resData?.rfp || resData?.data || resData;
+            if (record && (record._id || record.id)) {
+              const st = (record.status || '').toLowerCase();
+              if (st === 'generated' || st === 'completed' || record.documentUrl || record.fileUrl) {
+                setGeneratedRfpMap(prev => ({ ...prev, [uId]: true }));
+              }
+            }
+          }
+        } catch (e) {
+          // ignore background check error
+        }
+      });
     } catch (err: any) {
       console.error('Error loading shortlisted usecases:', err);
       setRfpUsecasesError(err.message || 'Failed to load shortlisted usecases');
@@ -1335,7 +1404,7 @@ export const AgentOrchestration: React.FC = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success('RFP Document generated and downloaded successfully!', { id: toastId });
+      toast.dismiss(toastId);
     } catch (err: any) {
       console.error('Error generating RFP:', err);
       toast.error(err.message || 'Error occurred during RFP generation process', { id: toastId });
@@ -2115,7 +2184,7 @@ export const AgentOrchestration: React.FC = () => {
                       ) : (
                         <>
                           <RefreshCw className="w-4 h-4" />
-                          <span>Load shortlisted evaluations</span>
+                          <span>Refresh Shortlisted evaluations</span>
                         </>
                       )}
                     </button>
@@ -2166,6 +2235,7 @@ export const AgentOrchestration: React.FC = () => {
                       {rfpUsecases.map((item: any, idx: number) => {
                         const usecaseId = item.usecaseId || item._id || item.id;
                         const isGenerating = generatingRfpId === usecaseId;
+                        const isGenerated = isRfpAlreadyGenerated(item);
                         const company = item.company_name || item.company || '';
                         const industry = item.industry || item.domain || '';
                         const score = item.totalWeightedScore !== undefined ? item.totalWeightedScore : (item.weighted_score !== undefined ? item.weighted_score : item.score);
@@ -2194,6 +2264,11 @@ export const AgentOrchestration: React.FC = () => {
                                 <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100">
                                   Use Case
                                 </span>
+                                {isGenerated && (
+                                  <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    RFP Generated
+                                  </span>
+                                )}
                               </div>
 
                               <div className="space-y-1">
@@ -2216,10 +2291,20 @@ export const AgentOrchestration: React.FC = () => {
                                   const usecaseId = item.usecaseId || item._id || item.id;
                                   navigate(`/rfp/from-usecase/${usecaseId}`);
                                 }}
-                                className="px-5 py-2.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition flex items-center gap-1.5 cursor-pointer"
+                                className="px-5 py-2.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                                id={`rfp-action-button-${usecaseId}`}
                               >
-                                <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
-                                <span>Generate RFP Document</span>
+                                {isGenerated ? (
+                                  <>
+                                    <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
+                                    <span>View RFP Document</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
+                                    <span>Generate RFP Document</span>
+                                  </>
+                                )}
                               </button>
                             </div>
                           </motion.div>
