@@ -433,46 +433,129 @@ const materialAgent: AgentSolution = {
   ],
 };
 
-// Placeholders illustrate that this hub is designed to grow. Mark them
-// 'coming-soon' — the gallery renders them disabled until they go live.
-const comingSoon: AgentSolution[] = [
-  {
-    id: 'invoice-processing-agent',
-    name: 'Invoice Processing Agent',
-    tagline: 'Extract, match and approve supplier invoices.',
-    description:
-      'Reads supplier invoices, performs 2- and 3-way matching against POs and goods receipts, and routes exceptions for approval.',
-    category: 'Accounts Payable',
-    emoji: '🧾',
-    accentFrom: '#6366f1',
-    accentTo: '#a26da8',
-    status: 'coming-soon',
-    agentUrl: '',
-    embeddable: false,
-    whatItDoes: [],
-    steps: [],
-    samples: [],
-  },
-  {
-    id: 'vendor-onboarding-agent',
-    name: 'Vendor Onboarding Agent',
-    tagline: 'Onboard and verify new vendors in minutes.',
-    description:
-      'Collects vendor documents, validates tax and banking details, screens against compliance lists and creates the vendor master record.',
-    category: 'Procurement',
-    emoji: '🤝',
-    accentFrom: '#0ea5e9',
-    accentTo: '#6fcbbd',
-    status: 'coming-soon',
-    agentUrl: '',
-    embeddable: false,
-    whatItDoes: [],
-    steps: [],
-    samples: [],
-  },
-];
+// ---------------------------------------------------------------------------
+// Contract Clause Review Agent (Contract -> Clause extraction -> Risk -> Routing)
+// ---------------------------------------------------------------------------
+const CONTRACT_AGENT_URL =
+  ((import.meta as any).env?.VITE_CONTRACT_AGENT_URL as string) ||
+  'https://contractreviewfrontend.vercel.app/';
 
-export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, ...comingSoon];
+const contractReviewAgent: AgentSolution = {
+  id: 'contract-clause-review-agent',
+  name: 'Contract Clause Review Agent',
+  tagline: 'Extract every clause, compare against approved templates, and flag risk.',
+  description:
+    'Upload a contract and a multi-agent pipeline extracts every clause verbatim, classifies the contract type, compares all 15 clause categories against the approved template, scores each clause Low/Medium/High, and routes the contract for auto-approval or legal review.',
+  category: 'Legal · Contract Review',
+  emoji: '📜',
+  // Bright blue → violet pastel (light, on-brand with the deck). Dark indigo text stays readable.
+  accentFrom: '#93c5fd',
+  accentTo: '#c4b5fd',
+  accentText: '#3730a3',
+  status: 'live',
+  agentUrl: CONTRACT_AGENT_URL,
+  // Public production Vercel app (not an SSO preview) — embeds inline.
+  embeddable: true,
+  featuredSampleId: 'high-risk',
+  whatItDoes: [
+    'Extracts every clause verbatim from an uploaded contract, with its heading',
+    'Classifies the contract type and retrieves the matching approved clause template',
+    'Compares all 15 clause categories — Standard / Modified / Missing / Additional',
+    'Scores each clause Low / Medium / High and routes for auto-approval or legal review',
+  ],
+  steps: [
+    {
+      title: 'Open the agent',
+      description:
+        'The Contract Clause Review Agent loads in the window on this page. It walks a contract through ingestion, clause comparison, risk scoring and routing.',
+      tip: 'This agent embeds directly here — no new tab needed.',
+    },
+    {
+      title: 'Pick a sample contract',
+      description:
+        'Download one of the sample contracts below (start with the recommended high-risk vendor agreement), drop it into this step to continue, then upload the same file into the agent window to start the review.',
+      tip: 'Each sample is written to land in a specific risk band — high, medium or low.',
+      action: 'upload',
+    },
+    {
+      title: 'Watch the pipeline run',
+      description:
+        'The agents run in sequence: ingest and clean the text, extract every clause, classify the contract type, retrieve the approved template, then compare all 15 clause categories.',
+    },
+    {
+      title: 'Review the clause-by-clause results',
+      description:
+        'Each of the 15 clause categories is marked Standard, Modified, Missing or Additional, with a Low/Medium/High risk rating, a plain-English rationale and suggested wording.',
+      tip: 'Look for the flagged clauses — those are the deviations from the approved template.',
+    },
+    {
+      title: 'Read the routing decision',
+      description:
+        'The overall risk decides routing: Low or Medium is auto-approved (Medium is flagged for awareness), while High is assigned to the legal team. A Word report with the full redline is available to download.',
+      tip: 'The high-risk vendor agreement should come back "High → Legal Team" with several clauses flagged.',
+      anchor: 'usecases',
+    },
+  ],
+  samples: [
+    {
+      id: 'high-risk',
+      label: 'High risk — vendor agreement',
+      expectation: 'Uncapped liability, one-sided IP and no cure period → High risk, assigned to Legal.',
+      tone: 'danger',
+      notes: [
+        'Liability is uncapped and indemnification is one-sided in the Client\'s favour.',
+        'All Vendor IP (including pre-existing) is assigned away, and termination has no cure period.',
+        'Critical deviations like these route the contract to a human legal reviewer.',
+      ],
+    },
+    {
+      id: 'medium-risk',
+      label: 'Medium risk — modified SaaS terms',
+      expectation: 'Extended payment terms and a missing audit-rights clause → Medium, auto-approved & flagged.',
+      tone: 'warning',
+      notes: [
+        'Payment terms are stretched to Net 60 and the renewal notice is shorter than standard.',
+        'The audit-rights clause is missing entirely rather than modified.',
+        'Modified or missing clauses are auto-approved but flagged for awareness with a recommendation.',
+      ],
+    },
+    {
+      id: 'low-risk',
+      label: 'Low risk — clean NDA',
+      expectation: 'A standard mutual NDA matching the template → Low risk, auto-approved.',
+      tone: 'success',
+      notes: [
+        'Mutual confidentiality, capped liability, cure period and symmetric assignment.',
+        'No clause deviates materially from the approved template.',
+        'The happy path — the agent auto-approves and files it as low risk.',
+      ],
+    },
+  ],
+  sampleInputsTitle: 'Sample contracts to try',
+  sampleInputs: [
+    {
+      id: 'high-risk',
+      label: 'High-risk vendor agreement',
+      url: '/sample-contracts/high-risk-vendor-agreement.txt',
+      description: 'Uncapped liability, one-sided IP assignment and no cure period — expect a High-risk verdict routed to legal.',
+      recommended: true,
+    },
+    {
+      id: 'medium-risk',
+      label: 'SaaS agreement (modified terms)',
+      url: '/sample-contracts/saas-agreement.txt',
+      description: 'Mostly standard but with Net 60 payment terms and a missing audit-rights clause — expect Medium risk.',
+    },
+    {
+      id: 'low-risk',
+      label: 'Clean mutual NDA',
+      url: '/sample-contracts/nda-agreement.txt',
+      description: 'A standard NDA matching the approved template — expect Low risk, auto-approved.',
+    },
+  ],
+};
+
+export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent];
 
 export const getAgentSolution = (id: string): AgentSolution | undefined =>
   AGENT_SOLUTIONS.find(a => a.id === id);
