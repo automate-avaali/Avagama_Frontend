@@ -12,7 +12,9 @@ import {
   Loader2, 
   Building, 
   Globe, 
-  Percent 
+  Percent,
+  Trash2,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -46,6 +48,13 @@ const RfpDetail: React.FC = () => {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationSuccess, setGenerationSuccess] = useState(false);
   const [generationStatusText, setGenerationStatusText] = useState('');
+
+  // Deletion states
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Download preparation state
+  const [downloadingFormat, setDownloadingFormat] = useState<'docx' | 'pdf' | null>(null);
 
   // 1. Fetch or Create RFP on Load
   const checkOrCreateRfp = async () => {
@@ -272,9 +281,9 @@ const RfpDetail: React.FC = () => {
 
   // 3. Document download handlers
   const handleDownloadFile = async (format: 'docx' | 'pdf') => {
-    if (!rfpId) return;
+    if (!rfpId || downloadingFormat) return;
 
-    const toastId = toast.loading(`Preparing ${format.toUpperCase()} download...`);
+    setDownloadingFormat(format);
     try {
       const token = sessionStorage.getItem('token');
       const headers = {
@@ -312,11 +321,49 @@ const RfpDetail: React.FC = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
-      toast.success(`${format.toUpperCase()} downloaded successfully!`, { id: toastId });
     } catch (err: any) {
       console.error('Download error:', err);
-      toast.error(`Failed to download ${format.toUpperCase()} file: ${err.message}`, { id: toastId });
+      toast.error(`Failed to download ${format.toUpperCase()} file: ${err.message}`);
+    } finally {
+      setDownloadingFormat(null);
+    }
+  };
+
+  // 4. Delete RFP Document handler
+  const handleDeleteRfp = async () => {
+    if (!rfpId) {
+      toast.error('Failed to delete the RFP document. Please try again.');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      const response = await fetch(`${BASE_URL}/rfp/${rfpId}`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      // Reset state upon successful deletion
+      setGenerationSuccess(false);
+      setUsecaseData(prev => prev ? { ...prev, status: 'DRAFT' } : null);
+      toast.success('RFP document deleted successfully.');
+      setShowDeleteConfirm(false);
+      navigate('/admin/orchestration', { state: { selectedMenu: 'proposal-forge' } });
+    } catch (err: any) {
+      console.error('Delete RFP error:', err);
+      toast.error('Failed to delete the RFP document. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -333,12 +380,6 @@ const RfpDetail: React.FC = () => {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to RFP creation
           </button>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-150 px-3 py-1 rounded-md">
-              RFP ID: {rfpId || 'Resolving...'}
-            </span>
-          </div>
         </div>
       </div>
 
@@ -448,7 +489,7 @@ const RfpDetail: React.FC = () => {
                   <div className="py-6 text-center space-y-4" id="generation-spinner-state">
                     <Loader2 className="w-10 h-10 text-[#a26da8] animate-spin mx-auto" />
                     <div className="space-y-1">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-700 animate-pulse">Mistral Agent Working</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-slate-700 animate-pulse">Working on RFP Creation</p>
                       <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight max-w-[280px] mx-auto leading-relaxed">
                         {generationStatusText}
                       </p>
@@ -477,7 +518,7 @@ const RfpDetail: React.FC = () => {
                       <div className="space-y-1">
                         <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Proposal Document Ready</h4>
                         <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
-                          Mistral RFP compilation finished. Access the document assets below.
+                          Access the document assets below.
                         </p>
                       </div>
                     </div>
@@ -485,19 +526,52 @@ const RfpDetail: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="rfp-download-buttons">
                       <button
                         onClick={() => handleDownloadFile('docx')}
-                        className="w-full py-4 bg-slate-950 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-200"
+                        disabled={downloadingFormat !== null}
+                        className="w-full py-4 bg-slate-950 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-200 disabled:opacity-80"
                         id="download-docx-button"
                       >
-                        <Download className="w-3.5 h-3.5 text-[#6fcbbd]" />
-                        <span>Download .docx</span>
+                        {downloadingFormat === 'docx' ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 text-[#6fcbbd] animate-spin" />
+                            <span>Preparing DOCX download...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5 text-[#6fcbbd]" />
+                            <span>Download .docx</span>
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => handleDownloadFile('pdf')}
-                        className="w-full py-4 bg-white hover:bg-slate-50 text-slate-800 text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer border border-slate-200 shadow-sm"
+                        disabled={downloadingFormat !== null}
+                        className="w-full py-4 bg-slate-950 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-200 disabled:opacity-80"
                         id="download-pdf-button"
                       >
-                        <Download className="w-3.5 h-3.5 text-[#a26da8]" />
-                        <span>Download .pdf</span>
+                        {downloadingFormat === 'pdf' ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 text-[#a26da8] animate-spin" />
+                            <span>Preparing PDF download...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5 text-[#a26da8]" />
+                            <span>Download .pdf</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Delete RFP Document Button */}
+                    <div className="pt-2" id="rfp-delete-button-container">
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isDeleting}
+                        className="w-full py-3.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                        id="delete-rfp-button"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Delete RFP Document</span>
                       </button>
                     </div>
                   </div>
@@ -505,7 +579,7 @@ const RfpDetail: React.FC = () => {
                   <button
                     onClick={handleCreateRfp}
                     disabled={isGenerating}
-                    className="w-full py-4.5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                    className="w-full py-5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
                     id="create-rfp-button"
                   >
                     <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
@@ -517,6 +591,58 @@ const RfpDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete RFP Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" id="delete-rfp-modal">
+          <div className="bg-white max-w-md w-full rounded-[28px] p-6 md:p-8 shadow-2xl border border-slate-100 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Delete RFP Document</h3>
+                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Confirm Action</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              Are you sure you want to delete the generated RFP document? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-5 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
+                id="cancel-delete-button"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteRfp}
+                disabled={isDeleting}
+                className="px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                id="confirm-delete-button"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete RFP Document</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
