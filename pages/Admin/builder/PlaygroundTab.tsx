@@ -369,25 +369,29 @@ const MappingTable = ({
   onChange, 
   mode = 'kv', // 'kv' for key-value, 'to-from' for output assignments
   variables = [],
-  arguments_list = []
-}: { 
-  label: string; 
+  arguments_list = [],
+  outputVars = []
+}: {
+  label: string;
   mappings: any[];
   onChange: (newMappings: any[]) => void;
   mode?: 'kv' | 'to-from';
   variables?: any[];
   arguments_list?: any[];
+  outputVars?: string[];
 }) => {
   const safeMappings = Array.isArray(mappings) ? mappings : [];
-  
+
   // Available targets for 'to-from' mode
   const targets = [
     ...variables.map(v => `vars.${v.name}`),
     ...arguments_list.filter(a => a.direction === 'out' || a.direction === 'inout' || a.direction === 'in').map(a => `args.${a.name}`)
   ];
 
-  // Helper template strings that can be inserted
+  // Helper template strings that can be inserted. Node output variables
+  // (new Data Manager model) are referenced simply as {{name}}.
   const quickInserts = [
+    ...Array.from(new Set(outputVars)).map(n => `{{${n}}}`),
     ...arguments_list.map(a => `{{args.${a.name}}}`),
     ...variables.map(v => `{{vars.${v.name}}}`)
   ];
@@ -1278,13 +1282,14 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
       const vars = (dataManager.variables || []);
       const primaryInArg = ins[0]?.name || 'location';
       const primaryTarget = vars[0]?.name ? `vars.${vars[0].name}` : 'vars.news_articles';
-      defaultConfig = { 
-        input_map: [{ k: 'message', v: `Find and analyze data for {{args.${primaryInArg}}}` }], 
-        output_assign: [{ to: primaryTarget, from: '$' }] 
+      defaultConfig = {
+        output_var: '',
+        input_map: [{ k: 'message', v: `Find and analyze data for {{args.${primaryInArg}}}` }],
+        output_assign: [{ to: primaryTarget, from: '$' }]
       };
     }
-    if (type === 'connector') defaultConfig = { input_map: [], output_assign: [] };
-    if (type === 'api_call') defaultConfig = { input_map: [], output_assign: [], method: 'POST' };
+    if (type === 'connector') defaultConfig = { output_var: '', input_map: [], output_assign: [] };
+    if (type === 'api_call') defaultConfig = { output_var: '', input_map: [], output_assign: [], method: 'POST' };
     if (type === 'condition') defaultConfig = { outcomes: [], default_route: '' };
     if (type === 'transform') defaultConfig = { assign: [] };
     if (type === 'join') defaultConfig = { merge: 'merge' };
@@ -2243,13 +2248,14 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                         )}
 
                         {activeNode.data.type === 'transform' && (
-                          <MappingTable 
-                            label="Data Mutations" 
+                          <MappingTable
+                            label="Data Mutations"
                             mode="to-from"
-                            mappings={activeNode.data.config?.assign || []} 
+                            mappings={activeNode.data.config?.assign || []}
                             onChange={(next) => updateNodeData(activeNode.id, { config: { ...activeNode.data.config, assign: next } })}
                             variables={dataManager.variables}
                             arguments_list={dataManager.arguments}
+                            outputVars={nodes.map((n: any) => n?.data?.config?.output_var).filter(Boolean)}
                           />
                         )}
 
@@ -2391,6 +2397,32 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
 
                         {(['agent', 'connector', 'api_call', 'transform'].includes(activeNode.data.type)) && (
                           <>
+                            {/* Output variable — the single primary output field (new Data Manager model) */}
+                            {['agent', 'connector', 'api_call'].includes(activeNode.data.type) && (() => {
+                              const ov = activeNode.data.config?.output_var || '';
+                              const valid = ov === '' || /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(ov);
+                              return (
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                    Store this node's output as <span className="text-red-400">*</span>
+                                  </label>
+                                  <input
+                                    value={ov}
+                                    onChange={(e) => updateNodeData(activeNode.id, { config: { ...activeNode.data.config, output_var: e.target.value } })}
+                                    placeholder="e.g. sales_reply"
+                                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-xs font-bold outline-none transition-all focus:bg-white ${valid ? 'border-gray-100 focus:border-purple-200' : 'border-red-300 focus:border-red-400'}`}
+                                  />
+                                  {!valid ? (
+                                    <p className="text-[9px] font-bold text-red-500 pl-1">Letters, digits and underscores only, starting with a letter or _ (no spaces).</p>
+                                  ) : ov ? (
+                                    <p className="text-[9px] font-semibold text-gray-400 pl-1">Reference it later as <code className="text-[#a26da8] font-mono">{`{{${ov}}}`}</code></p>
+                                  ) : (
+                                    <p className="text-[9px] font-semibold text-gray-400 pl-1">Required — name this output so other nodes can use it as <code className="text-[#a26da8] font-mono">{'{{name}}'}</code>.</p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
                             {/* Smart Mapping Assistant for agent / connector / api_call */}
                             {['agent', 'connector', 'api_call'].includes(activeNode.data.type) && (
                               <div className="p-4 bg-purple-50/40 border border-purple-100 rounded-[20px] space-y-2 mb-4">
@@ -2460,21 +2492,32 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                               </div>
                             )}
 
-                            <MappingTable 
-                              label="Input Bindings" 
-                              mappings={activeNode.data.config?.input_map || []} 
+                            <MappingTable
+                              label="Input Bindings"
+                              mappings={activeNode.data.config?.input_map || []}
                               onChange={(next) => updateNodeData(activeNode.id, { config: { ...activeNode.data.config, input_map: next } })}
                               variables={dataManager.variables}
                               arguments_list={dataManager.arguments}
+                              outputVars={nodes.map((n: any) => n?.data?.config?.output_var).filter(Boolean)}
                             />
-                            <MappingTable 
-                              label="Output Assignments" 
-                              mode="to-from"
-                              mappings={activeNode.data.config?.output_assign || []} 
-                              onChange={(next) => updateNodeData(activeNode.id, { config: { ...activeNode.data.config, output_assign: next } })}
-                              variables={dataManager.variables}
-                              arguments_list={dataManager.arguments}
-                            />
+                            <details className="group bg-gray-50/40 rounded-[20px] border border-gray-100 overflow-hidden">
+                              <summary className="cursor-pointer px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5 select-none hover:text-gray-700">
+                                <ChevronRight size={12} className="group-open:rotate-90 transition-transform" />
+                                Advanced — Output mapping
+                              </summary>
+                              <div className="px-3 pb-3 pt-1 space-y-2">
+                                <p className="text-[9px] font-semibold text-gray-400 leading-relaxed px-1">Optional — write multiple or renamed variables from this node's result. Most nodes only need the Output variable above.</p>
+                                <MappingTable
+                                  label="Output Assignments"
+                                  mode="to-from"
+                                  mappings={activeNode.data.config?.output_assign || []}
+                                  onChange={(next) => updateNodeData(activeNode.id, { config: { ...activeNode.data.config, output_assign: next } })}
+                                  variables={dataManager.variables}
+                                  arguments_list={dataManager.arguments}
+                                  outputVars={nodes.map((n: any) => n?.data?.config?.output_var).filter(Boolean)}
+                                />
+                              </div>
+                            </details>
                           </>
                         )}
                       </div>
@@ -3554,6 +3597,23 @@ const PlaygroundTab: React.FC<PlaygroundTabProps> = ({ agentId }) => {
                                   {step.route && (
                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">&rarr; routed to {step.route}</span>
                                   )}
+                                </div>
+                              )}
+
+                              {/* Stored as — which variable(s) this node's output was saved to */}
+                              {Array.isArray(step.stored_as) && step.stored_as.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Stored as</span>
+                                  {step.stored_as.map((name: string, i: number) => (
+                                    <button
+                                      key={i}
+                                      onClick={() => { navigator.clipboard?.writeText(`{{${name}}}`); toast.success(`Copied {{${name}}}`); }}
+                                      title="Copy reference"
+                                      className="px-2.5 py-1 rounded-lg text-[10px] font-black tracking-widest bg-purple-50 border border-purple-100 text-[#8e5a94] hover:bg-purple-100 transition-all font-mono"
+                                    >
+                                      {`{{${name}}}`}
+                                    </button>
+                                  ))}
                                 </div>
                               )}
 

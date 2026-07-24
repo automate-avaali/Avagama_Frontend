@@ -555,7 +555,136 @@ const contractReviewAgent: AgentSolution = {
   ],
 };
 
-export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent];
+// ---------------------------------------------------------------------------
+// AP Automation Agent (Invoice -> AI extraction -> 3-way match -> decision)
+// ---------------------------------------------------------------------------
+const AP_AGENT_URL =
+  ((import.meta as any).env?.VITE_AP_AGENT_URL as string) ||
+  'https://ap-desktop-agent.vercel.app/';
+
+const apAutomationAgent: AgentSolution = {
+  id: 'ap-automation-agent',
+  name: 'AP Automation Agent',
+  tagline: 'Read invoices, run a 3-way match, and auto-clear or route for review.',
+  description:
+    'Reads a vendor invoice, extracts every field with AI, fetches the matching Purchase Order and Goods Receipt Note from the ERP, reconciles them across a deterministic 3-way match, and either auto-approves the invoice or routes it to a human reviewer with the exact reason.',
+  category: 'Accounts Payable · 3-Way Match',
+  emoji: '🧾',
+  // Bright amber → peach (gold) pastel — a warm, finance-y accent distinct from the
+  // other agents. Dark amber text keeps labels readable on the gradient.
+  accentFrom: '#fcd34d',
+  accentTo: '#fdba74',
+  accentText: '#92400e',
+  status: 'live',
+  agentUrl: AP_AGENT_URL,
+  // Public production Vercel dashboard (no SSO) — embeds inline.
+  embeddable: true,
+  featuredSampleId: 'perfect-match',
+  whatItDoes: [
+    'Reads a vendor invoice PDF and extracts header, line items, tax, freight and terms',
+    'Fetches the matching Purchase Order and Goods Receipt Note from the ERP by PO number',
+    'Runs a deterministic 3-way match across 12 checks — price, quantity, UOM, tax, terms…',
+    'Auto-approves clean invoices; routes anything outside tolerance to a reviewer with the reason',
+  ],
+  steps: [
+    {
+      title: 'Open the agent',
+      description:
+        'The AP Automation dashboard loads in the window on this page — an Overview with live counts (Pending Review, Processed, Approved, Exceptions) and the tabs that hold each invoice’s full detail.',
+      tip: 'It embeds directly here — the dashboard is public, no login needed.',
+    },
+    {
+      title: 'Choose how to start',
+      description:
+        'There are two ways in. “Process Mailbox” drains every invoice waiting in the ToBeProcessed folder in one go. “Upload Invoice Manually” lets you drop a single invoice PDF — no mailbox required.',
+      tip: 'For this walkthrough, Upload Invoice Manually is the fastest — grab a sample below.',
+    },
+    {
+      title: 'Pick a sample invoice and upload it',
+      description:
+        'Download one of the sample invoices below (start with the recommended perfect-match one), drop it into this step to continue, then upload the same PDF using “Upload Invoice Manually” in the agent.',
+      tip: 'Each sample is engineered to trigger a specific outcome — auto-approve, price variance, or vendor mismatch.',
+      action: 'upload',
+    },
+    {
+      title: 'Watch AI extraction & ERP lookup',
+      description:
+        'The agent parses the PDF into structured fields, then uses the PO number printed on the invoice to pull the matching Purchase Order and Goods Receipt Note from the ERP automatically — no PO/GRN attachments needed.',
+    },
+    {
+      title: 'Follow the 3-way match',
+      description:
+        'Invoice, PO and GRN are reconciled across 12 deterministic checks — PO validity, GRN, quantity, unit price & UOM (within 2%), tax, freight/discount, payment terms, line maths, and duplicate detection.',
+      tip: 'No fuzzy matching — every gate is a firm rule, and a failure prints the exact reason.',
+    },
+    {
+      title: 'Read the decision & review',
+      description:
+        'Clean invoices within tolerance auto-approve and file to Processed. Anything outside tolerance routes to the review portal — open the secure link and Approve, Reject, or Request Clarification. A missing PO or unreadable invoice becomes an Exception with the reason to fix.',
+      tip: 'Confirm the outcome on the dashboard tabs: Processed, Approved, or Exceptions.',
+      anchor: 'usecases',
+    },
+  ],
+  samples: [
+    {
+      id: 'perfect-match',
+      label: 'S01 · Perfect match → auto-approve',
+      expectation: 'All fields match the PO exactly, zero variance → cleared automatically.',
+      tone: 'success',
+      notes: [
+        'ABC Industries, PO-S01-001 — two lines, prices and quantities match the PO.',
+        'All 12 checks pass within tolerance.',
+        'The happy path — cleared automatically and filed to Processed.',
+      ],
+    },
+    {
+      id: 'price-variance',
+      label: 'S03 · Price variance → review',
+      expectation: 'Invoice price about 8.5% above the PO — exceeds the 2% tolerance → manual review.',
+      tone: 'warning',
+      notes: [
+        'Global Supplies Co, PO-S03-001 — Office Chair billed at $163 vs $150 on the PO.',
+        'The unit-price gate fails, so the invoice is paused for a human decision.',
+        'Shows the reviewer portal: Approve / Reject / Request Clarification.',
+      ],
+    },
+    {
+      id: 'vendor-mismatch',
+      label: 'S11 · Vendor mismatch → review',
+      expectation: 'Invoice vendor differs from the PO vendor → manual review.',
+      tone: 'danger',
+      notes: [
+        'Invoice raised by Delta Office Supplies, but PO-S11-001 was issued to Sigma Stationery Works.',
+        'The vendor/header gate fails — payment cannot proceed until it is resolved.',
+        'Routed to a reviewer with the exact discrepancy noted.',
+      ],
+    },
+  ],
+  sampleInputsTitle: 'Sample invoices to try',
+  sampleInputs: [
+    {
+      id: 'perfect-match',
+      label: 'S01 — Perfect match (ABC Industries)',
+      url: '/sample-invoices/invoice-s01-perfect-match.pdf',
+      description: 'All fields match the PO exactly — expect an automatic approval.',
+      recommended: true,
+    },
+    {
+      id: 'price-variance',
+      label: 'S03 — Price variance (Global Supplies Co)',
+      url: '/sample-invoices/invoice-s03-price-variance.pdf',
+      description: 'Unit price about 8.5% above the PO — expect a manual-review route.',
+    },
+    {
+      id: 'vendor-mismatch',
+      label: 'S11 — Vendor mismatch (Delta Office Supplies)',
+      url: '/sample-invoices/invoice-s11-vendor-mismatch.pdf',
+      description: 'Invoice vendor differs from the PO vendor — expect a manual-review route.',
+    },
+  ],
+};
+
+export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent];
 
 export const getAgentSolution = (id: string): AgentSolution | undefined =>
   AGENT_SOLUTIONS.find(a => a.id === id);

@@ -1,0 +1,82 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 981 >>
+stream
+BT
+/F1 14 Tf
+50 760 Td
+(INVOICE - INV-S01-001) Tj
+/F1 10 Tf
+0 -24 Td
+13 TL
+(Scenario S01: Perfect Match - Auto Approve) Tj
+T*
+() Tj
+T*
+(Invoice Number:  INV-S01-001) Tj
+T*
+(Invoice Date:    2026-06-19) Tj
+T*
+(Vendor Name:     ABC Industries) Tj
+T*
+(Bill To:         Avaali Solutions, Accounts Payable, balakrishna.m@avaali.com) Tj
+T*
+(PO Reference:    PO-S01-001) Tj
+T*
+(Currency:        USD) Tj
+T*
+(Payment Terms:   Net 30) Tj
+T*
+(Tax Type:        GST @ 10.0%) Tj
+T*
+() Tj
+T*
+(LINE ITEMS) Tj
+T*
+(1\) Dell Laptop XPS-15 | Qty 10 EA | Unit Price $1,200.00 | Line Amount $12,000.00) Tj
+T*
+(2\) Samsung Monitor 27-inch | Qty 5 EA | Unit Price $450.00 | Line Amount $2,250.00) Tj
+T*
+() Tj
+T*
+(Subtotal:            $14,250.00) Tj
+T*
+(Tax \(GST 10.0%\):     $1,425.00) Tj
+T*
+(Freight / Delivery:  $150.00) Tj
+T*
+(Discount \(0.0%\):     -$0.00) Tj
+T*
+(TOTAL AMOUNT DUE:    $15,825.00) Tj
+T*
+() Tj
+T*
+(Expected result: Auto Approved - all fields match the PO exactly, zero variance.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1343
+%%EOF
