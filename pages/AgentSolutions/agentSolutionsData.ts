@@ -29,7 +29,7 @@ export interface SamplePO {
   lines: POLine[];
 }
 
-export type ScenarioTone = 'success' | 'info' | 'warning' | 'danger';
+export type ScenarioTone  = 'success' | 'info' | 'warning' | 'danger';
 
 export interface SampleFile {
   id: string;
