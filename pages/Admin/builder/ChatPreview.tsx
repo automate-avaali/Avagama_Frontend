@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2, Minimize2, Maximize2, RotateCcw, X, Save } from 'lucide-react';
+import { Send, User, Bot, Loader2, Minimize2, Maximize2, RotateCcw, X, Save, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -20,6 +20,51 @@ interface ChatPreviewProps {
   isDirty?: boolean;
   onTurnComplete?: () => void;
 }
+
+// Models emit tool calls as raw <tool_call>…</tool_call> markup inside the reply.
+// Pull those out so we can render a clean chip instead of dumping the raw XML,
+// and drop any stray reasoning tags. Returns the human-readable text + parsed calls.
+const parseBotContent = (raw: string): { text: string; toolCalls: { name: string; params: Record<string, string> }[] } => {
+  let text = raw || '';
+  const toolCalls: { name: string; params: Record<string, string> }[] = [];
+
+  const blockRe = /<tool_call>([\s\S]*?)<\/tool_call>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = blockRe.exec(text)) !== null) {
+    const inner = (m[1] || '').trim();
+    let name = 'tool';
+    const params: Record<string, string> = {};
+
+    const nameMatch = inner.match(/<function=([^>\s]+)\s*>/i);
+    if (nameMatch) {
+      name = nameMatch[1];
+      const paramRe = /<parameter=([^>\s]+)\s*>\s*([\s\S]*?)\s*<\/parameter>/gi;
+      let p: RegExpExecArray | null;
+      while ((p = paramRe.exec(inner)) !== null) params[p[1]] = (p[2] || '').trim();
+    } else {
+      // Fallback: OpenAI-style JSON tool call { "name": "...", "arguments": { … } }
+      try {
+        const j: any = JSON.parse(inner);
+        name = j?.name || j?.function?.name || 'tool';
+        const args = j?.arguments ?? j?.parameters ?? j?.function?.arguments;
+        const parsed = typeof args === 'string' ? JSON.parse(args) : args;
+        if (parsed && typeof parsed === 'object') {
+          Object.entries(parsed).forEach(([k, v]) => { params[k] = typeof v === 'string' ? v : JSON.stringify(v); });
+        }
+      } catch { /* leave as a generic tool chip */ }
+    }
+    toolCalls.push({ name, params });
+  }
+
+  text = text
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')   // complete calls
+    .replace(/<tool_call>[\s\S]*$/gi, '')                // dangling / mid-stream call
+    .replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '') // reasoning blocks
+    .replace(/<\/?think(?:ing)?>/gi, '')                 // stray reasoning tags
+    .trim();
+
+  return { text, toolCalls };
+};
 
 const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, isDirty, onTurnComplete }) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -231,32 +276,61 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
                     {msg.role === 'user' ? (
                       msg.content
                     ) : (
-                      <div className="max-w-none overflow-x-auto">
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            table: ({node, ...props}) => (
-                              <div className="my-4 overflow-x-auto rounded-xl border border-gray-100 min-w-full">
-                                <table className="min-w-full border-collapse" {...props} />
+                      (() => {
+                        const { text, toolCalls } = parseBotContent(msg.content);
+                        return (
+                          <div className="max-w-none overflow-x-auto space-y-2">
+                            {toolCalls.map((tc, i) => (
+                              <div key={i} className="rounded-xl border border-purple-100 bg-purple-50/60 overflow-hidden">
+                                <div className="flex items-center gap-2 px-3 py-2 border-b border-purple-100/70">
+                                  <Wrench size={12} className="text-[#a26da8] shrink-0" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-[#a26da8]">Using tool</span>
+                                  <span className="text-[10px] font-black text-gray-800 font-mono break-all">{tc.name}</span>
+                                </div>
+                                {Object.keys(tc.params).length > 0 && (
+                                  <div className="px-3 py-2 space-y-1">
+                                    {Object.entries(tc.params).map(([k, v]) => (
+                                      <div key={k} className="flex gap-2 text-[10px] leading-relaxed">
+                                        <span className="font-black text-gray-400 uppercase tracking-wider shrink-0">{k}</span>
+                                        <span className="font-mono text-gray-600 break-words line-clamp-3">{v}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            ),
-                            thead: ({node, ...props}) => <thead className="bg-gray-50/50" {...props} />,
-                            th: ({node, ...props}) => <th className="px-3 py-2 text-left border-b border-gray-100 text-[10px] font-black uppercase tracking-wider text-gray-400 whitespace-nowrap" {...props} />,
-                            td: ({node, ...props}) => <td className="px-3 py-2 border-b border-gray-50 text-[10px] font-bold text-gray-600" {...props} />,
-                            p: ({node, ...props}) => <p className="mb-2 last:mb-0 break-words" {...props} />,
-                            strong: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />,
-                            em: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />,
-                            a: ({node, ...props}) => <a className="text-[#a26da8] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc ml-4 space-y-1 my-2" {...props} />,
-                            ol: ({node, ...props}) => <ol className="list-decimal ml-4 space-y-1 my-2" {...props} />,
-                            li: ({node, ...props}) => <li className="pl-1 break-words" {...props} />,
-                            hr: ({node, ...props}) => <hr className="my-4 border-gray-100" {...props} />,
-                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-100 pl-4 py-1 my-4 italic text-gray-400" {...props} />
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
-                      </div>
+                            ))}
+                            {text && (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  table: ({node, ...props}) => (
+                                    <div className="my-4 overflow-x-auto rounded-xl border border-gray-100 min-w-full">
+                                      <table className="min-w-full border-collapse" {...props} />
+                                    </div>
+                                  ),
+                                  thead: ({node, ...props}) => <thead className="bg-gray-50/50" {...props} />,
+                                  th: ({node, ...props}) => <th className="px-3 py-2 text-left border-b border-gray-100 text-[10px] font-black uppercase tracking-wider text-gray-400 whitespace-nowrap" {...props} />,
+                                  td: ({node, ...props}) => <td className="px-3 py-2 border-b border-gray-50 text-[10px] font-bold text-gray-600" {...props} />,
+                                  p: ({node, ...props}) => <p className="mb-2 last:mb-0 break-words" {...props} />,
+                                  strong: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />,
+                                  em: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />,
+                                  a: ({node, ...props}) => <a className="text-[#a26da8] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                                  ul: ({node, ...props}) => <ul className="list-disc ml-4 space-y-1 my-2" {...props} />,
+                                  ol: ({node, ...props}) => <ol className="list-decimal ml-4 space-y-1 my-2" {...props} />,
+                                  li: ({node, ...props}) => <li className="pl-1 break-words" {...props} />,
+                                  hr: ({node, ...props}) => <hr className="my-4 border-gray-100" {...props} />,
+                                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-100 pl-4 py-1 my-4 italic text-gray-400" {...props} />
+                                }}
+                              >
+                                {text}
+                              </ReactMarkdown>
+                            )}
+                            {!text && toolCalls.length === 0 && (
+                              <span className="text-gray-400 italic">…</span>
+                            )}
+                          </div>
+                        );
+                      })()
                     )}
                   </div>
                 </div>

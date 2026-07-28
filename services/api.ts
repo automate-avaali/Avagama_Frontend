@@ -6,6 +6,7 @@
 
 // const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://3.109.133.35:5000'}/api`;
 const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
+// const BASE_URL = "http://localhost:5000/api";
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
   return {
@@ -1394,6 +1395,14 @@ export const apiService = {
           });
           return handleResponse(response);
         },
+        // Test an SAP tool's connection (SAP only). Sets the tool status to connected/error.
+        test: async (id: string, toolId: string) => {
+          const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}/test`, {
+            method: 'POST',
+            headers: getHeaders(),
+          });
+          return handleResponse(response);
+        },
         getOAuthUrl: async (id: string, toolId: string, provider: 'google' | 'microsoft') => {
           const response = await fetch(`${BASE_URL}/v3/standalone/agents/${id}/tools/${toolId}/oauth/authorize?provider=${provider}`, {
             headers: getHeaders(),
@@ -1449,6 +1458,13 @@ export const apiService = {
     tools: {
       getCatalog: async () => {
         const response = await fetch(`${BASE_URL}/v3/standalone/tools/catalog`, {
+          headers: getHeaders(),
+        });
+        return handleResponse(response);
+      },
+      // SAP BAPI catalog — used to render the whitelist picker in the SAP tool form.
+      sapBapis: async () => {
+        const response = await fetch(`${BASE_URL}/v3/standalone/tools/sap/bapis`, {
           headers: getHeaders(),
         });
         return handleResponse(response);
