@@ -21,6 +21,45 @@ interface ChatPreviewProps {
   onTurnComplete?: () => void;
 }
 
+// Turn a run of tab-separated lines into a GitHub-flavoured Markdown table so it
+// renders as a real table instead of raw columns of text.
+const convertTabTables = (block: string): string => {
+  const lines = block.split('\n');
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].includes('\t')) {
+      const run: string[] = [];
+      while (i < lines.length && lines[i].includes('\t')) { run.push(lines[i]); i++; }
+      if (run.length >= 2) {
+        const rows = run.map(l => l.split('\t').map(c => c.trim().replace(/<br\s*\/?>/gi, ' ').replace(/\|/g, '\\|')));
+        const cols = Math.max(...rows.map(r => r.length));
+        const pad = (r: string[]) => { const c = [...r]; while (c.length < cols) c.push(''); return c; };
+        out.push('', '| ' + pad(rows[0]).join(' | ') + ' |', '| ' + pad(rows[0]).map(() => '---').join(' | ') + ' |');
+        for (let r = 1; r < rows.length; r++) out.push('| ' + pad(rows[r]).join(' | ') + ' |');
+        out.push('');
+      } else {
+        out.push(...run);
+      }
+    } else { out.push(lines[i]); i++; }
+  }
+  return out.join('\n');
+};
+
+// Clean up messy agent formatting: drop heavy ASCII divider lines and convert
+// tab-separated tables to Markdown. Fenced code blocks are left untouched.
+const normalizeBotMarkdown = (input: string): string =>
+  input
+    .split(/(```[\s\S]*?```)/g)
+    .map((seg, idx) => {
+      if (idx % 2 === 1) return seg; // fenced code — leave exactly as-is
+      const noRules = seg.replace(/^[^\S\n]*[─-╿]{3,}[^\S\n]*$/gm, ''); // box-drawing rules
+      return convertTabTables(noRules);
+    })
+    .join('')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 // Models emit tool calls as raw <tool_call>…</tool_call> markup inside the reply.
 // Pull those out so we can render a clean chip instead of dumping the raw XML,
 // and drop any stray reasoning tags. Returns the human-readable text + parsed calls.
@@ -62,6 +101,8 @@ const parseBotContent = (raw: string): { text: string; toolCalls: { name: string
     .replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '') // reasoning blocks
     .replace(/<\/?think(?:ing)?>/gi, '')                 // stray reasoning tags
     .trim();
+
+  text = normalizeBotMarkdown(text);
 
   return { text, toolCalls };
 };
