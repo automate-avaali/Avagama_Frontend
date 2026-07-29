@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import { apiService } from '../services/api';
+import AgentMessage from '../components/AgentMessage';
 
 interface Msg { role: 'user' | 'assistant'; text: string }
 
@@ -115,7 +114,7 @@ const PublicChat: React.FC = () => {
                     : 'bg-white border border-gray-100 text-gray-800 rounded-bl-md shadow-sm'
                 }`}>
                   {m.role === 'assistant'
-                    ? <div className="markdown-body prose prose-sm max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown></div>
+                    ? <AgentMessage content={m.text} />
                     : <span className="whitespace-pre-wrap">{m.text}</span>}
                 </div>
               </div>
