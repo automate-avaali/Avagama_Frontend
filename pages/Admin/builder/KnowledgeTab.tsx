@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../../../services/api';
 import { StandaloneKnowledgeSource } from '../../../types/standalone';
 import { 
@@ -10,9 +10,10 @@ import {
   Plus, 
   Trash2, 
   RotateCw, 
-  CheckCircle2, 
-  Clock, 
+  CheckCircle2,
+  Clock,
   AlertCircle,
+  AlertTriangle,
   Database,
   Search,
   ArrowRight,
@@ -36,6 +37,10 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
   const [textData, setTextData] = useState({ text: '', title: '' });
   const [qaData, setQaData] = useState({ title: '', pairs: [{ q: '', a: '' }] });
   const [uploadingFile, setUploadingFile] = useState(false);
+  const pollersRef = useRef<Record<string, boolean>>({});
+
+  // Stop every polling loop when the tab unmounts.
+  useEffect(() => () => { pollersRef.current = {}; }, []);
 
   useEffect(() => {
     if (agentId !== 'new') {
@@ -43,10 +48,64 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
     }
   }, [agentId, refreshKey]);
 
+  // Merge a freshly-fetched source into the list (live status / chunk_count updates).
+  const mergeSource = (updated: any) => {
+    if (!updated?._id) return;
+    setSources(prev => {
+      const exists = prev.some(s => s._id === updated._id);
+      return exists
+        ? prev.map(s => (s._id === updated._id ? { ...s, ...updated } : s))
+        : [updated, ...prev];
+    });
+  };
+
+  // KB indexing is asynchronous: upload returns status "processing" and chunk_count
+  // climbs live. Poll the source every 2s (backing off to 5s after a minute) until it
+  // reaches a terminal state (ready | failed). Same model as URL/Text/Q&A sources.
+  const pollSource = async (sourceId: string) => {
+    if (!sourceId || pollersRef.current[sourceId]) return; // already polling
+    pollersRef.current[sourceId] = true;
+    const started = Date.now();
+    const TIMEOUT_MS = 30 * 60 * 1000;
+    try {
+      while (pollersRef.current[sourceId]) {
+        let data: any = null;
+        try {
+          const res = await apiService.standalone.agents.kb.getSource(agentId, sourceId);
+          data = res?.data;
+        } catch { /* transient network/server hiccup — keep polling */ }
+
+        if (!pollersRef.current[sourceId]) break; // unmounted mid-request
+        if (data) {
+          mergeSource(data);
+          if (data.status === 'ready') {
+            if (data.error_message) toast(`Indexed with warnings: ${data.error_message}`, { icon: '⚠️' });
+            else toast.success(`Indexed — ${(data.chunk_count || 0).toLocaleString()} chunk${data.chunk_count === 1 ? '' : 's'}`);
+            break;
+          }
+          if (data.status === 'failed') {
+            toast.error(data.error_message || 'Indexing failed');
+            break;
+          }
+        }
+        if (Date.now() - started > TIMEOUT_MS) break;
+        await new Promise(r => setTimeout(r, Date.now() - started > 60 * 1000 ? 5000 : 2000));
+      }
+    } finally {
+      delete pollersRef.current[sourceId];
+    }
+  };
+
   const fetchSources = async () => {
     try {
       const response = await apiService.standalone.agents.kb.list(agentId);
-      if (response.success) setSources(response.data);
+      if (response.success) {
+        setSources(response.data);
+        // Resume polling any source still indexing (survives navigating away and back).
+        (response.data || []).forEach((s: any) => {
+          if (s.status === 'processing' || s.status === 'pending') pollSource(s._id);
+        });
+      }
     } catch (error) {
       toast.error('Failed to load knowledge base');
     } finally {
@@ -68,8 +127,10 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
     setProcessingId(sourceId);
     try {
       await apiService.standalone.agents.kb.reprocessSource(agentId, sourceId);
-      toast.success('Reprocessing heartbeat sent');
-      fetchSources();
+      toast.success('Reprocessing started');
+      // Flip to processing locally and poll to completion (reprocess is async too).
+      mergeSource({ _id: sourceId, status: 'processing', error_message: null });
+      pollSource(sourceId);
     } catch (error) {
       toast.error('Reprocess request failed');
     } finally {
@@ -82,18 +143,28 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
     if (!file) return;
 
     setUploadingFile(true);
-    const toastId = toast.loading('Uploading document...');
+    const toastId = toast.loading('Uploading document…');
     try {
       const response = await apiService.standalone.agents.kb.uploadFile(agentId, file);
-      if (response.success) {
-        toast.success('Document added to ingestion queue', { id: toastId });
+      const src = response?.data;
+      if (response.success && src) {
+        // Async: upload returns the source with status "processing". Show it now and poll.
+        toast.success('Upload received — indexing in the background', { id: toastId });
         setAddingSource('none');
-        fetchSources();
+        mergeSource(src);
+        pollSource(src._id);
+      } else {
+        toast.error('Upload failed', { id: toastId });
       }
-    } catch (error) {
-      toast.error('Upload failed', { id: toastId });
+    } catch (error: any) {
+      // 422 = the file could not be read to text (corrupt / empty / unreadable scan) — synchronous.
+      const msg = error?.status === 422
+        ? (error?.message || 'Could not extract readable text from the file')
+        : (error?.message || 'Upload failed');
+      toast.error(msg, { id: toastId });
     } finally {
       setUploadingFile(false);
+      e.target.value = ''; // allow re-selecting the same file
     }
   };
 
@@ -336,12 +407,12 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
              <Loader2 className="w-8 h-8 text-gray-200 animate-spin" />
           </div>
         ) : sources.length > 0 ? (
-          sources.map((source) => (
+          sources.map((source: any) => (
             <div key={source._id} className="group flex items-center justify-between p-6 bg-white border border-gray-100 rounded-[28px] hover:border-purple-100 hover:shadow-xl hover:shadow-purple-50 transition-all">
                <div className="flex items-center gap-5">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                    source.status === 'ready' ? 'bg-purple-50 text-[#a26da8]' : 
-                    source.status === 'processing' ? 'bg-blue-50 text-blue-500' :
+                    source.status === 'ready' ? 'bg-purple-50 text-[#a26da8]' :
+                    (source.status === 'processing' || source.status === 'pending') ? 'bg-blue-50 text-blue-500' :
                     'bg-red-50 text-red-500'
                   }`}>
                     {source.type === 'file' ? <FileText size={20} /> : 
@@ -349,24 +420,41 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                      source.type === 'text' ? <Type size={20} /> :
                      <HelpCircle size={20} />}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
                        <h5 className="text-sm font-black text-gray-900">{source.title}</h5>
-                       <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                         source.status === 'ready' ? 'border-green-100 bg-green-50 text-green-600' :
-                         source.status === 'processing' ? 'border-blue-100 bg-blue-50 text-blue-500' :
+                       <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border flex items-center gap-1 ${
+                         source.status === 'ready' ? (source.error_message ? 'border-amber-100 bg-amber-50 text-amber-600' : 'border-green-100 bg-green-50 text-green-600') :
+                         (source.status === 'processing' || source.status === 'pending') ? 'border-blue-100 bg-blue-50 text-blue-500' :
                          'border-red-100 bg-red-50 text-red-500'
                        }`}>
-                         {source.status}
+                         {(source.status === 'processing' || source.status === 'pending') && <Loader2 size={9} className="animate-spin" />}
+                         {source.status === 'ready' && source.error_message ? 'partial' : source.status}
                        </span>
                     </div>
                     <div className="flex items-center gap-4 mt-1.5 text-[9px] font-bold text-gray-400 font-mono uppercase">
                        <span>{source.type}</span>
                        <span>•</span>
-                       <span>{source.chunk_count} Chunks</span>
+                       {(source.status === 'processing' || source.status === 'pending') ? (
+                         <span className="text-blue-500 flex items-center gap-1.5 normal-case tracking-normal">
+                           <Loader2 size={10} className="animate-spin" /> Indexing… {(source.chunk_count || 0).toLocaleString()} chunks
+                         </span>
+                       ) : (
+                         <span>{(source.chunk_count || 0).toLocaleString()} Chunks</span>
+                       )}
                        <span>•</span>
                        <span>Added {new Date(source.createdAt).toLocaleDateString()}</span>
                     </div>
+                    {source.status === 'ready' && source.error_message && (
+                      <div className="flex items-start gap-1.5 mt-2 text-[10px] font-bold text-amber-600">
+                        <AlertTriangle size={12} className="shrink-0 mt-0.5" /> {source.error_message}
+                      </div>
+                    )}
+                    {source.status === 'failed' && (
+                      <div className="flex items-start gap-1.5 mt-2 text-[10px] font-bold text-red-500">
+                        <AlertCircle size={12} className="shrink-0 mt-0.5" /> {source.error_message || 'Could not index this source. Try re-uploading.'}
+                      </div>
+                    )}
                   </div>
                </div>
 
