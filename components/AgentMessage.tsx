@@ -38,15 +38,33 @@ const convertTabTables = (block: string): string => {
   return out.join('\n');
 };
 
-// Clean up messy agent formatting: drop heavy ASCII divider lines and convert
-// tab-separated tables to Markdown. Fenced code blocks are left untouched.
+// Convert model citation markers like 【1†L1-L3】 into Markdown links that the `a`
+// component below renders as small superscript source badges (with the location as
+// a tooltip). Handles one or several sources inside a single bracket.
+const linkifyCitations = (s: string): string =>
+  s.replace(/【\s*([^】]*?)\s*】/g, (whole, inner) => {
+    const re = /(\d+)\s*†\s*([^,，;、]+)/g;
+    const out: string[] = [];
+    let mm: RegExpExecArray | null;
+    while ((mm = re.exec(String(inner))) !== null) {
+      out.push(`[${mm[1]}](#cite "${(mm[2] || '').trim().replace(/"/g, '')}")`);
+    }
+    if (out.length === 0) {
+      const num = String(inner).trim();
+      return /^\d+$/.test(num) ? `[${num}](#cite "")` : whole; // leave non-citation brackets alone
+    }
+    return out.join('');
+  });
+
+// Clean up messy agent formatting: drop heavy ASCII divider lines, convert
+// tab-separated tables to Markdown, and linkify citations. Fenced code untouched.
 const normalizeAgentMarkdown = (input: string): string =>
   input
     .split(/(```[\s\S]*?```)/g)
     .map((seg, idx) => {
       if (idx % 2 === 1) return seg; // fenced code — leave exactly as-is
       const noRules = seg.replace(/^[^\S\n]*[─-╿]{3,}[^\S\n]*$/gm, ''); // box-drawing rules
-      return convertTabTables(noRules);
+      return linkifyCitations(convertTabTables(noRules));
     })
     .join('')
     .replace(/\n{3,}/g, '\n\n')
@@ -113,7 +131,19 @@ const mdComponents = {
   p: (props: any) => <p className="mb-2 last:mb-0 break-words leading-relaxed" {...props} />,
   strong: (props: any) => <strong className="font-black text-gray-900" {...props} />,
   em: (props: any) => <em className="italic" {...props} />,
-  a: (props: any) => <a className="text-[#a26da8] font-semibold hover:underline break-words" target="_blank" rel="noopener noreferrer" {...props} />,
+  a: ({ node, href, title, children, ...props }: any) => {
+    if (typeof href === 'string' && href.startsWith('#cite')) {
+      return (
+        <sup
+          title={`Source ${children}${title ? ` · ${title}` : ''}`}
+          className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 mx-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline cursor-default"
+        >
+          {children}
+        </sup>
+      );
+    }
+    return <a href={href} title={title} className="text-[#a26da8] font-semibold hover:underline break-words" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+  },
   ul: (props: any) => <ul className="list-disc ml-5 space-y-1 my-2" {...props} />,
   ol: (props: any) => <ol className="list-decimal ml-5 space-y-1 my-2" {...props} />,
   li: (props: any) => <li className="pl-1 break-words leading-relaxed" {...props} />,
