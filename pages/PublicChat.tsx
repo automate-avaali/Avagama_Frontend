@@ -4,7 +4,7 @@ import { Send, Loader2, Sparkles } from 'lucide-react';
 import { apiService } from '../services/api';
 import AgentMessage from '../components/AgentMessage';
 
-interface Msg { role: 'user' | 'assistant'; text: string }
+interface Msg { role: 'user' | 'assistant'; text: string; citations?: any[] }
 
 const prettifySlug = (slug: string) =>
   (slug || 'Assistant')
@@ -74,7 +74,7 @@ const PublicChat: React.FC = () => {
         : await apiService.deployedAgent.chat(slug, { session_id: sessionId, message: text });
       const reply = res?.data?.reply ?? res?.reply ?? "Sorry, I couldn't generate a response.";
       if (res?.data?.session_id) setSessionId(res.data.session_id);
-      setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: reply, citations: res?.data?.citations }]);
     } catch (e: any) {
       setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ ${e?.message || 'Something went wrong. Please try again.'}` }]);
     } finally {
@@ -114,7 +114,7 @@ const PublicChat: React.FC = () => {
                     : 'bg-white border border-gray-100 text-gray-800 rounded-bl-md shadow-sm'
                 }`}>
                   {m.role === 'assistant'
-                    ? <AgentMessage content={m.text} />
+                    ? <AgentMessage content={m.text} citations={m.citations} />
                     : <span className="whitespace-pre-wrap">{m.text}</span>}
                 </div>
               </div>

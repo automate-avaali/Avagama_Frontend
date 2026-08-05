@@ -7,11 +7,27 @@ import { Wrench } from 'lucide-react';
 // AgentMessage — the single, shared renderer for assistant/agent chat replies.
 // Used by every chat surface (public chat, builder preview, …) so responses
 // look consistent: tool calls become clean chips, Markdown/tables render
-// properly, and messy model output (raw XML, reasoning tags, ASCII rules,
-// tab-separated tables) is normalised. Built on react-markdown + remark-gfm.
+// properly, citations become hoverable source badges, and messy model output
+// (raw XML, reasoning tags, ASCII rules, tab-separated tables) is normalised.
+// Built on react-markdown + remark-gfm.
 // ---------------------------------------------------------------------------
 
 export interface ParsedToolCall { name: string; params: Record<string, string>; }
+
+// Citation metadata from the agent test-chat response (data.citations[]). All
+// location fields are optional — public/deployed chat may only send the base ones.
+export interface Citation {
+  index: number;
+  source_id?: string;
+  chunk_id?: string;
+  score?: number;
+  chunk_index?: number;
+  page?: number;
+  line_start?: number;
+  line_end?: number;
+  char_start?: number;
+  char_end?: number;
+}
 
 // Turn a run of tab-separated lines into a GitHub-flavoured Markdown table so it
 // renders as a real table instead of raw columns of text.
@@ -38,33 +54,42 @@ const convertTabTables = (block: string): string => {
   return out.join('\n');
 };
 
-// Convert model citation markers like 【1†L1-L3】 into Markdown links that the `a`
-// component below renders as small superscript source badges (with the location as
-// a tooltip). Handles one or several sources inside a single bracket.
-const linkifyCitations = (s: string): string =>
-  s.replace(/【\s*([^】]*?)\s*】/g, (whole, inner) => {
+// Convert citation markers into Markdown links that the `a` component renders as
+// hoverable source badges. Handles two marker styles:
+//   • fullwidth 【1†L1-L3】  (one or several sources per bracket) — always a citation
+//   • ASCII [1], [2]        — only when the number is a real citation index
+// The index is encoded in the href (#cite:N) so the badge can look up its metadata.
+const linkifyCitations = (s: string, valid: Set<number>): string => {
+  let out = s.replace(/【\s*([^】]*?)\s*】/g, (whole, inner) => {
     const re = /(\d+)\s*†\s*([^,，;、]+)/g;
-    const out: string[] = [];
+    const parts: string[] = [];
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(String(inner))) !== null) {
-      out.push(`[${mm[1]}](#cite "${(mm[2] || '').trim().replace(/"/g, '')}")`);
+      parts.push(`[${mm[1]}](#cite:${mm[1]} "${(mm[2] || '').trim().replace(/"/g, '')}")`);
     }
-    if (out.length === 0) {
+    if (parts.length === 0) {
       const num = String(inner).trim();
-      return /^\d+$/.test(num) ? `[${num}](#cite "")` : whole; // leave non-citation brackets alone
+      return /^\d+$/.test(num) ? `[${num}](#cite:${num} "")` : whole; // leave non-citation brackets alone
     }
-    return out.join('');
+    return parts.join('');
   });
+  // ASCII [n] — convert only known citation indices, and never one already turned
+  // into a link ("[n](" ) so arrays / footnotes stay untouched.
+  if (valid.size > 0) {
+    out = out.replace(/\[(\d+)\](?!\()/g, (whole, n) => (valid.has(Number(n)) ? `[${n}](#cite:${n} "")` : whole));
+  }
+  return out;
+};
 
 // Clean up messy agent formatting: drop heavy ASCII divider lines, convert
 // tab-separated tables to Markdown, and linkify citations. Fenced code untouched.
-const normalizeAgentMarkdown = (input: string): string =>
+const normalizeAgentMarkdown = (input: string, valid: Set<number>): string =>
   input
     .split(/(```[\s\S]*?```)/g)
     .map((seg, idx) => {
       if (idx % 2 === 1) return seg; // fenced code — leave exactly as-is
       const noRules = seg.replace(/^[^\S\n]*[─-╿]{3,}[^\S\n]*$/gm, ''); // box-drawing rules
-      return linkifyCitations(convertTabTables(noRules));
+      return linkifyCitations(convertTabTables(noRules), valid);
     })
     .join('')
     .replace(/\n{3,}/g, '\n\n')
@@ -73,7 +98,10 @@ const normalizeAgentMarkdown = (input: string): string =>
 // Pull out <tool_call>…</tool_call> markup (both the <function=…><parameter=…>
 // form and the OpenAI-style JSON form), strip stray reasoning tags, and return
 // the human-readable text plus any parsed tool calls.
-export const parseAgentContent = (raw: string): { text: string; toolCalls: ParsedToolCall[] } => {
+export const parseAgentContent = (
+  raw: string,
+  validIndices: Set<number> = new Set(),
+): { text: string; toolCalls: ParsedToolCall[] } => {
   let text = raw || '';
   const toolCalls: ParsedToolCall[] = [];
 
@@ -111,12 +139,27 @@ export const parseAgentContent = (raw: string): { text: string; toolCalls: Parse
     .replace(/<\/?think(?:ing)?>/gi, '')
     .trim();
 
-  text = normalizeAgentMarkdown(text);
+  text = normalizeAgentMarkdown(text, validIndices);
 
   return { text, toolCalls };
 };
 
-const mdComponents = {
+// Hover label for a citation badge — rich when metadata is present, otherwise a
+// simple "Source N" (+ any inline location captured from a 【N†loc】 marker).
+const citationLabel = (c: Citation | undefined, fallbackTitle: string, num: string): string => {
+  if (c) {
+    const bits = [`Source ${c.index}`];
+    if (c.page != null) bits.push(`Page ${c.page}`);
+    if (c.line_start != null && c.line_end != null) bits.push(`lines ${c.line_start}–${c.line_end}`);
+    else if (c.line_start != null) bits.push(`line ${c.line_start}`);
+    if (typeof c.score === 'number') bits.push(`similarity ${c.score.toFixed(2)}`);
+    return bits.join(' · ');
+  }
+  return `Source ${num}${fallbackTitle ? ` · ${fallbackTitle}` : ''}`;
+};
+
+// Static Markdown components (everything except the citation-aware <a>).
+const baseComponents: Record<string, any> = {
   h1: (props: any) => <h3 className="text-[15px] font-black text-gray-900 mt-3 mb-1.5" {...props} />,
   h2: (props: any) => <h4 className="text-[14px] font-black text-gray-900 mt-3 mb-1.5" {...props} />,
   h3: (props: any) => <h5 className="text-[13px] font-black text-gray-900 mt-2.5 mb-1" {...props} />,
@@ -131,19 +174,6 @@ const mdComponents = {
   p: (props: any) => <p className="mb-2 last:mb-0 break-words leading-relaxed" {...props} />,
   strong: (props: any) => <strong className="font-black text-gray-900" {...props} />,
   em: (props: any) => <em className="italic" {...props} />,
-  a: ({ node, href, title, children, ...props }: any) => {
-    if (typeof href === 'string' && href.startsWith('#cite')) {
-      return (
-        <sup
-          title={`Source ${children}${title ? ` · ${title}` : ''}`}
-          className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 mx-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline cursor-default"
-        >
-          {children}
-        </sup>
-      );
-    }
-    return <a href={href} title={title} className="text-[#a26da8] font-semibold hover:underline break-words" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
-  },
   ul: (props: any) => <ul className="list-disc ml-5 space-y-1 my-2" {...props} />,
   ol: (props: any) => <ol className="list-decimal ml-5 space-y-1 my-2" {...props} />,
   li: (props: any) => <li className="pl-1 break-words leading-relaxed" {...props} />,
@@ -158,13 +188,43 @@ const mdComponents = {
   pre: (props: any) => <pre className="my-2 bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto text-[12px] leading-relaxed" {...props} />,
 };
 
+// Build the component map with a citation-aware <a> bound to this message's sources.
+const makeComponents = (byIndex: Record<number, Citation>): Record<string, any> => ({
+  ...baseComponents,
+  a: ({ node, href, title, children, ...props }: any) => {
+    if (typeof href === 'string' && href.startsWith('#cite')) {
+      const idx = Number(href.split(':')[1]);
+      const c = Number.isFinite(idx) ? byIndex[idx] : undefined;
+      return (
+        <sup
+          title={citationLabel(c, title, String(children))}
+          className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 mx-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline cursor-help"
+        >
+          {children}
+        </sup>
+      );
+    }
+    return <a href={href} title={title} className="text-[#a26da8] font-semibold hover:underline break-words" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+  },
+});
+
 interface AgentMessageProps {
   content: string;
+  /** Structured citation metadata (from data.citations[]) for rich hover labels. */
+  citations?: Citation[];
   className?: string;
 }
 
-const AgentMessage: React.FC<AgentMessageProps> = ({ content, className = '' }) => {
-  const { text, toolCalls } = parseAgentContent(content);
+const AgentMessage: React.FC<AgentMessageProps> = ({ content, citations, className = '' }) => {
+  const byIndex = React.useMemo(() => {
+    const map: Record<number, Citation> = {};
+    (citations || []).forEach(c => { if (c && typeof c.index === 'number') map[c.index] = c; });
+    return map;
+  }, [citations]);
+  const validIndices = React.useMemo(() => new Set(Object.keys(byIndex).map(Number)), [byIndex]);
+  const { text, toolCalls } = React.useMemo(() => parseAgentContent(content, validIndices), [content, validIndices]);
+  const components = React.useMemo(() => makeComponents(byIndex), [byIndex]);
+
   return (
     <div className={`max-w-none overflow-x-auto space-y-2 ${className}`}>
       {toolCalls.map((tc, i) => (
@@ -187,7 +247,7 @@ const AgentMessage: React.FC<AgentMessageProps> = ({ content, className = '' }) 
         </div>
       ))}
       {text && (
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{text}</ReactMarkdown>
       )}
       {!text && toolCalls.length === 0 && <span className="text-gray-400 italic">…</span>}
     </div>

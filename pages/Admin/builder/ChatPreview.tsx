@@ -10,6 +10,7 @@ interface Message {
   role: 'user' | 'bot';
   content: string;
   timestamp: Date;
+  citations?: any[];
 }
 
 interface ChatPreviewProps {
@@ -50,6 +51,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
         setMessages(response.data.messages.map((m: any) => ({
           role: m.role === 'assistant' ? 'bot' : 'user',
           content: m.content,
+          citations: m.citations,
           timestamp: new Date(m.ts || m.createdAt)
         })));
       }
@@ -93,6 +95,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
         const botMsg: Message = {
           role: 'bot',
           content: response.data.reply,
+          citations: response.data.citations,
           timestamp: new Date()
         };
         setMessages(prev => [...prev, botMsg]);
@@ -230,7 +233,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
                     {msg.role === 'user' ? (
                       msg.content
                     ) : (
-                      <AgentMessage content={msg.content} />
+                      <AgentMessage content={msg.content} citations={msg.citations} />
                     )}
                   </div>
                 </div>
