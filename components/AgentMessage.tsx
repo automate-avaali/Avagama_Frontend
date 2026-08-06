@@ -73,11 +73,13 @@ const linkifyCitations = (s: string, valid: Set<number>): string => {
     }
     return parts.join('');
   });
-  // ASCII [n] — convert only known citation indices, and never one already turned
-  // into a link ("[n](" ) so arrays / footnotes stay untouched.
-  if (valid.size > 0) {
-    out = out.replace(/\[(\d+)\](?!\()/g, (whole, n) => (valid.has(Number(n)) ? `[${n}](#cite:${n} "")` : whole));
-  }
+  // ASCII [n] citation markers → badges. When the response includes a citation
+  // list, convert the known indices; when it carries none at all, still convert
+  // standalone [n] markers so citations always render. A preceding word char
+  // (e.g. arr[0]) is skipped, and an existing "[n](…)" link is left alone.
+  out = out.replace(/(?<!\w)\[(\d{1,3})\](?!\()/g, (whole, n) =>
+    (valid.size === 0 || valid.has(Number(n))) ? `[${n}](#cite:${n} "")` : whole
+  );
   return out;
 };
 
