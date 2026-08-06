@@ -1421,7 +1421,7 @@ export const AgentOrchestration: React.FC = () => {
   }, [selectedMenu]);
 
   return (
-    <div className="flex flex-1 min-h-[520px] bg-[#fafafc] text-gray-800 overflow-hidden" id="orchestration-panel-container">
+    <div className="flex h-[calc(100vh-80px)] min-h-[520px] bg-[#fafafc] text-gray-800 overflow-hidden" id="orchestration-panel-container">
       
       {/* 4-Minute Premium Pipeline Creation Progress Loader Overlay */}
       {/* Live execution manual input modal */}
