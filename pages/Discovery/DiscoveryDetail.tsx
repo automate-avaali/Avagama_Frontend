@@ -396,9 +396,9 @@ const DiscoveryDetail: React.FC = () => {
                              <div className="space-y-1">
                                 <p className="text-[9px] md:text-[11px] font-bold text-gray-400 uppercase tracking-widest">FEASIBILITY SCORE</p>
                                 <div className="text-2xl md:text-4xl font-black text-gray-900 flex items-baseline gap-1">
-                                  {(discoveryType === 'domain' && !uc.technical_feasibility_score?.score) 
-                                    ? (uc.business_benefit_score?.score || 0) + 2 
-                                    : (uc.technical_feasibility_score?.score || 0)}
+                                  {Math.round((discoveryType === 'domain' && !uc.technical_feasibility_score?.score)
+                                    ? (uc.business_benefit_score?.score || 0) + 2
+                                    : (uc.technical_feasibility_score?.score || 0))}
                                   <span className="text-[10px] md:text-sm text-gray-300 font-bold">/100</span>
                                 </div>
                              </div>
@@ -537,7 +537,7 @@ const DiscoveryDetail: React.FC = () => {
                                  })()}
                              </div>
                              <span className="text-3xl md:text-5xl font-black text-gray-900">
-                                {uc.business_benefit_score?.score || '-'}
+                                {uc.business_benefit_score?.score ? Math.round(uc.business_benefit_score.score) : '-'}
                              </span>
                           </div>
                        </div>
