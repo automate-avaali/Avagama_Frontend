@@ -60,7 +60,8 @@ const convertTabTables = (block: string): string => {
 //   • ASCII [1], [2]        — only when the number is a real citation index
 // The index is encoded in the href (#cite:N) so the badge can look up its metadata.
 const linkifyCitations = (s: string, valid: Set<number>): string => {
-  let out = s.replace(/【\s*([^】]*?)\s*】/g, (whole, inner) => {
+  // Fullwidth 【n†loc】 (one or several). Consume a leading space so the badge sits snug.
+  let out = s.replace(/[ \t ]*【\s*([^】]*?)\s*】/g, (whole, inner) => {
     const re = /(\d+)\s*†\s*([^,，;、]+)/g;
     const parts: string[] = [];
     let mm: RegExpExecArray | null;
@@ -73,13 +74,16 @@ const linkifyCitations = (s: string, valid: Set<number>): string => {
     }
     return parts.join('');
   });
-  // ASCII [n] citation markers → badges. When the response includes a citation
-  // list, convert the known indices; when it carries none at all, still convert
-  // standalone [n] markers so citations always render. A preceding word char
-  // (e.g. arr[0]) is skipped, and an existing "[n](…)" link is left alone.
-  out = out.replace(/(?<!\w)\[(\d{1,3})\](?!\()/g, (whole, n) =>
-    (valid.size === 0 || valid.has(Number(n))) ? `[${n}](#cite:${n} "")` : whole
-  );
+  // ASCII [n] citation markers → badges. Convert known indices (or any [n] when the
+  // response carries no citation list). A preceding word char (e.g. arr[0]) is skipped
+  // and "[n](…)" links are left alone; a leading space is dropped so spacing is uniform.
+  out = out.replace(/(^|[^\w])[ \t ]*\[(\d{1,3})\](?!\()/g, (whole, pre, n) => {
+    if (!(valid.size === 0 || valid.has(Number(n)))) return whole;
+    const sep = /\s/.test(pre) ? '' : pre; // drop a whitespace separator; keep punctuation / start
+    return `${sep}[${n}](#cite:${n} "")`;
+  });
+  // Let citation badges hug the following punctuation (no "¹ ." gap).
+  out = out.replace(/(\]\(#cite:\d+ "[^"]*"\))[ \t ]+([.,;:!?，。；：！？)])/g, '$1$2');
   return out;
 };
 
@@ -200,7 +204,7 @@ const makeComponents = (byIndex: Record<number, Citation>): Record<string, any> 
       return (
         <sup
           title={citationLabel(c, title, String(children))}
-          className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 mx-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline cursor-help"
+          className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 ml-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline cursor-help"
         >
           {children}
         </sup>
