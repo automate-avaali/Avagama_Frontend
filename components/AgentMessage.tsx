@@ -1,6 +1,9 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Wrench } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -54,6 +57,21 @@ const convertTabTables = (block: string): string => {
   return out.join('\n');
 };
 
+// Normalise LaTeX math delimiters so remark-math / KaTeX can render them:
+//   \[ … \]  → $$…$$ (display)      ·   \( … \) → $…$ (inline)
+//   bare [ …\frac… ] → $$…$$        — some models drop the backslash on the delimiter
+//   but keep the LaTeX commands inside; $…$ / $$…$$ are already handled and left alone.
+const MATH_CMD = /\\(?:frac|sqrt|text|begin|end|sum|int|prod|lim|cdot|times|div|leq|geq|neq|approx|pm|alpha|beta|gamma|delta|theta|lambda|mu|sigma|omega|pi|infty|partial|nabla|left|right|hat|bar|vec|overline|mathrm|mathbf)\b/;
+const normalizeMath = (s: string): string => {
+  let out = s
+    .replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_w, m) => `\n\n$$${m}$$\n\n`)
+    .replace(/\\\(\s*([\s\S]+?)\s*\\\)/g, (_w, m) => `$${m}$`);
+  // Bare [ … ] (no nested brackets) that clearly contains LaTeX → display math.
+  out = out.replace(/\[\s*([^\[\]]*?)\s*\]/g, (whole, inner) =>
+    MATH_CMD.test(inner) ? `\n\n$$${inner}$$\n\n` : whole);
+  return out;
+};
+
 // Convert citation markers into Markdown links that the `a` component renders as
 // hoverable source badges. Handles two marker styles:
 //   • fullwidth 【1†L1-L3】  (one or several sources per bracket) — always a citation
@@ -95,7 +113,7 @@ const normalizeAgentMarkdown = (input: string, valid: Set<number>): string =>
     .map((seg, idx) => {
       if (idx % 2 === 1) return seg; // fenced code — leave exactly as-is
       const noRules = seg.replace(/^[^\S\n]*[─-╿]{3,}[^\S\n]*$/gm, ''); // box-drawing rules
-      return linkifyCitations(convertTabTables(noRules), valid);
+      return linkifyCitations(normalizeMath(convertTabTables(noRules)), valid);
     })
     .join('')
     .replace(/\n{3,}/g, '\n\n')
@@ -253,7 +271,11 @@ const AgentMessage: React.FC<AgentMessageProps> = ({ content, citations, classNa
         </div>
       ))}
       {text && (
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{text}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+          components={components}
+        >{text}</ReactMarkdown>
       )}
       {!text && toolCalls.length === 0 && <span className="text-gray-400 italic">…</span>}
     </div>

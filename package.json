@@ -16,6 +16,7 @@
     "date-fns": "^4.1.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "katex": "^0.16.47",
     "lucide-react": "^1.7.0",
     "motion": "^12.34.3",
     "pdfjs-dist": "^5.7.284",
@@ -26,7 +27,9 @@
     "react-router-dom": "^7.13.0",
     "reactflow": "^11.11.4",
     "recharts": "^3.7.0",
-    "remark-gfm": "^4.0.1"
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
