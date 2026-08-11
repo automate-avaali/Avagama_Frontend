@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { apiService } from '../../../services/api';
+import AgentMessage from '../../../components/AgentMessage';
 import { 
   MessageSquare, 
   Search, 
@@ -201,40 +200,15 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ agentId, refreshKey }) => {
                              }`}>
                                 {m.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                              </div>
-                             <div className={`p-5 rounded-[24px] text-sm font-medium leading-relaxed break-words whitespace-pre-wrap ${
-                               m.role === 'user' 
-                               ? 'bg-gray-100 text-gray-900 rounded-tr-none' 
+                             <div className={`p-5 rounded-[24px] text-sm font-medium leading-relaxed break-words ${
+                               m.role === 'user'
+                               ? 'bg-gray-100 text-gray-900 rounded-tr-none'
                                : 'bg-white border border-gray-100 text-gray-900 rounded-tl-none shadow-sm'
                              }`}>
                                 {m.role === 'user' ? (
-                                  m.content
+                                  <span className="whitespace-pre-wrap">{m.content}</span>
                                 ) : (
-                                  <div className="max-w-none overflow-x-auto">
-                                    <ReactMarkdown 
-                                      remarkPlugins={[remarkGfm]}
-                                      components={{
-                                        table: ({node, ...props}) => (
-                                          <div className="my-4 overflow-x-auto rounded-xl border border-gray-100 min-w-full">
-                                            <table className="min-w-full border-collapse" {...props} />
-                                          </div>
-                                        ),
-                                        thead: ({node, ...props}) => <thead className="bg-gray-50/50" {...props} />,
-                                        th: ({node, ...props}) => <th className="px-3 py-2 text-left border-b border-gray-100 text-[10px] font-black uppercase tracking-wider text-gray-400 whitespace-nowrap" {...props} />,
-                                        td: ({node, ...props}) => <td className="px-3 py-2 border-b border-gray-50 text-[10px] font-bold text-gray-600" {...props} />,
-                                        p: ({node, ...props}) => <p className="mb-2 last:mb-0 break-words" {...props} />,
-                                        strong: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />,
-                                        em: ({node, ...props}) => <strong className="font-black text-gray-900" {...props} />,
-                                        a: ({node, ...props}) => <a className="text-[#a26da8] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-                                        ul: ({node, ...props}) => <ul className="list-disc ml-4 space-y-1 my-2" {...props} />,
-                                        ol: ({node, ...props}) => <ol className="list-decimal ml-4 space-y-1 my-2" {...props} />,
-                                        li: ({node, ...props}) => <li className="pl-1 break-words" {...props} />,
-                                        hr: ({node, ...props}) => <hr className="my-4 border-gray-100" {...props} />,
-                                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-100 pl-4 py-1 my-4 italic text-gray-400" {...props} />
-                                      }}
-                                    >
-                                      {m.content}
-                                    </ReactMarkdown>
-                                  </div>
+                                  <AgentMessage content={m.content} citations={m.citations} />
                                 )}
                              </div>
                           </div>
