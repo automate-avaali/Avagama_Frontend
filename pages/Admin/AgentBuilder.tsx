@@ -98,6 +98,8 @@ const AgentBuilder: React.FC = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [activeDimension, setActiveDimension] = useState(0);
   const [rightPanel, setRightPanel] = useState<'chat' | 'history' | 'none'>('chat');
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [showDeployConfirm, setShowDeployConfirm] = useState(false);
 
   const initializedParamsRef = useRef<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -167,16 +169,38 @@ const AgentBuilder: React.FC = () => {
           setError(res?.message || 'Failed to fetch agent details.');
         }
       } else {
-        const res = await apiService.agents.create({ 
-          type: type as any, 
-          entityId: entityId as string, 
-          usecaseId: usecaseId as string 
-        });
-        if (res.success && res.agents && res.agents.length > 0) {
-          setAgents(res.agents);
-          setSelectedAgent(res.agents[0]);
+        // Don't re-create agents if they already exist for this domain/company/process
+        // usecase — check first, and only create when none are found.
+        let existing: any[] = [];
+        try {
+          const listRes = await apiService.agents.list({
+            type: type as string,
+            entityId: entityId as string,
+            usecaseId: usecaseId as string,
+          });
+          existing = Array.isArray(listRes?.agents) ? listRes.agents
+                   : Array.isArray(listRes?.data?.agents) ? listRes.data.agents
+                   : Array.isArray(listRes?.data) ? listRes.data
+                   : Array.isArray(listRes) ? listRes : [];
+        } catch {
+          // list endpoint unavailable — fall through to create so the flow still works
+        }
+
+        if (existing.length > 0) {
+          setAgents(existing);
+          setSelectedAgent(existing[0]);
         } else {
-          setError(res?.message || 'No agents were returned from the server.');
+          const res = await apiService.agents.create({
+            type: type as any,
+            entityId: entityId as string,
+            usecaseId: usecaseId as string,
+          });
+          if (res.success && res.agents && res.agents.length > 0) {
+            setAgents(res.agents);
+            setSelectedAgent(res.agents[0]);
+          } else {
+            setError(res?.message || 'No agents were returned from the server.');
+          }
         }
       }
     } catch (err: any) {
@@ -185,6 +209,109 @@ const AgentBuilder: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Map a usecase (v1) agent to a Standalone (v3) agent config so it can be deployed.
+  const buildStandalonePayload = (src: Agent) => ({
+    name: src.name,
+    description: src.description || '',
+    system_prompt: src.system_prompt || '',
+    persona: {
+      role: src.name,
+      goal: src.description || '',
+      instructions: src.system_prompt || '',
+      tone: ['Professional'],
+      greeting: `Hi! I'm ${src.name}. How can I help you today?`,
+      fallback_message: "I'm sorry, I don't have enough information to answer that.",
+    },
+    llm: {
+      provider: (src.provider || 'openai').toLowerCase(),
+      model: src.model || 'gpt-4o-mini',
+      temperature: typeof src.temperature === 'number' ? src.temperature : 0.7,
+      top_p: typeof src.top_p === 'number' ? src.top_p : 1,
+      max_tokens: 4096,
+    },
+    guardrails: {
+      hallucination_check: true,
+      pii_detection: 'medium',
+      safety_filter: 'medium',
+      forbidden_topics: [],
+    },
+  });
+
+  // Deploy = publish this agent into the Standalone (v3) system and expose a public chat link.
+  // Usecase agents (v1 /api/agents) have no deploy endpoint of their own, so we create/refresh a
+  // standalone counterpart, publish + deploy it, then hand off to the standalone builder which
+  // already renders the public URL and channel settings.
+  const handleDeploy = async () => {
+    if (!selectedAgent) { toast.error('Select an agent to deploy first.'); return; }
+    if (isDeploying) return;
+    setShowDeployConfirm(false);
+    setIsDeploying(true);
+    const toastId = toast.loading('Deploying agent…');
+    try {
+      const payload = buildStandalonePayload(selectedAgent);
+
+      // Reuse an existing standalone agent with the same name to avoid duplicates on re-deploy.
+      let targetId: string | undefined;
+      try {
+        const listRes = await apiService.standalone.agents.list();
+        const arr = Array.isArray(listRes?.data) ? listRes.data
+                  : Array.isArray(listRes?.agents) ? listRes.agents
+                  : Array.isArray(listRes) ? listRes : [];
+        const match = arr.find((a: any) =>
+          (a?.name || '').trim().toLowerCase() === selectedAgent.name.trim().toLowerCase());
+        if (match?._id) targetId = match._id;
+      } catch {
+        // listing is optional — fall through to create
+      }
+
+      if (targetId) {
+        await apiService.standalone.agents.update(targetId, payload).catch(() => {});
+      } else {
+        const createRes = await apiService.standalone.agents.create(payload);
+        targetId = createRes?.data?._id;
+        if (!createRes?.success || !targetId) {
+          throw new Error(createRes?.message || 'Could not create the deployable agent.');
+        }
+      }
+
+      // Publish (preview) then deploy (public endpoint).
+      try { await apiService.standalone.agents.publish(targetId); } catch { /* may already be published */ }
+      const deployRes = await apiService.standalone.agents.deploy(targetId);
+      if (deployRes && deployRes.success === false) {
+        throw new Error(deployRes?.message || 'Deployment failed.');
+      }
+
+      toast.success('Agent deployed. Opening deployment settings…', { id: toastId });
+      navigate(`/admin/standalone/builder/${targetId}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Deployment failed. Please try again.', { id: toastId });
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  // Extract the assistant reply from any Avagama chat response shape — usecase V1
+  // ({ response/reply } flat or under data), V2 (data.response), builder (data.reply),
+  // and legacy Lyzr (response.response). Returns '' only when there's genuinely no text.
+  const extractAgentReply = (payload: any): string => {
+    if (payload == null) return '';
+    if (typeof payload === 'string') return payload;
+    const d = payload.data ?? payload;
+    const candidates = [
+      d?.reply,
+      d?.response,
+      payload?.reply,
+      payload?.response,
+      d?.message,
+      d?.content,
+      d?.text,
+      typeof d?.response === 'object' ? d?.response?.response : null,
+      d?.choices?.[0]?.message?.content,
+    ];
+    const text = candidates.find((v: any) => typeof v === 'string' && v.trim().length > 0);
+    return text ? text.trim() : '';
   };
 
   const handleSendMessage = async (e?: React.FormEvent) => {
@@ -207,16 +334,18 @@ const AgentBuilder: React.FC = () => {
 
     try {
       const res = await apiService.agents.chat(selectedAgent._id, currentInput, currentFile || undefined);
-      if (res?.response?.response) {
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: res.response.response,
-          timestamp: new Date()
-        };
-        setChatMessages(prev => [...prev, assistantMessage]);
-      } else {
-        throw new Error('Invalid response from AI');
+      const reply = extractAgentReply(res);
+      // Only treat as an error when there is genuinely no text AND the server reported failure.
+      // A successful call with a non-empty reply must always render as a normal message.
+      if (!reply && res?.success === false) {
+        throw new Error(res?.message || res?.error || 'Chat request failed');
       }
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: reply || '(No answer was generated. Please try again.)',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, assistantMessage]);
     } catch (err: any) {
       console.error('Chat error:', err);
       const errorMessage: Message = {
@@ -601,13 +730,63 @@ const AgentBuilder: React.FC = () => {
             >
               <History className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <button className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-900 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-black/10">
-              <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Deploy
+            <button
+              onClick={() => setShowDeployConfirm(true)}
+              disabled={isDeploying || !selectedAgent}
+              className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-900 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeploying
+                ? <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                : <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+              {isDeploying ? 'Deploying…' : 'Deploy'}
             </button>
           </div>
         </div>
       </header>
+
+      {showDeployConfirm && createPortal(
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => !isDeploying && setShowDeployConfirm(false)}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-7" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 rounded-2xl bg-gray-900 text-white flex items-center justify-center shrink-0">
+                <Cloud className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-black text-gray-900">Deploy agent</h3>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">{selectedAgent?.name}</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              This publishes <span className="font-bold text-gray-900">{selectedAgent?.name}</span> to the
+              Standalone Agents system and creates a public chat link. You'll be taken to its deployment
+              settings to copy the link and manage channels.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeployConfirm(false)}
+                disabled={isDeploying}
+                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-100 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeploy}
+                disabled={isDeploying}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-gray-900 text-white hover:bg-black transition-all disabled:opacity-50"
+              >
+                {isDeploying
+                  ? <RefreshCw className="w-4 h-4 animate-spin" />
+                  : <Cloud className="w-4 h-4" />}
+                {isDeploying ? 'Deploying…' : 'Deploy'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <div className="flex-grow flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar: Configuration */}
@@ -735,14 +914,17 @@ const AgentBuilder: React.FC = () => {
                     ) : history.length > 0 ? (
                       history.map((item, idx) => {
                         const displayFeedback = idx < history.length - 1 ? history[idx + 1].feedback : 'Initial version';
+                        // The per-item `is_active` flag from the API can be wrong; trust the agent's
+                        // current active version so the badge + rollback land on the right version.
+                        const isActive = item.version === (selectedAgent?.version ?? selectedAgent?.active_version);
                         return (
                           <div key={item.version} className="bg-gray-50 rounded-3xl p-6 border border-gray-100 relative group transition-all hover:shadow-md">
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center gap-3">
                                 <span className="bg-white px-3 py-1 rounded-full text-xs font-bold text-[#a26da8] shadow-sm border border-gray-100">v{item.version}</span>
-                                {item.is_active && <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-green-200">Active</span>}
+                                {isActive && <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-green-200">Active</span>}
                               </div>
-                              {!item.is_active && (
+                              {!isActive && (
                                 <button 
                                   onClick={() => handleRollback(item.version)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#a26da8]/10 text-[#a26da8] rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-[#a26da8] hover:text-white transition-all shadow-sm"
