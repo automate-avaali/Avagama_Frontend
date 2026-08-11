@@ -92,6 +92,18 @@ const linkifyCitations = (s: string, valid: Set<number>): string => {
     }
     return parts.join('');
   });
+  // ASCII [n†loc] / [1†L1-L4] — square-bracket form of the 【…】 marker (some models
+  // emit ASCII brackets). Only when a dagger is inside, so plain [text], [n], math
+  // brackets and [label](link) markers are all left untouched.
+  out = out.replace(/[ \t ]*\[([^\[\]]*†[^\[\]]*)\](?!\()/g, (whole, inner) => {
+    const re = /(\d+)\s*†\s*([^,，;、\]]+)/g;
+    const parts: string[] = [];
+    let mm: RegExpExecArray | null;
+    while ((mm = re.exec(String(inner))) !== null) {
+      parts.push(`[${mm[1]}](#cite:${mm[1]} "${(mm[2] || '').trim().replace(/"/g, '')}")`);
+    }
+    return parts.length ? parts.join('') : whole;
+  });
   // ASCII [n] citation markers → badges. Convert known indices (or any [n] when the
   // response carries no citation list). A preceding word char (e.g. arr[0]) is skipped
   // and "[n](…)" links are left alone; a leading space is dropped so spacing is uniform.
@@ -105,15 +117,25 @@ const linkifyCitations = (s: string, valid: Set<number>): string => {
   return out;
 };
 
+// Some models emit bullet lists inline — "…tendency. * Higher yield * After-burn…"
+// instead of putting each point on its own line — so Markdown never list-ifies them
+// and the "* " shows as a literal asterisk. Promote a mid-line " * " that clearly
+// starts a new point (right after sentence punctuation, followed by bold or a capital)
+// to a real bullet on its own line. Multiplication ("2 * 3") and bold ("**x**") are
+// left alone by the punctuation anchor and the capital/`**` lookahead.
+const fixInlineBullets = (s: string): string =>
+  s.replace(/([.!?:;])[ \t]+\*[ \t]+(?=\*\*|[A-Z])/g, '$1\n- ');
+
 // Clean up messy agent formatting: drop heavy ASCII divider lines, convert
-// tab-separated tables to Markdown, and linkify citations. Fenced code untouched.
+// tab-separated tables to Markdown, fix inline bullets, and linkify citations.
+// Fenced code untouched.
 const normalizeAgentMarkdown = (input: string, valid: Set<number>): string =>
   input
     .split(/(```[\s\S]*?```)/g)
     .map((seg, idx) => {
       if (idx % 2 === 1) return seg; // fenced code — leave exactly as-is
       const noRules = seg.replace(/^[^\S\n]*[─-╿]{3,}[^\S\n]*$/gm, ''); // box-drawing rules
-      return linkifyCitations(normalizeMath(convertTabTables(noRules)), valid);
+      return linkifyCitations(normalizeMath(convertTabTables(fixInlineBullets(noRules))), valid);
     })
     .join('')
     .replace(/\n{3,}/g, '\n\n')
