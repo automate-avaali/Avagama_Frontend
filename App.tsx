@@ -41,6 +41,7 @@ import AgentSolutions from './pages/AgentSolutions/AgentSolutions';
 import AgentSolutionDetail from './pages/AgentSolutions/AgentSolutionDetail';
 import RfpDetail from './pages/RfpDetail';
 import Navigation from './components/Navigation';
+import { FeatureRoute } from './hooks/usePermissions';
 
 import { CortexProvider } from './context/CortexContext';
 import CortexChatModal from './components/Cortex/CortexChatModal';
@@ -131,19 +132,19 @@ const App: React.FC = () => {
               
               {/* Authenticated Routes */}
               <Route path="/dashboard" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard /></ProtectedRoute>} />
-              <Route path="/evaluations" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Evaluations /></ProtectedRoute>} />
-              <Route path="/evaluate" element={<ProtectedRoute isAuthenticated={isAuthenticated}><EvaluateProcess /></ProtectedRoute>} />
+              <Route path="/evaluations" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="processEvaluation"><Evaluations /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/evaluate" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="processEvaluation"><EvaluateProcess /></FeatureRoute></ProtectedRoute>} />
               <Route path="/results/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Results /></ProtectedRoute>} />
               <Route path="/compare" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Compare /></ProtectedRoute>} />
               <Route path="/quadrant" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Quadrant /></ProtectedRoute>} />
               
               {/* New Discovery Routes */}
-              <Route path="/discovery/company" element={<ProtectedRoute isAuthenticated={isAuthenticated}><CompanyDiscovery /></ProtectedRoute>} />
-              <Route path="/discovery/domain" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DomainDiscovery /></ProtectedRoute>} />
+              <Route path="/discovery/company" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="company"><CompanyDiscovery /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/discovery/domain" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="domain"><DomainDiscovery /></FeatureRoute></ProtectedRoute>} />
               <Route path="/discovery/detail/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DiscoveryDetail /></ProtectedRoute>} />
-              <Route path="/playground" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Playground /></ProtectedRoute>} />
-              <Route path="/agent-solutions" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentSolutions /></ProtectedRoute>} />
-              <Route path="/agent-solutions/:agentId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentSolutionDetail /></ProtectedRoute>} />
+              <Route path="/playground" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature={['agents', 'agentPlayground']}><Playground /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/agent-solutions" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature={['agents', 'agentSolutions']}><AgentSolutions /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/agent-solutions/:agentId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature={['agents', 'agentSolutions']}><AgentSolutionDetail /></FeatureRoute></ProtectedRoute>} />
               <Route path="/rfp/from-usecase/:usecaseId" element={<ProtectedRoute isAuthenticated={isAuthenticated}><RfpDetail /></ProtectedRoute>} />
               
               {/* Admin Routes */}
@@ -152,12 +153,12 @@ const App: React.FC = () => {
               <Route path="/admin/org" element={<ProtectedRoute isAuthenticated={isAuthenticated}><OrgAdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/dept" element={<ProtectedRoute isAuthenticated={isAuthenticated}><DeptAdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/agent-builder" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentBuilder /></ProtectedRoute>} />
-              <Route path="/admin/orchestration" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentOrchestration /></ProtectedRoute>} />
-              <Route path="/admin/standalone" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneAgents /></ProtectedRoute>} />
-              <Route path="/admin/standalone/marketplace" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneMarketplace /></ProtectedRoute>} />
-              <Route path="/admin/standalone/builder/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><StandaloneAgentBuilder /></ProtectedRoute>} />
+              <Route path="/admin/orchestration" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="orchestration"><AgentOrchestration /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/admin/standalone" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="agents"><StandaloneAgents /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/admin/standalone/marketplace" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="agents"><StandaloneMarketplace /></FeatureRoute></ProtectedRoute>} />
+              <Route path="/admin/standalone/builder/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="agents"><StandaloneAgentBuilder /></FeatureRoute></ProtectedRoute>} />
               <Route path="/agents/tools" element={<OAuthHandler />} />
-              <Route path="/agents" element={<ProtectedRoute isAuthenticated={isAuthenticated}><AgentsList /></ProtectedRoute>} />
+              <Route path="/agents" element={<ProtectedRoute isAuthenticated={isAuthenticated}><FeatureRoute feature="agents"><AgentsList /></FeatureRoute></ProtectedRoute>} />
             </Routes>
           </main>
           

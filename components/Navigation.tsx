@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiService } from '../services/api';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface NavigationProps {
   isAuthenticated: boolean;
@@ -12,6 +13,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthenticated }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { can } = usePermissions();
   const [initial, setInitial] = useState('U');
   const [isAdmin, setIsAdmin] = useState(false);
   const [userRole, setUserRole] = useState('USER_ROLE');
@@ -225,8 +227,9 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
               <>
                 <Link to="/dashboard" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/dashboard' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>DASHBOARD</Link>
                 
-                {/* Discovery Dropdown */}
-                <div 
+                {/* Discovery Dropdown — masked by feature access (company / domain) */}
+                {(can('company') || can('domain')) && (
+                <div
                   className="relative group"
                   onMouseEnter={openDropdown}
                   onMouseLeave={closeDropdown}
@@ -239,31 +242,39 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                   {showDiscoveryMenu && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-2 w-56 bg-transparent z-[60]">
                       <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 overflow-hidden animate-fadeIn">
-                        <Link 
-                          to="/discovery/company" 
+                        {can('company') && (
+                        <Link
+                          to="/discovery/company"
                           className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-[#a26da8] transition-all"
                           onClick={() => setShowDiscoveryMenu(false)}
                         >
                           <span className="w-2 h-2 rounded-full bg-[#a26da8]"></span>
                           Company Focus
                         </Link>
-                        <Link 
-                          to="/discovery/domain" 
+                        )}
+                        {can('domain') && (
+                        <Link
+                          to="/discovery/domain"
                           className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-teal-50 hover:text-[#4db6ac] transition-all"
                           onClick={() => setShowDiscoveryMenu(false)}
                         >
                           <span className="w-2 h-2 rounded-full bg-[#4db6ac]"></span>
                           Domain Focus
                         </Link>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
+                )}
 
+                {can('processEvaluation') && (
                 <Link to="/evaluations" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/evaluations' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>MY EVALUATIONS</Link>
+                )}
                 {/* Agents dropdown — groups Agent Builder, Agent Playground and Agent
                     Solutions under one "AGENTS" tab. Same routes/visibility as before,
                     only the top-nav presentation changed. */}
+                {can('agents') && (
                 <div
                   className="relative"
                   onMouseEnter={openAgentsDropdown}
@@ -285,6 +296,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                           <span className="w-2 h-2 rounded-full bg-[#a26da8]"></span>
                           Agent Builder
                         </Link>
+                        {can('agentPlayground') && (
                         <Link
                           to="/playground"
                           className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-teal-50 hover:text-[#4db6ac] transition-all"
@@ -293,6 +305,8 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                           <span className="w-2 h-2 rounded-full bg-[#4db6ac]"></span>
                           Agent Playground
                         </Link>
+                        )}
+                        {can('agentSolutions') && (
                         <Link
                           to="/agent-solutions"
                           className="flex items-center gap-3 px-5 py-3 text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-[#a26da8] transition-all"
@@ -301,11 +315,15 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                           <span className="w-2 h-2 rounded-full bg-[#a26da8]"></span>
                           Agent Solutions
                         </Link>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
+                )}
+                {can('orchestration') && (
                 <Link to="/admin/orchestration" className={`text-sm font-bold tracking-wide transition-colors ${location.pathname === '/admin/orchestration' ? 'text-[#a26da8]' : 'text-gray-500 hover:text-gray-900'}`}>ORCHESTRATION</Link>
+                )}
                 
                 {/* Admin Console — a single top-level tab. The other admin destinations
                     (System Admin, etc.) now live inside the Admin Console page's left
@@ -596,9 +614,11 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                           <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Dashboard</Link>
                         </motion.div>
 
+                        {(can('company') || can('domain')) && (
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }} className="space-y-6">
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Strategic Discovery</p>
                           <div className="grid grid-cols-1 gap-3">
+                            {can('company') && (
                             <Link to="/discovery/company" onClick={() => setIsMobileMenuOpen(false)} className="group bg-purple-50/50 p-5 rounded-[24px] border border-purple-100/50 flex items-center justify-between transition-all hover:bg-purple-50">
                               <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm text-base">🏢</div>
@@ -606,6 +626,8 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                               </div>
                               <svg className="w-4 h-4 text-[#a26da8] transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </Link>
+                            )}
+                            {can('domain') && (
                             <Link to="/discovery/domain" onClick={() => setIsMobileMenuOpen(false)} className="group bg-teal-50/50 p-4 rounded-[24px] border border-teal-100/50 flex items-center justify-between transition-all hover:bg-teal-50">
                               <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm text-base">🌐</div>
@@ -613,28 +635,40 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, setIsAuthentic
                               </div>
                               <svg className="w-4 h-4 text-[#4db6ac] transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </Link>
+                            )}
                           </div>
                         </motion.div>
+                        )}
 
+                        {can('processEvaluation') && (
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/evaluations" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Evaluations</Link>
                         </motion.div>
+                        )}
 
+                        {can('agents') && (
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/admin/standalone" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Agent Builder</Link>
                         </motion.div>
+                        )}
 
+                        {can('agents') && can('agentPlayground') && (
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/playground" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Agent Playground</Link>
                         </motion.div>
+                        )}
 
+                        {can('agents') && can('agentSolutions') && (
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/agent-solutions" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Agent Solutions</Link>
                         </motion.div>
+                        )}
 
+                        {can('orchestration') && (
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/admin/orchestration" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Orchestration</Link>
                         </motion.div>
+                        )}
 
                         <motion.div variants={{ open: { opacity: 1, x: 0 }, closed: { opacity: 0, x: 20 } }}>
                           <Link to="/support" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black text-gray-900 uppercase tracking-tighter hover:text-[#a26da8] transition-colors">Support</Link>
