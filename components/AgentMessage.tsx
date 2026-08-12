@@ -117,25 +117,38 @@ const linkifyCitations = (s: string, valid: Set<number>): string => {
   return out;
 };
 
-// Some models emit bullet lists inline — "…tendency. * Higher yield * After-burn…"
-// instead of putting each point on its own line — so Markdown never list-ifies them
-// and the "* " shows as a literal asterisk. Promote a mid-line " * " that clearly
-// starts a new point (right after sentence punctuation, followed by bold or a capital)
-// to a real bullet on its own line. Multiplication ("2 * 3") and bold ("**x**") are
-// left alone by the punctuation anchor and the capital/`**` lookahead.
-const fixInlineBullets = (s: string): string =>
-  s.replace(/([.!?:;])[ \t]+\*[ \t]+(?=\*\*|[A-Z])/g, '$1\n- ');
+// Some models emit list points inline — "…tendency. * Higher yield. - After-burn…"
+// or with bullet glyphs (•, ‣) — instead of putting each point on its own line, so
+// Markdown never list-ifies them and the marker shows literally. Promote those to
+// real bullets on their own line. The sentence-punctuation anchor plus a capital/bold
+// lookahead keeps multiplication ("2 * 3"), ranges/negatives ("5 - 3", "-5") and bold
+// ("**x**") untouched.
+const structureLists = (s: string): string =>
+  s
+    // Unicode bullet glyphs → a Markdown bullet on its own line.
+    .replace(/[ \t]*[•‣◦●▪][ \t]+/g, '\n- ')
+    // Inline "…sentence. * Point" / "…sentence. - Point" → real bullets.
+    .replace(/([.!?:;)])[ \t]+[*\-][ \t]+(?=\*\*|[A-Z])/g, '$1\n- ');
+
+// Turn intentional single line breaks into Markdown hard breaks so multi-line points
+// that use single "\n" (which Markdown would otherwise fold into one paragraph) keep
+// their own lines. List items, headings, blank lines and table rows are left alone.
+const preserveLineBreaks = (s: string): string =>
+  s.replace(/([^\n|])\n(?![\n|])(?!\s*(?:[-*+]|\d+[.)])\s)(?!\s*#{1,6}\s)/g, '$1  \n');
 
 // Clean up messy agent formatting: drop heavy ASCII divider lines, convert
-// tab-separated tables to Markdown, fix inline bullets, and linkify citations.
-// Fenced code untouched.
+// tab-separated tables to Markdown, structure inline lists, keep intentional line
+// breaks, and linkify citations. Fenced code untouched.
 const normalizeAgentMarkdown = (input: string, valid: Set<number>): string =>
   input
     .split(/(```[\s\S]*?```)/g)
     .map((seg, idx) => {
       if (idx % 2 === 1) return seg; // fenced code — leave exactly as-is
       const noRules = seg.replace(/^[^\S\n]*[─-╿]{3,}[^\S\n]*$/gm, ''); // box-drawing rules
-      return linkifyCitations(normalizeMath(convertTabTables(fixInlineBullets(noRules))), valid);
+      return linkifyCitations(
+        preserveLineBreaks(normalizeMath(convertTabTables(structureLists(noRules)))),
+        valid,
+      );
     })
     .join('')
     .replace(/\n{3,}/g, '\n\n')
