@@ -44,16 +44,21 @@ const loadPerms = (): Promise<Perms | null> => {
 export const resetPermissionsCache = () => { cacheToken = null; cache = null; inflight = null; };
 
 export function usePermissions() {
-  const [perms, setPerms] = useState<Perms | null>(cache);
-  const [loading, setLoading] = useState<boolean>(
-    !cache && typeof sessionStorage !== 'undefined' && !!sessionStorage.getItem('token'),
-  );
+  // Track the current auth token so the hook re-fetches whenever it changes
+  // (login / logout / account switch). Without this, a newly logged-in user keeps
+  // seeing the previous user's cached permissions until a manual page refresh,
+  // because the effect would otherwise only run once on mount.
+  const token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('token') : null;
+  const [perms, setPerms] = useState<Perms | null>(cacheToken === token ? cache : null);
+  const [loading, setLoading] = useState<boolean>(!!token && !(cacheToken === token && cache));
 
   useEffect(() => {
     let alive = true;
+    if (!token) { setPerms(null); setLoading(false); return; }
+    if (!(cacheToken === token && cache)) setLoading(true);
     loadPerms().then(p => { if (alive) { setPerms(p); setLoading(false); } });
     return () => { alive = false; };
-  }, []);
+  }, [token]);
 
   // Allowed unless the feature is explicitly false (admins always allowed).
   const can = (key: string): boolean => {
