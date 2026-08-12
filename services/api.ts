@@ -446,6 +446,44 @@ export const apiService = {
     }
   },
 
+  // Feature-Based Access Control (FBAC). Purely additive — no existing endpoint changes.
+  // `me`/`features` are readable by any authenticated user; `getUser`/`updateUser` are
+  // TENANT_ADMIN-only (backend returns 403 otherwise, and for cross-org targets).
+  permissions: {
+    me: async () => {
+      const response = await fetch(`${BASE_URL}/permissions/me`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    features: async () => {
+      const response = await fetch(`${BASE_URL}/permissions/features`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    getUser: async (userId: string) => {
+      const response = await fetch(`${BASE_URL}/permissions/users/${userId}`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    updateUser: async (
+      userId: string,
+      payload: {
+        features?: Record<string, boolean>;
+        agentAccess?: { mode: 'all' | 'restricted'; allowedAgentIds?: string[] };
+      },
+    ) => {
+      const response = await fetch(`${BASE_URL}/permissions/users/${userId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+      return handleResponse(response);
+    },
+  },
+
   documents: {
     upload: async (file: File) => {
       const formData = new FormData();

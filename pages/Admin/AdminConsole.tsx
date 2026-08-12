@@ -17,7 +17,8 @@ import {
   User as UserIcon,
   ChevronRight,
   ChevronLeft,
-  Menu
+  Menu,
+  ShieldCheck
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { AdminMeta } from '../../types/admin-console';
@@ -27,10 +28,11 @@ import SolutionsLab from './console/SolutionsLab';
 import AuditLogs from './console/AuditLogs';
 import TokenUsage from './console/TokenUsage';
 import SystemAdmin from './SystemAdmin';
+import UserAccess from './console/UserAccess';
 
 const AdminConsole: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'agents' | 'solutions' | 'api' | 'overview' | 'orgs' | 'audit' | 'usage' | 'system'>('agents');
+  const [activeTab, setActiveTab] = useState<'agents' | 'solutions' | 'api' | 'overview' | 'orgs' | 'audit' | 'usage' | 'system' | 'access'>('agents');
   const [userRole, setUserRole] = useState('');
   const [meta, setMeta] = useState<AdminMeta | null>(null);
   const [loadingMeta, setLoadingMeta] = useState(true);
@@ -83,8 +85,9 @@ const AdminConsole: React.FC = () => {
     { id: 'usage', label: 'Token Usage', icon: BarChart3, group: 'Platform' },
   ];
 
-  const adminNav: { label: string; icon: any; show: boolean; tab?: 'system'; to?: string }[] = [
+  const adminNav: { label: string; icon: any; show: boolean; tab?: 'system' | 'access'; to?: string }[] = [
     { label: 'System Admin', tab: 'system' as const, show: userRole === 'TENANT_ADMIN', icon: Terminal },
+    { label: 'User Access', tab: 'access' as const, show: userRole === 'TENANT_ADMIN', icon: ShieldCheck },
     { label: 'Org Admin', to: '/admin/org', show: userRole === 'SUPER_ADMIN_ROLE', icon: Building2 },
     { label: 'Dept Admin', to: '/admin/dept', show: userRole === 'ADMIN_ROLE' || userRole === 'SUPER_ADMIN_ROLE', icon: UserIcon },
   ].filter(i => i.show);
@@ -196,7 +199,7 @@ const AdminConsole: React.FC = () => {
           <span className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">Admin Console</span>
         </div>
 
-        {activeTab !== 'system' && (
+        {activeTab !== 'system' && activeTab !== 'access' && (
           <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 shrink-0 relative z-10">
             <div className="flex-1 max-w-md relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -209,12 +212,13 @@ const AdminConsole: React.FC = () => {
           </header>
         )}
 
-        <main className={`overflow-auto bg-[#fbfbfe] flex-1 ${activeTab === 'system' ? '' : 'p-4 md:p-10'}`}>
+        <main className={`overflow-auto bg-[#fbfbfe] flex-1 ${activeTab === 'system' || activeTab === 'access' ? '' : 'p-4 md:p-10'}`}>
           {activeTab === 'agents' && <BlueprintGallery meta={meta} />}
           {activeTab === 'solutions' && <SolutionsLab meta={meta} />}
           {activeTab === 'audit' && <AuditLogs />}
           {activeTab === 'usage' && <TokenUsage />}
           {activeTab === 'system' && <SystemAdmin />}
+          {activeTab === 'access' && <UserAccess />}
         </main>
       </div>
     </div>
