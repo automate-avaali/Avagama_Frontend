@@ -349,7 +349,7 @@ const SystemAdmin: React.FC = () => {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-24 right-6 z-[10000] animate-slideIn">
-          <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 ${
+          <div className={`px-4 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 ${
             toast.type === 'success' 
               ? 'bg-white border-green-500 text-gray-900' 
               : 'bg-white border-red-500 text-gray-900'
@@ -457,7 +457,7 @@ const SystemAdmin: React.FC = () => {
               <button 
                 onClick={() => setOnboardEnterpriseModal({ ...onboardEnterpriseModal, isOpen: false })} 
                 disabled={isConfirming}
-                className="px-6 py-4 text-gray-500 font-bold hover:bg-gray-100 rounded-2xl disabled:opacity-50 transition-colors"
+                className="px-4 py-4 text-gray-500 font-bold hover:bg-gray-100 rounded-2xl disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -691,7 +691,7 @@ const SystemAdmin: React.FC = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="w-full max-w-[1700px] mx-auto space-y-8">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -789,42 +789,42 @@ const SystemAdmin: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50/50">
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Plan</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Total Credits</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Plan</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Total Credits</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                         Extra Credit Pool
                       </th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Total Accounts</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Credits Held by Users</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Actions</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Total Accounts</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Credits Held by Users</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {paginatedOrgs.map((org: any) => (
                       <tr key={org._id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-bold text-gray-900">{org.name}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className={`px-3 py-1 text-xs font-bold rounded-lg uppercase tracking-wide ${getPlanBadgeStyle(org.plan)}`}>
                           {org.plan}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{org.totalCredits?.toLocaleString() || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{org.unallocatedCredits?.toLocaleString() || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{org.userCount || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{org.userCredits?.toLocaleString() || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         {!org.isApproved ? (
                           <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wide bg-amber-50 text-amber-600">
                             PENDING APPROVAL
@@ -837,7 +837,7 @@ const SystemAdmin: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
                           {org.isApproved && (
                             <button 
@@ -927,32 +927,32 @@ const SystemAdmin: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50/50">
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Email</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Role</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Wallet</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Actions</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Email</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Role</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Wallet</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {paginatedUsers.map((user: any) => (
                       <tr key={user._id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-bold text-gray-900">{user.email}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[10px] font-bold rounded-lg uppercase tracking-wide">
                           {user.role?.replace('_ROLE', '').replace('_', ' ')}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{user.organization?.name || 'N/A'}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{user.credits?.toLocaleString() || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         {user.organization && user.organization.isActive === false ? (
                           <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wide bg-slate-100 text-slate-700">
                             ORG SUSPENDED
@@ -969,7 +969,7 @@ const SystemAdmin: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
                           {user.isApproved && (
                             <button 
@@ -1047,30 +1047,30 @@ const SystemAdmin: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50/50">
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Requested By</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Amount</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Reason</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
-                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Actions</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Requested By</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Amount</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Reason</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
+                      <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {paginatedRequests.map((request: any) => (
                       <tr key={request._id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-bold text-gray-900">{request.organization?.name || 'N/A'}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-semibold text-gray-700">{request.requestedBy?.email || 'Unknown'}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="font-black text-gray-900">{request.amount?.toLocaleString() || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="text-sm text-gray-600">{request.reason || '-'}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wide ${
                           request.status === 'pending' ? 'bg-amber-50 text-amber-600' :
                           request.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
@@ -1078,7 +1078,7 @@ const SystemAdmin: React.FC = () => {
                           {request.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         {request.status === 'pending' && (
                           <div className="flex items-center justify-end gap-2">
                             <button 
@@ -1142,31 +1142,31 @@ const SystemAdmin: React.FC = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/50">
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Amount</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Reason</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Requested By</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Request Date</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Action Date</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Action By</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Rejection Note</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Organization</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Amount</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Reason</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Requested By</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Request Date</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Action Date</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Action By</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Rejection Note</th>
+                    <th className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {historyData.map((request: any) => (
                     <tr key={request._id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-gray-900">{request.organization?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 font-black text-gray-900">{request.amount?.toLocaleString() || 0}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{request.reason || '-'}</td>
-                      <td className="px-6 py-4 font-semibold text-gray-700">{request.requestedBy?.email || 'Unknown'}</td>
-                      <td className="px-6 py-4 text-gray-700">{new Date(request.createdAt).toLocaleDateString('en-US')}</td>
-                      <td className="px-6 py-4 text-gray-700">{request.processedAt ? new Date(request.processedAt).toLocaleDateString('en-US') : 'N/A'}</td>
-                      <td className="px-6 py-4 text-gray-700">{request.processedBy?.email || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-4 py-4 font-bold text-gray-900">{request.organization?.name || 'N/A'}</td>
+                      <td className="px-4 py-4 font-black text-gray-900">{request.amount?.toLocaleString() || 0}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">{request.reason || '-'}</td>
+                      <td className="px-4 py-4 font-semibold text-gray-700">{request.requestedBy?.email || 'Unknown'}</td>
+                      <td className="px-4 py-4 text-gray-700">{new Date(request.createdAt).toLocaleDateString('en-US')}</td>
+                      <td className="px-4 py-4 text-gray-700">{request.processedAt ? new Date(request.processedAt).toLocaleDateString('en-US') : 'N/A'}</td>
+                      <td className="px-4 py-4 text-gray-700">{request.processedBy?.email || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
                         {request.status === 'rejected' ? request.rejectionReason || '-' : '-'}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wide ${
                           request.status === 'approved' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                         }`}>

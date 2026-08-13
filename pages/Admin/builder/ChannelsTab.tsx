@@ -27,7 +27,7 @@ interface ChannelsTabProps {
 
 // Public-facing frontend URL used for shareable links (so they work when opened outside this dev host).
 // Env-driven — set VITE_PUBLIC_APP_URL to switch (e.g. Netlify → EC2) with no code change.
-const PUBLIC_APP_URL = ((import.meta as any).env?.VITE_PUBLIC_APP_URL as string) || 'https://avagamaai.netlify.app';
+const PUBLIC_APP_URL = ((import.meta as any).env?.VITE_PUBLIC_APP_URL as string) || 'https://www.avagama.dev';
 
 const CHANNELS = [
   { type: 'web', name: 'Web Widget', icon: <Globe size={20} />, desc: 'Embed on your website as a chat bubble or full page.' },

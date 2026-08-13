@@ -1,10 +1,33 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { Send, Loader2, Sparkles } from 'lucide-react';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { Send, Loader2, Sparkles, Lock } from 'lucide-react';
 import { apiService } from '../services/api';
 import AgentMessage from '../components/AgentMessage';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface Msg { role: 'user' | 'assistant'; text: string; citations?: any[] }
+
+// Access gate shown when a shareable (token) link is opened without sign-in or
+// without access to the agent. Deployed (slug-only) links stay public.
+const AccessGate: React.FC<{ title: string; message: string; action?: { label: string; onClick: () => void } }> = ({ title, message, action }) => (
+  <div className="min-h-[calc(100vh-80px)] bg-[#fafafa] flex items-center justify-center px-4 py-8">
+    <div className="w-full max-w-md bg-white border border-gray-100 rounded-[32px] shadow-sm p-10 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-purple-50 text-[#a26da8] flex items-center justify-center mx-auto mb-5">
+        <Lock className="w-6 h-6" />
+      </div>
+      <h1 className="text-lg font-black text-gray-900 mb-2">{title}</h1>
+      <p className="text-sm text-gray-500 leading-relaxed mb-6">{message}</p>
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="px-6 py-3 rounded-2xl bg-[#a26da8] text-white text-xs font-black uppercase tracking-widest hover:bg-[#8e5a94] transition-all"
+        >
+          {action.label}
+        </button>
+      )}
+    </div>
+  </div>
+);
 
 const prettifySlug = (slug: string) =>
   (slug || 'Assistant')
@@ -19,6 +42,12 @@ const PublicChat: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || undefined;
 
+  const navigate = useNavigate();
+  const { perms, loading: permsLoading } = usePermissions();
+  const isAuthed = typeof sessionStorage !== 'undefined' && !!sessionStorage.getItem('token');
+  const isPreview = !!token; // token-based shareable link → requires sign-in + agent access
+  const [agentId, setAgentId] = useState<string | null>(null);
+
   const [agentName, setAgentName] = useState(prettifySlug(slug));
   const [loadingInfo, setLoadingInfo] = useState(true);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -31,6 +60,8 @@ const PublicChat: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Shareable (token) links are private — don't fetch anything until signed in.
+      if (isPreview && !isAuthed) { setLoadingInfo(false); return; }
       setLoadingInfo(true);
       try {
         const res = token
@@ -39,6 +70,7 @@ const PublicChat: React.FC = () => {
         if (cancelled) return;
         if (res.success && res.data) {
           const d = res.data;
+          setAgentId(d.agent?._id || d._id || d.agent_id || d.agentId || null);
           const name = d.name || d.agent?.name || prettifySlug(slug);
           const greeting = d.persona?.greeting || d.greeting || d.agent?.persona?.greeting || `Hi! I'm ${name}. How can I help you today?`;
           setAgentName(name);
@@ -83,6 +115,36 @@ const PublicChat: React.FC = () => {
   };
 
   const initial = (agentName || 'A').charAt(0).toUpperCase();
+
+  // Gate shareable (token) links: the visitor must be signed in AND have access to this agent.
+  // Deployed (slug-only) links are unaffected and remain public.
+  const hasAgentAccess = (() => {
+    if (!isPreview) return true;               // deployed public link stays public
+    if (!perms) return true;                   // permissions unknown → don't hard-block
+    if (perms.isAdmin) return true;
+    const acc = perms.agentAccess;
+    if (!acc || acc.mode !== 'restricted') return true;
+    if (!agentId) return true;                 // couldn't map the agent → don't block
+    return (acc.allowedAgentIds || []).map(String).includes(String(agentId));
+  })();
+
+  if (isPreview && !isAuthed) {
+    return (
+      <AccessGate
+        title="Sign in required"
+        message="This shared agent link is private. Please sign in with an account that has access to view it."
+        action={{ label: 'Log in', onClick: () => navigate('/login') }}
+      />
+    );
+  }
+  if (isPreview && isAuthed && !permsLoading && !hasAgentAccess) {
+    return (
+      <AccessGate
+        title="No access to this agent"
+        message="Your account doesn’t have access to this agent. Please ask an administrator to grant you access."
+      />
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-[#fafafa] flex justify-center px-4 py-8">
