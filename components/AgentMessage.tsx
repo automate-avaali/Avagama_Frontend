@@ -108,10 +108,16 @@ const linkifyCitations = (s: string, valid: Set<number>): string => {
   // response carries no citation list). A preceding word char (e.g. arr[0]) is skipped
   // and "[n](…)" links are left alone; a leading space is dropped so spacing is uniform.
   out = out.replace(/(^|[^\w])[ \t ]*\[(\d{1,3})\](?!\()/g, (whole, pre, n) => {
-    if (!(valid.size === 0 || valid.has(Number(n)))) return whole;
+    // Convert every [n] marker so no raw brackets remain, even indices absent from the
+    // citation list; the list only enriches the hover and never gates the conversion.
     const sep = /\s/.test(pre) ? '' : pre; // drop a whitespace separator; keep punctuation / start
     return `${sep}[${n}](#cite:${n} "")`;
   });
+  // Second pass — with adjacent markers like [1][5][6] the first pass converts only every
+  // other one (the shared "]" is consumed as the next match's separator). After that pass
+  // the leftovers sit right after a converted link's ")", so this plain pass mops them up.
+  out = out.replace(/(^|[^\w])\[(\d{1,3})\](?!\()/g, (_w, pre, n) =>
+    `${/\s/.test(pre) ? '' : pre}[${n}](#cite:${n} "")`);
   // Let citation badges hug the following punctuation (no "¹ ." gap).
   out = out.replace(/(\]\(#cite:\d+ "[^"]*"\))[ \t ]+([.,;:!?，。；：！？)])/g, '$1$2');
   return out;
