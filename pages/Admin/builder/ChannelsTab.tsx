@@ -173,8 +173,8 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                            value={`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`}
                            className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-xs font-mono text-gray-600 outline-none pr-12"
                         />
-                        <button 
-                           onClick={() => copyShareLink()}
+                        <button
+                           onClick={() => copyShareLink(`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`)}
                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-900 transition-all"
                         >
                            <Copy size={16} />
