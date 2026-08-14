@@ -684,7 +684,246 @@ const apAutomationAgent: AgentSolution = {
   ],
 };
 
-export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent];
+// ---------------------------------------------------------------------------
+// PO, Contract & SAP Validation Agent (PO → extract → validate vs SAP & Contract)
+// ---------------------------------------------------------------------------
+const PO_CONTRACT_AGENT_URL =
+  ((import.meta as any).env?.VITE_PO_CONTRACT_AGENT_URL as string) ||
+  'https://po-and-contract-match-vtm2.vercel.app/';
+
+const poContractValidationAgent: AgentSolution = {
+  id: 'po-contract-sap-validation-agent',
+  name: 'PO, Contract & SAP Validation Agent',
+  tagline: 'Extract PO data and validate it against the Contract and SAP records — before VIM.',
+  description:
+    'Upload a Purchase Order and its Contract and two sequential CrewAI crews extract every field (schema-validated with Pydantic), then validate the PO against the SAP record and against the Contract. It returns two validation reports that flag each difference as match, minor or major — catching discrepancies before hand-off to VIM.',
+  category: 'Procurement · PO Validation',
+  emoji: '⚖️',
+  // Indigo → purple pastel (matches the solution deck's brand). Dark purple text stays readable.
+  accentFrom: '#a5b4fc',
+  accentTo: '#d8b4fe',
+  accentText: '#5b21b6',
+  status: 'live',
+  agentUrl: PO_CONTRACT_AGENT_URL,
+  // Public production Vercel app (no SSO) — embeds inline.
+  embeddable: true,
+  featuredSampleId: 'po-vs-contract',
+  whatItDoes: [
+    'Extracts every field from the PO and the Contract with a CrewAI extraction crew (schema-validated with Pydantic)',
+    'Validates the PO against the SAP record — contract price, payment terms and dates',
+    'Validates the PO against the Contract — pricing, payment terms, liquidated-damage cap and penalties',
+    'Returns two validation reports that flag each difference as match / minor / major before VIM hand-off',
+  ],
+  steps: [
+    {
+      title: 'Open the agent',
+      description:
+        'The PO, Contract & SAP Validation agent loads in the window on this page. It runs a PO through extraction and then two validations — against the SAP record and against the Contract.',
+      tip: 'It embeds directly here — the app is public, no login needed.',
+    },
+    {
+      title: 'Get the sample inputs',
+      description:
+        'Download the sample Purchase Order, Contract and SAP record below, then drop one into this step to continue. Upload the PO and Contract PDFs into the agent — the SAP record is a JSON stand-in for the SAP system.',
+      tip: 'The three samples are engineered to agree with SAP but diverge from the Contract, so you see both a pass and a fail.',
+      action: 'upload',
+    },
+    {
+      title: 'Watch the extraction crew run',
+      description:
+        'The POExtractor and ContractExtractor read both PDFs and produce schema-validated PODetails and ContractDetails — never raw text across a crew boundary.',
+    },
+    {
+      title: 'Follow the two validations',
+      description:
+        'The validation crew compares the PO field by field: first against the SAP record, then against the Contract. Every difference is rated match, minor or major with a plain-English note.',
+      tip: 'Watch the liquidated-damage cap and the contract value — that is where the PO and Contract diverge.',
+    },
+    {
+      title: 'Read the two validation reports',
+      description:
+        'Each report gives a per-field severity and an overall status — PASS, PASS_WITH_WARNINGS or FAIL. With this sample set, PO-vs-SAP passes while PO-vs-Contract fails on the liquidated-damage cap and contract value, ready to route before VIM.',
+      tip: 'The system stops at extract → compare → summarise — it flags discrepancies but never resolves them (that is VIM / human territory).',
+      anchor: 'usecases',
+    },
+  ],
+  samples: [
+    {
+      id: 'po-vs-sap',
+      label: 'PO vs SAP → passes',
+      expectation: 'PO contract price and payment terms agree with the SAP record → PASS (a minor date variance may be flagged).',
+      tone: 'success',
+      notes: [
+        'PO CC-PO-2025-001234 checked against the SAP PO record for the same number.',
+        'Contract price (INR 45,00,000) and payment terms (Net 30) match SAP.',
+        'Overall PASS — at most a minor, low-severity variance is noted.',
+      ],
+    },
+    {
+      id: 'po-vs-contract',
+      label: 'PO vs Contract → fails',
+      expectation: 'The PO diverges from the Contract on value and the LD cap → FAIL, routed for review.',
+      tone: 'danger',
+      notes: [
+        'Contract value differs — INR 45,00,000 on the PO vs INR 45,50,000 in the Contract.',
+        'Liquidated-damage cap differs materially — 5% on the PO vs 10% in the Contract.',
+        'Payment terms are semantically equivalent (Net 30) — a match, not a flag.',
+      ],
+    },
+    {
+      id: 'contract-only-clauses',
+      label: 'Contract-only clauses surfaced',
+      expectation: 'Clauses that exist only in the Contract are flagged so nothing is missed before VIM.',
+      tone: 'info',
+      notes: [
+        'The Contract adds a Performance Bank Guarantee (10%) and a 2% quality penalty clause.',
+        'These have no PO counterpart, so they are surfaced as additional obligations.',
+        'The agent summarises them — it never approves or resolves them itself.',
+      ],
+    },
+  ],
+  sampleInputsTitle: 'Sample PO, Contract & SAP record to try',
+  sampleInputs: [
+    {
+      id: 'po',
+      label: 'Purchase Order — CC-PO-2025-001234',
+      url: '/sample-po-contract/sample_po.pdf',
+      description: 'The PO to validate — INR 45,00,000, Net 30, 5% liquidated-damage cap.',
+      recommended: true,
+    },
+    {
+      id: 'contract',
+      label: 'Contract — CC-CONT-2025-001234',
+      url: '/sample-po-contract/sample_contract.pdf',
+      description: 'The governing contract — INR 45,50,000, 10% LD cap, plus bank-guarantee and penalty clauses.',
+    },
+    {
+      id: 'sap-record',
+      label: 'SAP record — sap_po_record.json',
+      url: '/sample-po-contract/sap_po_record.json',
+      description: 'The SAP PO record (a JSON stand-in for SAP Gauss) the PO is validated against.',
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Pricing Intelligence Agent (SAP cost + commodity/vendor quotes -> price recos)
+// ---------------------------------------------------------------------------
+const PRICING_AGENT_URL =
+  ((import.meta as any).env?.VITE_PRICING_AGENT_URL as string) ||
+  'https://bidco-pricing-intelligence-blush.vercel.app/';
+
+const pricingIntelligenceAgent: AgentSolution = {
+  id: 'pricing-intelligence-agent',
+  name: 'Pricing Intelligence Agent',
+  tagline: 'Turn SAP costs, live commodity prices and vendor quotes into defensible price recommendations.',
+  description:
+    'A pricing-intelligence workspace for manufacturers. It ingests SAP cost and inventory exports, tracks raw-material commodity prices and vendor quotes, and recomputes every product’s true cost under three bases — SAP MAP baseline, full-market, and blended reality. With demand, margin and EBITDA impact worked out, a deterministic decision engine recommends a price for each SKU and routes it to approve or hold.',
+  category: 'Pricing · Margin Intelligence',
+  emoji: '🏷️',
+  // Fresh emerald → green pastel (margin / finance). Dark green text stays readable.
+  accentFrom: '#6ee7b7',
+  accentTo: '#86efac',
+  accentText: '#166534',
+  status: 'live',
+  agentUrl: PRICING_AGENT_URL,
+  // Public production Vercel workspace — embeds inline (sign-in happens inside the app).
+  embeddable: true,
+  featuredSampleId: 'scenario-c',
+  whatItDoes: [
+    'Ingests SAP exports — Moving Average Price, CS12 BOM and MB52 inventory — plus demand and operations-cost CSVs',
+    'Tracks raw-material commodity prices and vendor quotes, landing each quote with freight and import duty',
+    'Recomputes every product’s cost three ways — SAP MAP baseline, full-market and blended reality — with margin and EBITDA impact',
+    'A deterministic decision engine recommends a price per SKU and flags raise-price, re-procure, approve or hold',
+  ],
+  steps: [
+    {
+      title: 'Open the agent and sign in',
+      description:
+        'The Pricing Intelligence workspace loads in the window on this page. Sign in with your corporate email — it is a live workspace backed by a database, not a one-off document uploader.',
+      tip: 'If the embedded window is tight, use “Open in new tab” to run it full-screen alongside this tutorial.',
+    },
+    {
+      title: 'Start on the Dashboard',
+      description:
+        'The Dashboard is the portfolio view: blended average margin, portfolio EBITDA, how many SKUs need a price increase or fresh procurement, and the revenue at risk if everything were priced at today’s market cost.',
+      tip: 'The headline number to watch is “EBITDA Risk (A vs C)” — the gap between full-market cost and blended reality.',
+    },
+    {
+      title: 'Load data in Data Ingestion',
+      description:
+        'Upload your SAP exports (MAP, CS12 BOM, MB52 inventory) and the demand and operations-cost CSV templates. No SAP handy? Use the built-in Data Synthesizer to generate realistic industry data to explore with.',
+      tip: 'Download the CSV schema templates first so your columns line up on the first try.',
+    },
+    {
+      title: 'Track costs in the Commodities & RM Market',
+      description:
+        'Add vendor quotes — quote price plus freight and import duty gives a landed cost per raw material — fetch live rates, and let the Commodities Researcher pull market context. This replaces chasing quotes over WhatsApp/email.',
+      tip: 'The “Best Landed Quote” and “Best Vendor” surface automatically once a few quotes are in.',
+    },
+    {
+      title: 'Compare the three cost bases in Cost Simulation',
+      description:
+        'Every product is costed three ways: Scenario A (Full Market — all RMs re-procured at latest quotes + freight + duty), Scenario B (SAP MAP baseline), and Scenario C (Blended Reality — on-hand stock at MAP + the shortfall at market). Margin and EBITDA are shown under each.',
+      tip: 'Scenario C is the realistic landed cost the price recommendation is anchored on.',
+    },
+    {
+      title: 'Review recommendations and decide',
+      description:
+        'Pricing Recommendations proposes a recommended price and a minimum target price per SKU — with a target margin and an acceptance probability — and flags whether the SKU needs a price increase or re-procurement. Approve or hold each one; Inventory Analysis and Trend & Demand back it with depletion alerts and a demand forecast, and the Avagama Advisor chat answers cost questions in context.',
+      tip: 'Deterministic, not fuzzy — every recommendation traces back to a cost basis and margin target you can defend.',
+      anchor: 'usecases',
+    },
+  ],
+  samples: [
+    {
+      id: 'scenario-a',
+      label: 'Scenario A · Full Market',
+      expectation: 'Every RM re-procured at the latest vendor quotes + freight + duty → the true forward cost.',
+      tone: 'danger',
+      notes: [
+        'Values the whole BOM at current market — the cost you would pay to make the product today.',
+        'Usually the highest cost basis, and the one that reveals EBITDA at risk if you keep pricing off old SAP costs.',
+        'Answers “what happens to margin if input prices stay where they are now?”',
+      ],
+    },
+    {
+      id: 'scenario-b',
+      label: 'Scenario B · SAP MAP baseline',
+      expectation: 'Every RM valued at its current SAP Moving Average Price → the accounting baseline you hold today.',
+      tone: 'info',
+      notes: [
+        'The cost your books show right now, straight from the SAP MAP.',
+        'Best-case-looking because it reflects stock bought earlier, before recent market moves.',
+        'The reference point the other two scenarios are compared against.',
+      ],
+    },
+    {
+      id: 'scenario-c',
+      label: 'Scenario C · Blended Reality',
+      expectation: 'On-hand stock at MAP + the shortfall procured at market → the realistic landed cost.',
+      tone: 'success',
+      notes: [
+        'Blends what you already hold (at MAP) with what you must still buy (at market), using inventory cover.',
+        'The most realistic cost basis — and the one the price recommendation is anchored on.',
+        'Bridges the gap between the optimistic SAP baseline and the full-market view.',
+      ],
+    },
+    {
+      id: 'decision',
+      label: 'Deterministic decision → recommend & route',
+      expectation: 'Per SKU: a recommended price, a minimum target price, acceptance probability, and approve / hold.',
+      tone: 'warning',
+      notes: [
+        'The decision engine turns the chosen cost basis and a target margin into a concrete recommended price.',
+        'It flags SKUs that need a price increase or fresh procurement, with the revenue and EBITDA at stake.',
+        'Nothing auto-commits — every recommendation is presented for a human to approve or hold.',
+      ],
+    },
+  ],
+};
+
+export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent, poContractValidationAgent, pricingIntelligenceAgent];
 
 export const getAgentSolution = (id: string): AgentSolution | undefined =>
   AGENT_SOLUTIONS.find(a => a.id === id);

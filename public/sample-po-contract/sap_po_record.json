@@ -1,0 +1,12 @@
+{
+  "po_number": "CC-PO-2025-001234",
+  "po_date": "2025-08-15",
+  "contract_period_start": "2025-09-01",
+  "contract_period_end": "2026-08-31",
+  "contract_price": "INR 45,00,000",
+  "payment_terms": "Net 30 days",
+  "liquidated_damage_rate": "0.5% per week",
+  "liquidated_damage_cap": "5% of contract value",
+  "vendor_name": "ABC Engineering Services Pvt. Ltd.",
+  "vendor_code": "VENDOR-0089234"
+}
