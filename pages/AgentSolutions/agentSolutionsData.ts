@@ -101,7 +101,7 @@ export interface AgentSolution {
 // host later without touching code (mirrors VITE_PUBLIC_APP_URL pattern).
 const SALES_ORDER_AGENT_URL =
   ((import.meta as any).env?.VITE_SALES_ORDER_AGENT_URL as string) ||
-  'https://sales-order-agent-3v8hz9lhe-avaali.vercel.app/';
+  'https://sales-order-agent.vercel.app/';
 
 const salesOrderAgent: AgentSolution = {
   id: 'sales-order-agent',
@@ -117,9 +117,8 @@ const salesOrderAgent: AgentSolution = {
   accentText: '#115e59',
   status: 'live',
   agentUrl: SALES_ORDER_AGENT_URL,
-  // The Vercel preview URL is behind SSO and sends X-Frame-Options: DENY, so it
-  // cannot be embedded yet. Flip to true once a public, frame-friendly URL exists.
-  embeddable: false,
+  // Public production Vercel app (frame-friendly headers) — embeds inline.
+  embeddable: true,
   featuredSampleId: 'success',
   whatItDoes: [
     'Reads a purchase order PDF and extracts header + line-item data',
