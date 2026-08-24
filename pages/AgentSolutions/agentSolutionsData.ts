@@ -922,7 +922,133 @@ const pricingIntelligenceAgent: AgentSolution = {
   ],
 };
 
-export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent, poContractValidationAgent, pricingIntelligenceAgent];
+// ---------------------------------------------------------------------------
+// Invoice Intelligence & TDS Agent (Invoice -> OCR -> extraction -> TDS determination)
+// ---------------------------------------------------------------------------
+const TDS_AGENT_URL =
+  ((import.meta as any).env?.VITE_TDS_AGENT_URL as string) ||
+  'https://invoiceintelligen.netlify.app/';
+
+const invoiceTdsAgent: AgentSolution = {
+  id: 'invoice-intelligence-tds-agent',
+  name: 'Invoice Intelligence & TDS Agent',
+  tagline: 'Read any invoice, extract every field with confidence, and determine the TDS section & rate per line.',
+  description:
+    'One review screen over three steps — Mistral Document AI reads the invoice to markdown, an extraction agent returns every field with its confidence, and a TDS engine returns the section, rate and confidence for each line item. The tax base is always ex-GST, money stays exact to the paisa, and the engine never invents a tax figure — the reviewer sees exactly what was determined and how confident it was, ready to correct and export.',
+  category: 'Tax · TDS Determination',
+  emoji: '📑',
+  // Rose → red pastel, echoing the Avaali-red branding on the solution deck.
+  // Distinct from AP (amber) and Material (pink→lavender). Dark rose text stays readable.
+  accentFrom: '#fda4af',
+  accentTo: '#fca5a5',
+  accentText: '#9f1239',
+  status: 'live',
+  agentUrl: TDS_AGENT_URL,
+  // Netlify app now sends CSP frame-ancestors allowing the Avagama origins — embeds inline.
+  embeddable: true,
+  featuredSampleId: 'service-invoice',
+  whatItDoes: [
+    'Reads any invoice PDF or scan (PDF, PNG, JPEG, WebP, AVIF) to page markdown with Mistral Document AI',
+    'Extracts 17 header + 14 per-line fields, each with a confidence score and plain-English validation — all editable',
+    'Determines the TDS section, rate and confidence for every line item — on the ex-GST base, never the printed total',
+    'Exports an Excel workbook and a JSON audit trail carrying both agents’ raw request & response',
+  ],
+  steps: [
+    {
+      title: 'Open the agent',
+      description:
+        'The Invoice Intelligence & TDS app loads in the window on this page. If the embedded view is tight, use "Open in new tab" to run it full-screen alongside this tutorial.',
+      tip: 'It embeds directly here — no login needed to start a review.',
+    },
+    {
+      title: 'Upload an invoice',
+      description:
+        'Download one of the sample invoices below (start with the recommended service invoice), drop it into this step to continue, then upload the same file in the agent so it reads and extracts the document.',
+      tip: 'Both samples are real tax invoices — a service line and a goods line — so you can see how the TDS call differs.',
+      action: 'upload',
+    },
+    {
+      title: 'Watch OCR & extraction run',
+      description:
+        'Mistral Document AI reads the pages to markdown, then the extraction agent returns 17 header fields and 14 fields per line item — each with its own confidence score.',
+      tip: 'If the agent fails soft, you still get the fields plus a banner rather than a blank screen.',
+    },
+    {
+      title: 'Review & correct the fields',
+      description:
+        'Every extracted field is editable, with a confidence band and plain-English validation. Fix anything low-confidence — a taxable amount of 0 is blocked, because the extractor cannot tell "absent" from "zero".',
+      tip: 'The base sent to the TDS engine is the ex-GST taxableAmount, never the GST-inclusive printed total.',
+    },
+    {
+      title: 'Enter vendor details for TDS',
+      description:
+        'Supply the context no invoice carries — entity type, PAN status, lower-deduction certificate and FY-to-date paid. Every default value is tagged so the reviewer knows what was assumed.',
+      tip: 'These fields drive the rate: PAN status and an LDC can change the section and rate the engine returns.',
+    },
+    {
+      title: 'Determine TDS & export',
+      description:
+        'The TDS engine returns a section, rate and confidence for every line — joined on a deterministic lineItemID, never by position. Export the Excel workbook and JSON audit trail when the review looks right.',
+      tip: 'The engine never computes rate × base itself — it shows the section, rate and confidence it determined, so the number is defensible.',
+      anchor: 'usecases',
+    },
+  ],
+  samples: [
+    {
+      id: 'service-invoice',
+      label: 'Service invoice → TDS on the ex-GST base',
+      expectation: 'A repair/service line — the engine returns the applicable TDS section, rate & confidence on the ₹40,000 ex-GST base, not the ₹47,200 total.',
+      tone: 'success',
+      fileName: 'service-po-invoice.pdf',
+      notes: [
+        'Dhruv Engineers — "Carrier Chiller (23XRV) ICVC card repairing & programming" (HSN 998711), a service line.',
+        'Printed total ₹47,200 = ₹40,000 taxable + 18% IGST ₹7,200; the determination runs on ₹40,000.',
+        'The recommended first run — a service line is where a TDS section clearly applies.',
+      ],
+    },
+    {
+      id: 'material-invoice',
+      label: 'Goods invoice → base corrected',
+      expectation: 'A goods line billed GST-inclusive — determination runs on the ₹16,200 ex-GST base, not the ₹19,116 printed total.',
+      tone: 'info',
+      fileName: 'material-po-invoice.pdf',
+      notes: [
+        'Nuways Creation — "Laser Jet Compatible Cartridge CF228 A", 4 PCS (HSN 844399), a goods line.',
+        'Printed total ₹19,116 = ₹16,200 taxable + 9% CGST + 9% SGST; sending the total would deduct on a base 18% too high.',
+        'Shows how a goods purchase is treated differently from a service, both anchored on the ex-GST base.',
+      ],
+    },
+    {
+      id: 'period-not-ingested',
+      label: 'Out-of-period → mandatory review',
+      expectation: 'An invoice dated outside the ingested assessment year comes back no_dataset_for_period — every line Unresolved, never a zero rate.',
+      tone: 'warning',
+      notes: [
+        'The engine holds AY 2026-2027 today; an invoice outside it cannot be determined.',
+        'Every line reads "Unresolved" and the engine’s own note is shown — it never silently returns a 0% rate.',
+        'A degraded, explainable answer beats a confident wrong one — the reviewer always gets something to act on.',
+      ],
+    },
+  ],
+  sampleInputsTitle: 'Sample invoices to try',
+  sampleInputs: [
+    {
+      id: 'service-invoice',
+      label: 'Service invoice — Dhruv Engineers (DE-032/24-25)',
+      url: '/sample-tds-invoices/service-po-invoice.pdf',
+      description: 'A chiller-repair service line — ₹40,000 ex-GST + 18% IGST. Expect a TDS section & rate on the ex-GST base.',
+      recommended: true,
+    },
+    {
+      id: 'material-invoice',
+      label: 'Goods invoice — Nuways Creation (NCPL/2425/07/158)',
+      url: '/sample-tds-invoices/material-po-invoice.pdf',
+      description: 'A laser-cartridge goods line — ₹16,200 ex-GST + 9%+9% GST. Expect the determination to run on the ex-GST base.',
+    },
+  ],
+};
+
+export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent, poContractValidationAgent, pricingIntelligenceAgent, invoiceTdsAgent];
 
 export const getAgentSolution = (id: string): AgentSolution | undefined =>
   AGENT_SOLUTIONS.find(a => a.id === id);
