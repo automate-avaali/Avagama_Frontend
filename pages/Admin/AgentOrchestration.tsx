@@ -2282,7 +2282,7 @@ export const AgentOrchestration: React.FC = () => {
                               {score !== undefined && score !== null && (
                                 <div className="text-left md:text-right">
                                   <span className="text-[8px] font-mono font-black text-slate-400 uppercase tracking-widest block">Weighted Score</span>
-                                  <span className="text-sm font-black text-[#6fcbbd]">{Number(score).toFixed(2)} / 10.00</span>
+                                  <span className="text-sm font-black text-[#6fcbbd]">{Math.round(Number(score))} / 100</span>
                                 </div>
                               )}
                               

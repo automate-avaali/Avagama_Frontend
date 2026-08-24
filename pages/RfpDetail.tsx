@@ -14,7 +14,8 @@ import {
   Globe, 
   Percent,
   Trash2,
-  X
+  X,
+  Upload
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,6 +43,12 @@ const RfpDetail: React.FC = () => {
   // resolved RFP ID from step 1
   const [rfpId, setRfpId] = useState<string | null>(null);
   const [usecaseData, setUsecaseData] = useState<UsecaseDetails | null>(null);
+
+  // Entity/Company field (sourced from account's Company Name, editable, mandatory)
+  const [entityCompany, setEntityCompany] = useState('');
+
+  // Optional RFP template upload
+  const [rfpTemplateFile, setRfpTemplateFile] = useState<File | null>(null);
 
   // Generation states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -184,6 +191,19 @@ const RfpDetail: React.FC = () => {
         status: (rfpRecord?.status || 'draft').toUpperCase()
       });
 
+      // Entity/Company must reflect the Company Name provided at account creation
+      let accountCompanyName = '';
+      try {
+        const storedUser = sessionStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          accountCompanyName = parsedUser?.organization?.name || '';
+        }
+      } catch (e) {
+        console.error('Failed to parse account company name from session', e);
+      }
+      setEntityCompany(accountCompanyName || (company !== 'NOT SPECIFIED' ? company : ''));
+
       // If document status is already generated/completed, show download options directly
       if (rfpRecord?.status === 'generated' || rfpRecord?.status === 'completed') {
         setGenerationSuccess(true);
@@ -205,6 +225,11 @@ const RfpDetail: React.FC = () => {
   const handleCreateRfp = async () => {
     if (!rfpId) {
       toast.error('Unable to generate: No RFP ID has been resolved yet.');
+      return;
+    }
+
+    if (!entityCompany.trim()) {
+      toast.error('Entity/Company is required to generate the RFP document.');
       return;
     }
 
@@ -443,11 +468,19 @@ const RfpDetail: React.FC = () => {
                 <div className="border border-slate-100 rounded-2xl p-5 space-y-2">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Building className="w-4 h-4" />
-                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">ENTITY/COMPANY</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">
+                      ENTITY/COMPANY <span className="text-rose-500">*</span>
+                    </span>
                   </div>
-                  <span className="text-sm font-black text-slate-800 uppercase tracking-tight block">
-                    {usecaseData?.company}
-                  </span>
+                  <input
+                    type="text"
+                    value={entityCompany}
+                    onChange={(e) => setEntityCompany(e.target.value)}
+                    placeholder="Enter entity/company name"
+                    required
+                    id="entity-company-input"
+                    className={`w-full text-sm font-black text-slate-800 uppercase tracking-tight bg-transparent border-b outline-none pb-1 ${entityCompany.trim() ? 'border-slate-200 focus:border-slate-900' : 'border-rose-300 focus:border-rose-500'}`}
+                  />
                 </div>
 
                 <div className="border border-slate-100 rounded-2xl p-5 space-y-2">
@@ -467,7 +500,7 @@ const RfpDetail: React.FC = () => {
                       <span className="text-[9px] font-black uppercase tracking-widest font-mono">PRIORITY SCORE</span>
                     </div>
                     <span className="text-sm font-black text-[#6fcbbd] block">
-                      {Number(usecaseData.score).toFixed(2)} / 10.00
+                      {Math.round(Number(usecaseData.score))} / 100
                     </span>
                   </div>
                 )}
@@ -481,6 +514,33 @@ const RfpDetail: React.FC = () => {
                     {usecaseData?.status || 'DRAFT'}
                   </span>
                 </div>
+              </div>
+
+              {/* Optional RFP Template Upload */}
+              <div className="space-y-2" id="rfp-template-upload-section">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono block">Upload RFP Template (Optional)</span>
+                <label
+                  htmlFor="rfp-template-upload-input"
+                  className="flex items-center justify-between gap-3 border border-dashed border-slate-200 rounded-2xl p-5 cursor-pointer hover:border-slate-300 transition bg-slate-50/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Upload className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span className="text-xs font-semibold text-slate-600 truncate">
+                      {rfpTemplateFile ? rfpTemplateFile.name : 'Choose a .docx or .pdf file'}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Browse</span>
+                </label>
+                <input
+                  id="rfp-template-upload-input"
+                  type="file"
+                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,application/pdf"
+                  className="hidden"
+                  onChange={(e) => setRfpTemplateFile(e.target.files?.[0] || null)}
+                />
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
+                  Supports .docx and .pdf formats
+                </p>
               </div>
 
               {/* Actions Area - placed at the bottom of the section shown in the screenshot */}
