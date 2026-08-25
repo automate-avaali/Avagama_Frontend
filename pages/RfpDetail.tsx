@@ -52,6 +52,7 @@ const RfpDetail: React.FC = () => {
   const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
   const [templateUploadError, setTemplateUploadError] = useState<string | null>(null);
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
+  const [showDeleteTemplateConfirm, setShowDeleteTemplateConfirm] = useState(false);
 
   // Generation states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -400,14 +401,16 @@ const RfpDetail: React.FC = () => {
         headers
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(errText || `Failed to delete template with status ${response.status}`);
+        throw new Error(data?.message || `Failed to delete template with status ${response.status}`);
       }
 
       setTemplateInfo(null);
       setTemplateUploadError(null);
-      toast.success('RFP template removed.');
+      setShowDeleteTemplateConfirm(false);
+      toast.success('Template removed');
     } catch (err: any) {
       console.error('Template delete error:', err);
       toast.error(err.message || 'Failed to delete the RFP template.');
@@ -672,7 +675,7 @@ const RfpDetail: React.FC = () => {
                       </label>
                       <button
                         type="button"
-                        onClick={handleDeleteTemplate}
+                        onClick={() => setShowDeleteTemplateConfirm(true)}
                         disabled={generationSuccess || isDeletingTemplate}
                         className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
                         id="delete-template-button"
@@ -899,6 +902,58 @@ const RfpDetail: React.FC = () => {
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete RFP Document</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete RFP Template Confirmation Modal */}
+      {showDeleteTemplateConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" id="delete-template-modal">
+          <div className="bg-white max-w-md w-full rounded-[28px] p-6 md:p-8 shadow-2xl border border-slate-100 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Remove Template</h3>
+                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Confirm Action</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              Remove this template? Future downloads will use the default RFP format.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteTemplateConfirm(false)}
+                disabled={isDeletingTemplate}
+                className="px-5 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
+                id="cancel-delete-template-button"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteTemplate}
+                disabled={isDeletingTemplate}
+                className="px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                id="confirm-delete-template-button"
+              >
+                {isDeletingTemplate ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove Template</span>
                   </>
                 )}
               </button>
