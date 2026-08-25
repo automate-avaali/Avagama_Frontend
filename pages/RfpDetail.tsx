@@ -48,7 +48,10 @@ const RfpDetail: React.FC = () => {
   const [entityCompany, setEntityCompany] = useState('');
 
   // Optional RFP template upload
-  const [rfpTemplateFile, setRfpTemplateFile] = useState<File | null>(null);
+  const [templateInfo, setTemplateInfo] = useState<{ filename: string; mimetype?: string; uploadedAt?: string } | null>(null);
+  const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
+  const [templateUploadError, setTemplateUploadError] = useState<string | null>(null);
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
 
   // Generation states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -204,6 +207,9 @@ const RfpDetail: React.FC = () => {
       }
       setEntityCompany(accountCompanyName || (company !== 'NOT SPECIFIED' ? company : ''));
 
+      // Reflect any template already stored on the RFP record
+      setTemplateInfo(rfpRecord?.template || null);
+
       // If document status is already generated/completed, show download options directly
       if (rfpRecord?.status === 'generated' || rfpRecord?.status === 'completed') {
         setGenerationSuccess(true);
@@ -301,6 +307,112 @@ const RfpDetail: React.FC = () => {
       clearInterval(interval);
       setIsGenerating(false);
       setGenerationStatusText('');
+    }
+  };
+
+  // Format the template's uploadedAt timestamp for display
+  const formatUploadedAt = (isoString?: string) => {
+    if (!isoString) return '';
+    const parsed = new Date(isoString);
+    if (isNaN(parsed.getTime())) return isoString;
+    return parsed.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Upload (or replace) the optional RFP template
+  const MAX_TEMPLATE_SIZE_BYTES = 15 * 1024 * 1024;
+
+  const handleTemplateFileSelect = async (file: File | null) => {
+    if (!file) return;
+    setTemplateUploadError(null);
+
+    const lowerName = file.name.toLowerCase();
+    const hasValidExtension = lowerName.endsWith('.docx') || lowerName.endsWith('.pdf');
+    if (!hasValidExtension) {
+      const message = 'Only .docx or .pdf files are supported.';
+      setTemplateUploadError(message);
+      toast.error(message);
+      return;
+    }
+
+    if (file.size > MAX_TEMPLATE_SIZE_BYTES) {
+      const message = 'File exceeds the 15 MB size limit.';
+      setTemplateUploadError(message);
+      toast.error(message);
+      return;
+    }
+
+    if (!rfpId) {
+      toast.error('Unable to upload: No RFP ID has been resolved yet.');
+      return;
+    }
+
+    setIsUploadingTemplate(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('template', file);
+
+      const response = await fetch(`${BASE_URL}/rfp/${rfpId}/template`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: formData
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.message || `Template upload failed with status ${response.status}`);
+      }
+
+      setTemplateInfo(data?.template || null);
+      toast.success(data?.message || 'Template uploaded successfully');
+    } catch (err: any) {
+      console.error('Template upload error:', err);
+      const message = err.message || 'Failed to upload the RFP template.';
+      setTemplateUploadError(message);
+      toast.error(message);
+    } finally {
+      setIsUploadingTemplate(false);
+    }
+  };
+
+  // Delete the uploaded RFP template
+  const handleDeleteTemplate = async () => {
+    if (!rfpId) return;
+
+    setIsDeletingTemplate(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const headers = {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      const response = await fetch(`${BASE_URL}/rfp/${rfpId}/template`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(errText || `Failed to delete template with status ${response.status}`);
+      }
+
+      setTemplateInfo(null);
+      setTemplateUploadError(null);
+      toast.success('RFP template removed.');
+    } catch (err: any) {
+      console.error('Template delete error:', err);
+      toast.error(err.message || 'Failed to delete the RFP template.');
+    } finally {
+      setIsDeletingTemplate(false);
     }
   };
 
@@ -478,8 +590,15 @@ const RfpDetail: React.FC = () => {
                     onChange={(e) => setEntityCompany(e.target.value)}
                     placeholder="Enter entity/company name"
                     required
+                    disabled={generationSuccess}
                     id="entity-company-input"
-                    className={`w-full text-sm font-black text-slate-800 uppercase tracking-tight bg-transparent border-b outline-none pb-1 ${entityCompany.trim() ? 'border-slate-200 focus:border-slate-900' : 'border-rose-300 focus:border-rose-500'}`}
+                    className={`w-full text-sm font-black uppercase tracking-tight bg-transparent border-b outline-none pb-1 ${
+                      generationSuccess
+                        ? 'text-slate-400 border-slate-100 cursor-not-allowed'
+                        : entityCompany.trim()
+                          ? 'text-slate-800 border-slate-200 focus:border-slate-900'
+                          : 'text-slate-800 border-rose-300 focus:border-rose-500'
+                    }`}
                   />
                 </div>
 
@@ -519,27 +638,96 @@ const RfpDetail: React.FC = () => {
               {/* Optional RFP Template Upload */}
               <div className="space-y-2" id="rfp-template-upload-section">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono block">Upload RFP Template (Optional)</span>
-                <label
-                  htmlFor="rfp-template-upload-input"
-                  className="flex items-center justify-between gap-3 border border-dashed border-slate-200 rounded-2xl p-5 cursor-pointer hover:border-slate-300 transition bg-slate-50/50"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Upload className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-600 truncate">
-                      {rfpTemplateFile ? rfpTemplateFile.name : 'Choose a .docx or .pdf file'}
-                    </span>
+
+                {templateInfo ? (
+                  <div
+                    className={`flex items-center justify-between gap-3 border rounded-2xl p-5 ${
+                      generationSuccess ? 'border-slate-100 bg-slate-50' : 'border-emerald-200 bg-emerald-50/50'
+                    }`}
+                    id="rfp-template-applied-state"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FileText className={`w-4 h-4 shrink-0 ${generationSuccess ? 'text-slate-400' : 'text-emerald-600'}`} />
+                      <div className="min-w-0">
+                        <p className={`text-xs font-black truncate ${generationSuccess ? 'text-slate-500' : 'text-slate-800'}`}>
+                          {templateInfo.filename}
+                        </p>
+                        {templateInfo.uploadedAt && (
+                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
+                            Uploaded {formatUploadedAt(templateInfo.uploadedAt)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <label
+                        htmlFor="rfp-template-upload-input"
+                        className={`text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-lg transition border ${
+                          generationSuccess
+                            ? 'text-slate-300 border-slate-100 cursor-not-allowed'
+                            : 'text-slate-500 border-slate-200 hover:text-slate-900 hover:border-slate-300 cursor-pointer'
+                        }`}
+                      >
+                        Replace
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleDeleteTemplate}
+                        disabled={generationSuccess || isDeletingTemplate}
+                        className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                        id="delete-template-button"
+                      >
+                        {isDeletingTemplate ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Browse</span>
-                </label>
+                ) : isUploadingTemplate ? (
+                  <div className="flex items-center gap-3 border border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50/50" id="rfp-template-uploading-state">
+                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
+                    <span className="text-xs font-semibold text-slate-500">Uploading template...</span>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="rfp-template-upload-input"
+                    className={`flex items-center justify-between gap-3 border border-dashed rounded-2xl p-5 transition ${
+                      generationSuccess
+                        ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
+                        : 'border-slate-200 hover:border-slate-300 cursor-pointer bg-slate-50/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Upload className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="text-xs font-semibold text-slate-600 truncate">
+                        Choose a .docx or .pdf file
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Browse</span>
+                  </label>
+                )}
+
                 <input
                   id="rfp-template-upload-input"
                   type="file"
                   accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,application/pdf"
                   className="hidden"
-                  onChange={(e) => setRfpTemplateFile(e.target.files?.[0] || null)}
+                  disabled={generationSuccess || isUploadingTemplate}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    handleTemplateFileSelect(file);
+                    e.target.value = '';
+                  }}
                 />
+
+                {templateUploadError && (
+                  <p className="text-[10px] text-rose-500 font-semibold uppercase tracking-tight">{templateUploadError}</p>
+                )}
+
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
-                  Supports .docx and .pdf formats
+                  Supports .docx and .pdf formats (max 15 MB)
                 </p>
               </div>
 
@@ -582,7 +770,14 @@ const RfpDetail: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    
+
+                    {templateInfo && (
+                      <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 w-fit mx-auto" id="template-applied-badge-downloads">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Template applied: {templateInfo.filename}</span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="rfp-download-buttons">
                       <button
                         onClick={() => handleDownloadFile('docx')}
@@ -636,15 +831,23 @@ const RfpDetail: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleCreateRfp}
-                    disabled={isGenerating}
-                    className="w-full py-5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                    id="create-rfp-button"
-                  >
-                    <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
-                    <span>Create RFP</span>
-                  </button>
+                  <div className="space-y-3">
+                    {templateInfo && (
+                      <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 w-fit mx-auto" id="template-applied-badge-generate">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Template applied: {templateInfo.filename}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleCreateRfp}
+                      disabled={isGenerating}
+                      className="w-full py-5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                      id="create-rfp-button"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
+                      <span>Create RFP</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
