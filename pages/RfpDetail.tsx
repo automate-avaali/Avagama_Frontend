@@ -311,20 +311,6 @@ const RfpDetail: React.FC = () => {
     }
   };
 
-  // Format the template's uploadedAt timestamp for display
-  const formatUploadedAt = (isoString?: string) => {
-    if (!isoString) return '';
-    const parsed = new Date(isoString);
-    if (isNaN(parsed.getTime())) return isoString;
-    return parsed.toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   // Upload (or replace) the optional RFP template
   const MAX_TEMPLATE_SIZE_BYTES = 15 * 1024 * 1024;
 
@@ -333,9 +319,9 @@ const RfpDetail: React.FC = () => {
     setTemplateUploadError(null);
 
     const lowerName = file.name.toLowerCase();
-    const hasValidExtension = lowerName.endsWith('.docx') || lowerName.endsWith('.pdf');
+    const hasValidExtension = lowerName.endsWith('.docx');
     if (!hasValidExtension) {
-      const message = 'Only .docx or .pdf files are supported.';
+      const message = 'Only .docx files are supported.';
       setTemplateUploadError(message);
       toast.error(message);
       return;
@@ -374,7 +360,6 @@ const RfpDetail: React.FC = () => {
       }
 
       setTemplateInfo(data?.template || null);
-      toast.success(data?.message || 'Template uploaded successfully');
     } catch (err: any) {
       console.error('Template upload error:', err);
       const message = err.message || 'Failed to upload the RFP template.';
@@ -594,8 +579,9 @@ const RfpDetail: React.FC = () => {
                     placeholder="Enter entity/company name"
                     required
                     disabled={generationSuccess}
+                    autoComplete="off"
                     id="entity-company-input"
-                    className={`w-full text-sm font-black uppercase tracking-tight bg-transparent border-b outline-none pb-1 ${
+                    className={`w-full text-sm font-black uppercase tracking-tight bg-white [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:shadow-[0_0_0px_1000px_white_inset] border-b outline-none pb-1 ${
                       generationSuccess
                         ? 'text-slate-400 border-slate-100 cursor-not-allowed'
                         : entityCompany.trim()
@@ -640,7 +626,7 @@ const RfpDetail: React.FC = () => {
 
               {/* Optional RFP Template Upload */}
               <div className="space-y-2" id="rfp-template-upload-section">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono block">Upload RFP Template (Optional)</span>
+                <span className="text-xs font-black text-slate-600 uppercase tracking-widest font-mono block">Upload RFP Template (Optional)</span>
 
                 {templateInfo ? (
                   <div
@@ -655,11 +641,6 @@ const RfpDetail: React.FC = () => {
                         <p className={`text-xs font-black truncate ${generationSuccess ? 'text-slate-500' : 'text-slate-800'}`}>
                           {templateInfo.filename}
                         </p>
-                        {templateInfo.uploadedAt && (
-                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
-                            Uploaded {formatUploadedAt(templateInfo.uploadedAt)}
-                          </p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -705,7 +686,7 @@ const RfpDetail: React.FC = () => {
                     <div className="flex items-center gap-3 min-w-0">
                       <Upload className="w-4 h-4 text-slate-400 shrink-0" />
                       <span className="text-xs font-semibold text-slate-600 truncate">
-                        Choose a .docx or .pdf file
+                        Choose a .docx file
                       </span>
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Browse</span>
@@ -715,7 +696,7 @@ const RfpDetail: React.FC = () => {
                 <input
                   id="rfp-template-upload-input"
                   type="file"
-                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,application/pdf"
+                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   disabled={generationSuccess || isUploadingTemplate}
                   onChange={(e) => {
@@ -730,7 +711,7 @@ const RfpDetail: React.FC = () => {
                 )}
 
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
-                  Supports .docx and .pdf formats (max 15 MB)
+                  Supports only .docx format (max 15 MB)
                 </p>
               </div>
 
@@ -773,13 +754,6 @@ const RfpDetail: React.FC = () => {
                         </p>
                       </div>
                     </div>
-
-                    {templateInfo && (
-                      <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 w-fit mx-auto" id="template-applied-badge-downloads">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Template applied: {templateInfo.filename}</span>
-                      </div>
-                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="rfp-download-buttons">
                       <button
