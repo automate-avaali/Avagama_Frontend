@@ -228,7 +228,7 @@ const RfpDetail: React.FC = () => {
     checkOrCreateRfp();
   }, [usecaseId]);
 
-  // 2. Trigger Mistral RFP Generation Agent
+  // 2. Trigger RFP Generation
   const handleCreateRfp = async () => {
     if (!rfpId) {
       toast.error('Unable to generate: No RFP ID has been resolved yet.');
@@ -243,10 +243,10 @@ const RfpDetail: React.FC = () => {
     setIsGenerating(true);
     setGenerationError(null);
     setGenerationSuccess(false);
-    setGenerationStatusText('Initializing Mistral generation pipeline...');
+    setGenerationStatusText('Initializing RFP generation pipeline...');
 
     const statuses = [
-      'Establishing contact with Mistral RFP agent...',
+      'Establishing connection with the RFP generation service...',
       'Analyzing business process boundaries...',
       'Mapping technical design metrics...',
       'Drafting executive summary and requirements...',
@@ -395,7 +395,6 @@ const RfpDetail: React.FC = () => {
       setTemplateInfo(null);
       setTemplateUploadError(null);
       setShowDeleteTemplateConfirm(false);
-      toast.success('Template removed');
     } catch (err: any) {
       console.error('Template delete error:', err);
       toast.error(err.message || 'Failed to delete the RFP template.');
@@ -576,6 +575,13 @@ const RfpDetail: React.FC = () => {
                     type="text"
                     value={entityCompany}
                     onChange={(e) => setEntityCompany(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        setEntityCompany(e.currentTarget.value);
+                        e.currentTarget.blur();
+                      }
+                    }}
                     placeholder="Enter entity/company name"
                     required
                     disabled={generationSuccess}
@@ -808,23 +814,15 @@ const RfpDetail: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {templateInfo && (
-                      <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 w-fit mx-auto" id="template-applied-badge-generate">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Template applied: {templateInfo.filename}</span>
-                      </div>
-                    )}
-                    <button
-                      onClick={handleCreateRfp}
-                      disabled={isGenerating}
-                      className="w-full py-5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                      id="create-rfp-button"
-                    >
-                      <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
-                      <span>Create RFP</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleCreateRfp}
+                    disabled={isGenerating}
+                    className="w-full py-5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                    id="create-rfp-button"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
+                    <span>Create RFP</span>
+                  </button>
                 )}
               </div>
             </div>
