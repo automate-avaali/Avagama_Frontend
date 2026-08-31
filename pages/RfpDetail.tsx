@@ -195,7 +195,8 @@ const RfpDetail: React.FC = () => {
         status: (rfpRecord?.status || 'draft').toUpperCase()
       });
 
-      // Entity/Company must reflect the Company Name provided at account creation
+      // Entity/Company must reflect the Company Name provided at account creation,
+      // unless the user has manually overridden it for this RFP
       let accountCompanyName = '';
       try {
         const storedUser = sessionStorage.getItem('user');
@@ -206,7 +207,15 @@ const RfpDetail: React.FC = () => {
       } catch (e) {
         console.error('Failed to parse account company name from session', e);
       }
-      setEntityCompany(accountCompanyName || (company !== 'NOT SPECIFIED' ? company : ''));
+
+      let manualEntityCompany = '';
+      try {
+        manualEntityCompany = sessionStorage.getItem(`rfp-entity-company-${usecaseId}`) || '';
+      } catch (e) {
+        console.error('Failed to read saved entity/company override', e);
+      }
+
+      setEntityCompany(manualEntityCompany || accountCompanyName || (company !== 'NOT SPECIFIED' ? company : ''));
 
       // Reflect any template already stored on the RFP record
       setTemplateInfo(rfpRecord?.template || null);
@@ -574,7 +583,15 @@ const RfpDetail: React.FC = () => {
                   <input
                     type="text"
                     value={entityCompany}
-                    onChange={(e) => setEntityCompany(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setEntityCompany(value);
+                      try {
+                        if (usecaseId) sessionStorage.setItem(`rfp-entity-company-${usecaseId}`, value);
+                      } catch (err) {
+                        console.error('Failed to persist entity/company override', err);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
