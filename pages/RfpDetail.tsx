@@ -210,7 +210,7 @@ const RfpDetail: React.FC = () => {
 
       let manualEntityCompany = '';
       try {
-        manualEntityCompany = sessionStorage.getItem(`rfp-entity-company-${usecaseId}`) || '';
+        manualEntityCompany = localStorage.getItem(`rfp-entity-company-${usecaseId}`) || '';
       } catch (e) {
         console.error('Failed to read saved entity/company override', e);
       }
@@ -587,7 +587,7 @@ const RfpDetail: React.FC = () => {
                       const value = e.target.value;
                       setEntityCompany(value);
                       try {
-                        if (usecaseId) sessionStorage.setItem(`rfp-entity-company-${usecaseId}`, value);
+                        if (usecaseId) localStorage.setItem(`rfp-entity-company-${usecaseId}`, value);
                       } catch (err) {
                         console.error('Failed to persist entity/company override', err);
                       }
