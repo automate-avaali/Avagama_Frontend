@@ -654,11 +654,11 @@ const RfpDetail: React.FC = () => {
                     }}
                     placeholder="Enter entity/company name"
                     required
-                    disabled={generationSuccess}
+                    disabled={generationSuccess || isGenerating}
                     autoComplete="off"
                     id="entity-company-input"
                     className={`w-full text-sm font-black uppercase tracking-tight bg-white [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:shadow-[0_0_0px_1000px_white_inset] border-b outline-none pb-1 ${
-                      generationSuccess
+                      generationSuccess || isGenerating
                         ? 'text-slate-400 border-slate-100 cursor-not-allowed'
                         : entityCompany.trim()
                           ? 'text-slate-800 border-slate-200 focus:border-slate-900'
@@ -704,17 +704,24 @@ const RfpDetail: React.FC = () => {
               <div className="space-y-2" id="rfp-template-upload-section">
                 <span className="text-xs font-black text-slate-600 uppercase tracking-widest font-mono block">Upload RFP Template (Optional)</span>
 
-                {templateInfo ? (
+                {isUploadingTemplate ? (
+                  <div className="flex items-center gap-3 border border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50/50" id="rfp-template-uploading-state">
+                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
+                    <span className="text-xs font-semibold text-slate-500">
+                      {templateInfo ? 'Replacing template...' : 'Uploading template...'}
+                    </span>
+                  </div>
+                ) : templateInfo ? (
                   <div
                     className={`flex items-center justify-between gap-3 border rounded-2xl p-5 ${
-                      generationSuccess ? 'border-slate-100 bg-slate-50' : 'border-emerald-200 bg-emerald-50/50'
+                      generationSuccess || isGenerating ? 'border-slate-100 bg-slate-50' : 'border-emerald-200 bg-emerald-50/50'
                     }`}
                     id="rfp-template-applied-state"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <FileText className={`w-4 h-4 shrink-0 ${generationSuccess ? 'text-slate-400' : 'text-emerald-600'}`} />
+                      <FileText className={`w-4 h-4 shrink-0 ${generationSuccess || isGenerating ? 'text-slate-400' : 'text-emerald-600'}`} />
                       <div className="min-w-0">
-                        <p className={`text-xs font-black truncate ${generationSuccess ? 'text-slate-500' : 'text-slate-800'}`}>
+                        <p className={`text-xs font-black truncate ${generationSuccess || isGenerating ? 'text-slate-500' : 'text-slate-800'}`}>
                           {templateInfo.filename}
                         </p>
                       </div>
@@ -723,7 +730,7 @@ const RfpDetail: React.FC = () => {
                       <label
                         htmlFor="rfp-template-upload-input"
                         className={`text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-lg transition border ${
-                          generationSuccess
+                          generationSuccess || isGenerating
                             ? 'text-slate-300 border-slate-100 cursor-not-allowed'
                             : 'text-slate-500 border-slate-200 hover:text-slate-900 hover:border-slate-300 cursor-pointer'
                         }`}
@@ -733,7 +740,7 @@ const RfpDetail: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowDeleteTemplateConfirm(true)}
-                        disabled={generationSuccess || isDeletingTemplate}
+                        disabled={generationSuccess || isGenerating || isDeletingTemplate}
                         className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
                         id="delete-template-button"
                       >
@@ -745,16 +752,11 @@ const RfpDetail: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                ) : isUploadingTemplate ? (
-                  <div className="flex items-center gap-3 border border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50/50" id="rfp-template-uploading-state">
-                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
-                    <span className="text-xs font-semibold text-slate-500">Uploading template...</span>
-                  </div>
                 ) : (
                   <label
                     htmlFor="rfp-template-upload-input"
                     className={`flex items-center justify-between gap-3 border border-dashed rounded-2xl p-5 transition ${
-                      generationSuccess
+                      generationSuccess || isGenerating
                         ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
                         : 'border-slate-200 hover:border-slate-300 cursor-pointer bg-slate-50/50'
                     }`}
@@ -774,7 +776,7 @@ const RfpDetail: React.FC = () => {
                   type="file"
                   accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
-                  disabled={generationSuccess || isUploadingTemplate}
+                  disabled={generationSuccess || isGenerating || isUploadingTemplate}
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
                     handleTemplateFileSelect(file);
