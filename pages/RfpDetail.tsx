@@ -296,7 +296,8 @@ const RfpDetail: React.FC = () => {
       // 2. Pass it to the POST /api/rfp/:id/generate
       const response = await fetch(`${BASE_URL}/rfp/${resolvedId}/generate`, {
         method: 'POST',
-        headers
+        headers,
+        body: JSON.stringify({ organizationName: entityCompany.trim() })
       });
 
       clearInterval(interval);
