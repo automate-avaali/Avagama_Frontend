@@ -413,6 +413,26 @@ const RfpDetail: React.FC = () => {
     }
   };
 
+  // Maps technical download failures to calm, non-technical copy.
+  // Raw details (status, message) stay in console.error only.
+  const getDownloadErrorMessage = (err: any): string => {
+    const status = err?.status;
+
+    if (status === 500) {
+      return "We couldn't generate your Word document. Please try again in a moment, or contact support if this keeps happening.";
+    }
+    if (status === 413) {
+      return 'This document is too large to generate right now.';
+    }
+    if (status === 400) {
+      return 'Some information needed to generate this document is missing. Please review the RFP details and try again.';
+    }
+    if (!status && (err instanceof TypeError || !navigator.onLine)) {
+      return "We couldn't reach the server. Please check your connection and try again.";
+    }
+    return 'Something went wrong while downloading your document. Please try again.';
+  };
+
   // 3. Document download handlers
   const handleDownloadFile = async (format: 'docx' | 'pdf') => {
     if (!rfpId || downloadingFormat) return;
@@ -430,7 +450,9 @@ const RfpDetail: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Download endpoint returned status ${response.status}`);
+        const statusErr: any = new Error(`Download endpoint returned status ${response.status}`);
+        statusErr.status = response.status;
+        throw statusErr;
       }
 
       const blob = await response.blob();
@@ -457,7 +479,37 @@ const RfpDetail: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error('Download error:', err);
-      toast.error(`Failed to download ${format.toUpperCase()} file: ${err.message}`);
+      const message = getDownloadErrorMessage(err);
+      toast((t) => (
+        <div className="flex items-center justify-between gap-4">
+          <span className="normal-case font-semibold tracking-normal text-slate-600">{message}</span>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              handleDownloadFile(format);
+            }}
+            className="shrink-0 text-[10px] font-black uppercase tracking-widest text-slate-900 underline underline-offset-2 hover:text-black cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      ), {
+        duration: 6000,
+        icon: '⚠️',
+        style: {
+          background: '#fff',
+          color: '#475569',
+          borderRadius: '20px',
+          padding: '16px 20px',
+          fontSize: '12px',
+          fontWeight: '600',
+          textTransform: 'none',
+          letterSpacing: 'normal',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.08)',
+          maxWidth: '420px',
+        }
+      });
     } finally {
       setDownloadingFormat(null);
     }
