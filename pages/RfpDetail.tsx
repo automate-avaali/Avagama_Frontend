@@ -419,10 +419,10 @@ const RfpDetail: React.FC = () => {
     const status = err?.status;
 
     if (status === 500) {
-      return "We couldn't generate your Word document. Please try again in a moment, or contact support if this keeps happening.";
+      return "We couldn't generate your document. Please try again in a moment or delete and retry.";
     }
     if (status === 413) {
-      return 'This document is too large to generate right now.';
+      return 'This document is too large to generate right now. Try reducing the number of sections.';
     }
     if (status === 400) {
       return 'Some information needed to generate this document is missing. Please review the RFP details and try again.';
@@ -480,36 +480,26 @@ const RfpDetail: React.FC = () => {
     } catch (err: any) {
       console.error('Download error:', err);
       const message = getDownloadErrorMessage(err);
-      toast((t) => (
-        <div className="flex items-center justify-between gap-4">
-          <span className="normal-case font-semibold tracking-normal text-slate-600">{message}</span>
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              handleDownloadFile(format);
-            }}
-            className="shrink-0 text-[10px] font-black uppercase tracking-widest text-slate-900 underline underline-offset-2 hover:text-black cursor-pointer"
-          >
-            Retry
-          </button>
-        </div>
-      ), {
-        duration: 6000,
-        icon: '⚠️',
-        style: {
-          background: '#fff',
-          color: '#475569',
-          borderRadius: '20px',
-          padding: '16px 20px',
-          fontSize: '12px',
-          fontWeight: '600',
-          textTransform: 'none',
-          letterSpacing: 'normal',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.08)',
-          maxWidth: '420px',
+      toast(
+        <span className="normal-case font-semibold tracking-normal text-slate-600">{message}</span>,
+        {
+          duration: 6000,
+          icon: '⚠️',
+          style: {
+            background: '#fff',
+            color: '#475569',
+            borderRadius: '20px',
+            padding: '16px 20px',
+            fontSize: '12px',
+            fontWeight: '600',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            maxWidth: '420px',
+          }
         }
-      });
+      );
     } finally {
       setDownloadingFormat(null);
     }
