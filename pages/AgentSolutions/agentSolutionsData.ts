@@ -1048,7 +1048,129 @@ const invoiceTdsAgent: AgentSolution = {
   ],
 };
 
-export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent, poContractValidationAgent, pricingIntelligenceAgent, invoiceTdsAgent];
+// ---------------------------------------------------------------------------
+// RFQ Intelligence Agent (Vendor quotes ZIP -> extract -> normalise -> score vs policy -> ranked award)
+// ---------------------------------------------------------------------------
+const RFQ_AGENT_URL =
+  ((import.meta as any).env?.VITE_RFQ_AGENT_URL as string) ||
+  'https://rfq-agent-frontend.vercel.app/';
+
+const rfqIntelligenceAgent: AgentSolution = {
+  id: 'rfq-intelligence-agent',
+  name: 'RFQ Intelligence Agent',
+  tagline: 'Vendor quotes in, a defensible award out — normalised, policy-scored and ranked.',
+  description:
+    'Upload a ZIP of vendor quotations and a thirteen-node LangGraph pipeline reads each one into 15+ fields, normalises them to a comparable landed cost, benchmarks a should-cost, checks mandatory gates, scores every vendor against the procurement policy — with a written reason per criterion — and returns a ranked award recommendation. Every score cites the retrieved policy clause, and nothing is awarded without an explicit human decision.',
+  category: 'Procurement · Vendor Award',
+  emoji: '🏆',
+  // Violet → fuchsia pastel (premium / award), distinct from the other agents. Dark purple text stays readable.
+  accentFrom: '#c084fc',
+  accentTo: '#f0abfc',
+  accentText: '#6b21a8',
+  status: 'live',
+  agentUrl: RFQ_AGENT_URL,
+  // Public production Vercel app — sends no X-Frame-Options / CSP, so it embeds inline.
+  embeddable: true,
+  featuredSampleId: 'award-recommended',
+  whatItDoes: [
+    'Reads every vendor quotation PDF from a single ZIP into 15+ commercial and technical fields with Mistral',
+    'Normalises each quote to a comparable landed cost across units, freight and tax — and benchmarks a should-cost',
+    'Checks mandatory gates first (MOQ, quote validity, certifications, penalty clauses), then scores each vendor against the procurement policy with a written reason per criterion',
+    'Returns a ranked award recommendation with Excel + JSON export, and halts for an explicit Approve / Select other / Hold / Reject',
+  ],
+  steps: [
+    {
+      title: 'Open the agent',
+      description:
+        'The RFQ Intelligence Agent loads in the window on this page. If the embedded view is tight, use "Open in new tab" to run it full-screen alongside this tutorial.',
+      tip: 'It embeds directly here — the app is public, no login needed.',
+    },
+    {
+      title: 'Upload the sample quotes ZIP',
+      description:
+        'Download the sample ZIP below — it bundles six real HR-steel-sheet quotations — drop it into this step to continue, then upload the same ZIP in the agent and enter the RFQ details (HR Steel Sheet IS:2062, 3mm, 10,000 Kg, delivered Mumbai).',
+      tip: 'The app takes a single ZIP of quotation PDFs — one file per vendor.',
+      action: 'upload',
+    },
+    {
+      title: 'Watch extraction & landed-cost normalisation',
+      description:
+        'Each PDF is read into 15+ structured fields, then normalised to one comparable basis — a landed cost per unit, ex-tax and freight-inclusive. This is where the lowest headline rate stops being the lowest real cost.',
+      tip: 'Watch Konkan Metal — the cheapest headline (₹441/kg) becomes the most expensive landed (₹544.88/kg) once freight is added.',
+    },
+    {
+      title: 'Follow the policy-grounded scoring',
+      description:
+        'Mandatory gates run first — a vendor that fails MOQ, validity, certifications or penalty terms is disqualified, not merely down-weighted. Every surviving vendor is then scored on price, quality, delivery, payment and penalty against the retrieved policy clause.',
+      tip: 'Everest Tubes is disqualified up front — its 25,000 Kg MOQ cannot serve a 10,000 Kg order.',
+    },
+    {
+      title: 'Read the ranked recommendation & decide',
+      description:
+        'The vendors converge into a ranked list with a written rationale per criterion. The graph then pauses at the approval node — an interrupt, not a poll — and resumes only on your decision: Approve, Select other, Hold or Reject. Export the Excel workbook and JSON audit trail when you are done.',
+      tip: 'Nothing is issued without a human — no PO, no email. Every recommendation traces back to a policy clause you can defend.',
+      anchor: 'usecases',
+    },
+  ],
+  samples: [
+    {
+      id: 'award-recommended',
+      label: 'Award recommended → Bharat Steel',
+      expectation: 'All quotes normalised to landed cost; the best qualifying blended score clears every mandatory gate and is recommended.',
+      tone: 'success',
+      notes: [
+        'Bharat Steel Works — landed ₹533.36/kg, DDP, 45-day credit, ISO + BIS + NABL, penalty 1%/wk (cap 5%), 45-day validity.',
+        'It wins on the blended score once the cheaper-but-ineligible vendors are gated out.',
+        'The recommended first run — a clean end-to-end award with a reason per criterion.',
+      ],
+    },
+    {
+      id: 'lowest-headline-trap',
+      label: 'Lowest headline ≠ lowest landed',
+      expectation: 'A vendor with the cheapest quoted rate becomes the most expensive once freight is normalised in.',
+      tone: 'warning',
+      notes: [
+        'Konkan Metal Traders quotes the lowest headline rate — ₹441/kg — but ex-works with freight extra at ₹24.50/kg.',
+        'Normalised, its landed cost is ₹544.88/kg — the highest of all six vendors.',
+        'Shows exactly why the comparison has to be earned on landed cost, not typed off the headline.',
+      ],
+    },
+    {
+      id: 'cheapest-but-risky',
+      label: 'Cheapest but disqualified on risk',
+      expectation: 'The lowest landed cost is flagged and gated out on policy — not silently awarded.',
+      tone: 'danger',
+      notes: [
+        'Sunrise Steel has the lowest landed cost (₹505.04/kg) but a NOT-FIRM, LME-linked price revisable at despatch.',
+        '100% advance, no quality certs, no BIS licence, no warranty and no penalty clause accepted.',
+        'Mandatory gates and risk flags disqualify it before price — cheap is not the same as awardable.',
+      ],
+    },
+    {
+      id: 'moq-gate',
+      label: 'MOQ gate → disqualified before price',
+      expectation: 'A vendor whose minimum order exceeds the RFQ quantity is disqualified up front, never scored on price.',
+      tone: 'info',
+      notes: [
+        'Everest Tubes requires a 25,000 Kg minimum single order; the RFQ is for 10,000 Kg.',
+        'The MOQ gate fails, so the vendor is disqualified rather than down-weighted.',
+        'If the quantity fell below every vendor’s MOQ, the agent names the gap per vendor instead of a bare N/A — a zero-value award is never issued.',
+      ],
+    },
+  ],
+  sampleInputsTitle: 'Sample vendor quotes to try',
+  sampleInputs: [
+    {
+      id: 'hr-steel-quotes',
+      label: 'HR steel sheet — 6 vendor quotes (ZIP)',
+      url: '/sample-rfq-quotes/hr-steel-vendor-quotes.zip',
+      description: 'Six real quotations for HR Steel Sheet IS:2062 3mm, 10,000 Kg to Mumbai — spanning the award, the freight trap, the risky low-baller and an MOQ disqualification.',
+      recommended: true,
+    },
+  ],
+};
+
+export const AGENT_SOLUTIONS: AgentSolution[] = [salesOrderAgent, materialAgent, contractReviewAgent, apAutomationAgent, poContractValidationAgent, pricingIntelligenceAgent, invoiceTdsAgent, rfqIntelligenceAgent];
 
 export const getAgentSolution = (id: string): AgentSolution | undefined =>
   AGENT_SOLUTIONS.find(a => a.id === id);
