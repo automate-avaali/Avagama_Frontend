@@ -201,7 +201,7 @@ export const AgentOrchestration: React.FC = () => {
   // Seeded synchronously from the sessionStorage cache (when present) so
   // returning from RFP Generation renders the list on the very first paint
   // instead of flashing the empty state while the mount effect below re-runs.
-  const [rfpUsecases, setRfpUsecases] = useState<any[]>(() => rfpSessionCache.get() || []);
+  const [rfpUsecases, setRfpUsecases] = useState<any[] | null>(() => rfpSessionCache.get() ?? null);
   const [loadingRfpUsecases, setLoadingRfpUsecases] = useState(false);
   const [rfpUsecasesError, setRfpUsecasesError] = useState<string | null>(null);
   const [generatingRfpId, setGeneratingRfpId] = useState<string | null>(null);
@@ -1323,74 +1323,21 @@ export const AgentOrchestration: React.FC = () => {
       }
       const data = await response.json();
       const items = Array.isArray(data) ? data : (data.data && Array.isArray(data.data)) ? data.data : [];
+
+      // The backend now returns rfpGenerated inline per row, so the map is
+      // built — and set — before setRfpUsecases. Both updates land in the
+      // same synchronous batch, so the first paint that includes these rows
+      // already carries correct status; there is no longer a verification
+      // window for the button to sit in.
+      const map: Record<string, boolean> = {};
+      items.forEach((item: any) => {
+        const uId = item.usecaseId || item._id || item.id;
+        if (uId) map[uId] = Boolean(item.rfpGenerated);
+      });
+      setGeneratedRfpMap(map);
+      setVerifyingRfpMap({});
       setRfpUsecases(items);
       rfpSessionCache.set(items);
-
-      // Items whose payload does not already say "generated" outright need an
-      // API round-trip to find out. Their action button waits (verifyingRfpMap)
-      // until that resolves, rather than defaulting to "Generate" and flipping
-      // to "View" a moment later.
-      const idsPendingVerification = items
-        .map((item: any) => item.usecaseId || item._id || item.id)
-        .filter((uId: any, i: number) => {
-          const item = items[i];
-          if (!uId) return false;
-          return !(item.rfpStatus === 'generated' || item.status === 'generated' || item.rfpGenerated === true || item.rfp_status === 'generated');
-        });
-      if (idsPendingVerification.length > 0) {
-        setVerifyingRfpMap(prev => {
-          const next = { ...prev };
-          idsPendingVerification.forEach((uId: string) => { next[uId] = true; });
-          return next;
-        });
-      }
-
-      // Verify RFP generation status for each use case asynchronously.
-      //
-      // Each resolved answer is written back onto its cached entry, so the next
-      // visit restores the whole lookup from storage instead of repeating this
-      // request per use case.
-      items.forEach(async (item: any) => {
-        const uId = item.usecaseId || item._id || item.id;
-        if (!uId) return;
-
-        if (item.rfpStatus === 'generated' || item.status === 'generated' || item.rfpGenerated === true || item.rfp_status === 'generated') {
-          setGeneratedRfpMap(prev => ({ ...prev, [uId]: true }));
-          rfpSessionCache.updateOne(uId, { rfpGenerated: true });
-          return;
-        }
-
-        try {
-          const res = await fetch(`https://avagama-backend-ckm9.onrender.com/api/rfp/from-usecase/${uId}`, {
-            method: 'GET',
-            headers,
-          });
-          let generated = false;
-          if (res.ok) {
-            const resData = await res.json();
-            const record = resData?.rfp || resData?.data || resData;
-            if (record && (record._id || record.id)) {
-              const st = (record.status || '').toLowerCase();
-              if (st === 'generated' || st === 'completed' || record.documentUrl || record.fileUrl) {
-                generated = true;
-                setGeneratedRfpMap(prev => ({ ...prev, [uId]: true }));
-              }
-            }
-          }
-          // Recorded either way: a definite "not generated" is what lets the
-          // next cache hit skip this request instead of re-checking.
-          rfpSessionCache.updateOne(uId, { rfpGenerated: generated });
-        } catch (e) {
-          // ignore background check error
-        } finally {
-          setVerifyingRfpMap(prev => {
-            if (!(uId in prev)) return prev;
-            const next = { ...prev };
-            delete next[uId];
-            return next;
-          });
-        }
-      });
     } catch (err: any) {
       console.error('Error loading shortlisted usecases:', err);
       setRfpUsecasesError(err.message || 'Failed to load shortlisted usecases');
@@ -1401,6 +1348,10 @@ export const AgentOrchestration: React.FC = () => {
   };
 
   // Action 2: GENERATE RFP DOCUMENT FOR THIS USE CASE
+  // NOTE: not currently called from any button in this file — the wired-up
+  // action navigates to /rfp/from-usecase/:id (RfpDetail.tsx), which already
+  // does its own equivalent optimistic update on generate success. Patched
+  // here to match anyway, in case this path is ever reconnected.
   const generateRfpDocument = async (item: any) => {
     const usecaseId = item.usecaseId || item._id || item.id;
     if (!usecaseId) {
@@ -1489,6 +1440,9 @@ export const AgentOrchestration: React.FC = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
+      setGeneratedRfpMap(prev => ({ ...prev, [usecaseId]: true }));
+      rfpSessionCache.updateOne(usecaseId, { rfpGenerated: true });
 
       toast.dismiss(toastId);
     } catch (err: any) {
@@ -2277,7 +2231,7 @@ export const AgentOrchestration: React.FC = () => {
                   </div>
 
                   {/* Main content conditional rendering */}
-                  {loadingRfpUsecases && rfpUsecases.length === 0 ? (
+                  {rfpUsecases === null || (loadingRfpUsecases && rfpUsecases.length === 0) ? (
                     <div className="bg-white border border-slate-100 p-16 rounded-[32px] text-center space-y-4">
                       <div className="w-12 h-12 border-4 border-slate-100 border-t-[#a26da8] rounded-full animate-spin mx-auto mb-2" />
                       <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest font-mono">Querying shortlist ledger...</h4>
@@ -2373,32 +2327,36 @@ export const AgentOrchestration: React.FC = () => {
                                 </div>
                               )}
                               
-                              <button
-                                onClick={() => {
-                                  const usecaseId = item.usecaseId || item._id || item.id;
-                                  navigate(`/rfp/from-usecase/${usecaseId}`);
-                                }}
-                                disabled={isVerifyingStatus}
-                                className="px-5 py-2.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                                id={`rfp-action-button-${usecaseId}`}
-                              >
-                                {isVerifyingStatus ? (
-                                  <>
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Checking status...</span>
-                                  </>
-                                ) : isGenerated ? (
-                                  <>
-                                    <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
-                                    <span>View RFP Document</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
-                                    <span>Generate RFP Document</span>
-                                  </>
-                                )}
-                              </button>
+                              {loadingRfpUsecases ? (
+                                <div className="h-9 w-48 rounded-xl bg-slate-200 animate-pulse" aria-hidden="true" />
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    const usecaseId = item.usecaseId || item._id || item.id;
+                                    navigate(`/rfp/from-usecase/${usecaseId}`);
+                                  }}
+                                  disabled={isVerifyingStatus}
+                                  className="px-5 py-2.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                  id={`rfp-action-button-${usecaseId}`}
+                                >
+                                  {isVerifyingStatus ? (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Checking status...</span>
+                                    </>
+                                  ) : isGenerated ? (
+                                    <>
+                                      <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
+                                      <span>View RFP Document</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-3.5 h-3.5 text-[#6fcbbd] fill-current" />
+                                      <span>Generate RFP Document</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
                             </div>
                           </motion.div>
                         );
