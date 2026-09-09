@@ -18,6 +18,7 @@ import {
   Upload
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import rfpSessionCache from '../services/rfpSessionCache';
 
 const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
 
@@ -309,6 +310,16 @@ const RfpDetail: React.FC = () => {
 
       setGenerationSuccess(true);
       setUsecaseData(prev => prev ? { ...prev, status: 'GENERATED' } : null);
+
+      // Patch just this use case in the RFP Creation page's cached list, so it
+      // shows as generated on return without the whole list being re-fetched.
+      if (usecaseId) {
+        rfpSessionCache.updateOne(usecaseId, {
+          rfpGenerated: true,
+          company_name: entityCompany.trim(),
+        });
+      }
+
       toast.success('RFP Document created successfully!');
     } catch (err: any) {
       console.error('Error in generation step:', err);
@@ -532,6 +543,14 @@ const RfpDetail: React.FC = () => {
       // Reset state upon successful deletion
       setGenerationSuccess(false);
       setUsecaseData(prev => prev ? { ...prev, status: 'DRAFT' } : null);
+
+      // Clear the generated marker on this one cached entry. The page we are
+      // about to navigate back to reads the cache, so without this it would
+      // still show the document as generated.
+      if (usecaseId) {
+        rfpSessionCache.updateOne(usecaseId, { rfpGenerated: false });
+      }
+
       toast.success('RFP document deleted successfully.');
       setShowDeleteConfirm(false);
       navigate('/admin/orchestration', { state: { selectedMenu: 'proposal-forge' } });
@@ -640,6 +659,15 @@ const RfpDetail: React.FC = () => {
                         e.preventDefault();
                         setEntityCompany(e.currentTarget.value);
                         e.currentTarget.blur();
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Committed on blur rather than on every keystroke — the
+                      // cache update rewrites the whole list, which is not worth
+                      // doing per character. Enter blurs the field, so both ways
+                      // of finishing the edit land here.
+                      if (usecaseId) {
+                        rfpSessionCache.updateOne(usecaseId, { company_name: e.target.value.trim() });
                       }
                     }}
                     placeholder="Enter entity/company name"

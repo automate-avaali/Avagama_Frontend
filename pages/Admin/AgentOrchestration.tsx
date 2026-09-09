@@ -57,6 +57,7 @@ import {
   Menu
 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import rfpSessionCache from '../../services/rfpSessionCache';
 import toast from 'react-hot-toast';
 
 // Styling to match Avagama theme perfectly
@@ -1253,8 +1254,38 @@ export const AgentOrchestration: React.FC = () => {
     }
   };
 
+  // Rebuilds the "already generated" lookup from a cached list, so a cache hit
+  // does not have to re-run the per-item verification requests below.
+  const generatedMapFromItems = (items: any[]): Record<string, boolean> => {
+    const map: Record<string, boolean> = {};
+    items.forEach((item: any) => {
+      const uId = item.usecaseId || item._id || item.id;
+      if (uId && item.rfpGenerated === true) map[uId] = true;
+    });
+    return map;
+  };
+
   // Action 1: LOAD SHORTLISTED EVALUATIONS
-  const loadShortlistedEvaluations = async () => {
+  //
+  // Reads the sessionStorage cache first so returning to this page — from RFP
+  // Generation, or across a browser refresh — renders immediately without
+  // touching the API. `force` is the explicit user action ("Refresh Shortlisted
+  // evaluations" and the retry buttons): it drops the cache and re-fetches.
+  const loadShortlistedEvaluations = async (options: { force?: boolean } = {}) => {
+    const { force = false } = options;
+
+    if (force) {
+      rfpSessionCache.clear();
+    } else {
+      const cached = rfpSessionCache.get();
+      if (cached) {
+        setRfpUsecases(cached);
+        setGeneratedRfpMap(generatedMapFromItems(cached));
+        setRfpUsecasesError(null);
+        return;
+      }
+    }
+
     setLoadingRfpUsecases(true);
     setRfpUsecasesError(null);
     try {
@@ -1275,14 +1306,20 @@ export const AgentOrchestration: React.FC = () => {
       const data = await response.json();
       const items = Array.isArray(data) ? data : (data.data && Array.isArray(data.data)) ? data.data : [];
       setRfpUsecases(items);
+      rfpSessionCache.set(items);
 
-      // Verify RFP generation status for each use case asynchronously
+      // Verify RFP generation status for each use case asynchronously.
+      //
+      // Each resolved answer is written back onto its cached entry, so the next
+      // visit restores the whole lookup from storage instead of repeating this
+      // request per use case.
       items.forEach(async (item: any) => {
         const uId = item.usecaseId || item._id || item.id;
         if (!uId) return;
 
         if (item.rfpStatus === 'generated' || item.status === 'generated' || item.rfpGenerated === true || item.rfp_status === 'generated') {
           setGeneratedRfpMap(prev => ({ ...prev, [uId]: true }));
+          rfpSessionCache.updateOne(uId, { rfpGenerated: true });
           return;
         }
 
@@ -1291,16 +1328,21 @@ export const AgentOrchestration: React.FC = () => {
             method: 'GET',
             headers,
           });
+          let generated = false;
           if (res.ok) {
             const resData = await res.json();
             const record = resData?.rfp || resData?.data || resData;
             if (record && (record._id || record.id)) {
               const st = (record.status || '').toLowerCase();
               if (st === 'generated' || st === 'completed' || record.documentUrl || record.fileUrl) {
+                generated = true;
                 setGeneratedRfpMap(prev => ({ ...prev, [uId]: true }));
               }
             }
           }
+          // Recorded either way: a definite "not generated" is what lets the
+          // next cache hit skip this request instead of re-checking.
+          rfpSessionCache.updateOne(uId, { rfpGenerated: generated });
         } catch (e) {
           // ignore background check error
         }
@@ -2172,7 +2214,7 @@ export const AgentOrchestration: React.FC = () => {
                     </div>
 
                     <button
-                      onClick={loadShortlistedEvaluations}
+                      onClick={() => loadShortlistedEvaluations({ force: true })}
                       disabled={loadingRfpUsecases}
                       className="px-6 py-3 bg-[#a26da8] hover:bg-[#8e5c94] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition shadow-md flex items-center gap-2 cursor-pointer shrink-0 animate-fade-in"
                     >
@@ -2205,7 +2247,7 @@ export const AgentOrchestration: React.FC = () => {
                         {rfpUsecasesError}
                       </p>
                       <button 
-                        onClick={loadShortlistedEvaluations}
+                        onClick={() => loadShortlistedEvaluations({ force: true })}
                         className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
                       >
                         Retry Load
@@ -2224,7 +2266,7 @@ export const AgentOrchestration: React.FC = () => {
                         </p>
                       </div>
                       <button 
-                        onClick={loadShortlistedEvaluations}
+                        onClick={() => loadShortlistedEvaluations({ force: true })}
                         className="px-6 py-3 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition cursor-pointer inline-flex items-center gap-2"
                       >
                         <RefreshCw className="w-3.5 h-3.5" /> Force Fetch Shortlist
