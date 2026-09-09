@@ -57,7 +57,7 @@ const RfpDetail: React.FC = () => {
 
   // Generation states
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState<{ code: string; requestId?: string } | null>(null);
   const [generationSuccess, setGenerationSuccess] = useState(false);
   const [generationStatusText, setGenerationStatusText] = useState('');
 
@@ -239,6 +239,35 @@ const RfpDetail: React.FC = () => {
   }, [usecaseId]);
 
   // 2. Trigger RFP Generation
+  // Error copy shown for the RFP generation failure state — never the raw
+  // response body. Unknown/missing codes fall back to GENERATION_FAILED's copy.
+  const RFP_GENERATION_ERROR_COPY: Record<string, { heading: string; message: string }> = {
+    UPSTREAM_UNAVAILABLE: {
+      heading: 'Generation Unavailable',
+      message: "We're unable to generate your RFP right now. Please try again in a few moments.",
+    },
+    GENERATION_FAILED: {
+      heading: 'Generation Failed',
+      message: 'Something went wrong while generating the RFP. Please try again.',
+    },
+  };
+  const DEFAULT_GENERATION_ERROR_COPY = RFP_GENERATION_ERROR_COPY.GENERATION_FAILED;
+
+  // Classifies a caught error into { code, requestId }. Prefers a sanitized
+  // code/requestId already on the error (in case the backend starts sending
+  // one), otherwise maps by HTTP status / network failure. Never touches
+  // err.message for display — that's the raw body, and it must never reach
+  // the UI verbatim.
+  const getGenerationErrorInfo = (err: any): { code: string; requestId?: string } => {
+    if (err && typeof err.code === 'string') {
+      return { code: err.code, requestId: typeof err.requestId === 'string' ? err.requestId : undefined };
+    }
+    const status = err?.status;
+    if (typeof status === 'number' && status >= 500) return { code: 'UPSTREAM_UNAVAILABLE' };
+    if (!status && (err instanceof TypeError || !navigator.onLine)) return { code: 'UPSTREAM_UNAVAILABLE' };
+    return { code: 'GENERATION_FAILED' };
+  };
+
   const handleCreateRfp = async () => {
     if (!rfpId) {
       toast.error('Unable to generate: No RFP ID has been resolved yet.');
@@ -286,8 +315,9 @@ const RfpDetail: React.FC = () => {
       });
 
       if (!getResponse.ok) {
-        const errText = await getResponse.text().catch(() => '');
-        throw new Error(errText || `Failed to fetch RFP key with status ${getResponse.status}`);
+        const statusErr: any = new Error(`Failed to fetch RFP key with status ${getResponse.status}`);
+        statusErr.status = getResponse.status;
+        throw statusErr;
       }
 
       const getResponseData = await getResponse.json();
@@ -304,8 +334,22 @@ const RfpDetail: React.FC = () => {
       clearInterval(interval);
 
       if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(errText || `Server returned status ${response.status}`);
+        const rawBody = await response.clone().text().catch(() => '');
+        const statusErr: any = new Error(`RFP generation request failed with status ${response.status}`);
+        statusErr.status = response.status;
+        statusErr.rawBody = rawBody;
+        // If the backend ever sends a sanitized { code, requestId } shape,
+        // pick it up — but this never becomes the displayed message.
+        try {
+          const parsed = JSON.parse(rawBody);
+          if (parsed && typeof parsed === 'object') {
+            if (typeof parsed.code === 'string') statusErr.code = parsed.code;
+            if (typeof parsed.requestId === 'string') statusErr.requestId = parsed.requestId;
+          }
+        } catch {
+          // Not JSON — status-based mapping still applies.
+        }
+        throw statusErr;
       }
 
       setGenerationSuccess(true);
@@ -322,8 +366,9 @@ const RfpDetail: React.FC = () => {
 
       toast.success('RFP Document created successfully!');
     } catch (err: any) {
-      console.error('Error in generation step:', err);
-      setGenerationError(err.message || 'RFP generation pipeline failed to execute.');
+      // Full upstream body (when we have it) stays in the console only.
+      console.error('Error in generation step:', err?.rawBody || err);
+      setGenerationError(getGenerationErrorInfo(err));
       toast.error('RFP document compilation interrupted.');
     } finally {
       clearInterval(interval);
@@ -826,10 +871,17 @@ const RfpDetail: React.FC = () => {
                 ) : generationError ? (
                   <div className="bg-rose-50 border border-rose-100 p-6 rounded-2xl text-center space-y-3" id="generation-failed-state">
                     <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto" />
-                    <h4 className="text-xs font-black text-rose-800 uppercase tracking-widest">Generation Failed</h4>
+                    <h4 className="text-xs font-black text-rose-800 uppercase tracking-widest">
+                      {(RFP_GENERATION_ERROR_COPY[generationError.code] || DEFAULT_GENERATION_ERROR_COPY).heading}
+                    </h4>
                     <p className="text-[10px] text-rose-650 leading-relaxed font-semibold max-w-[280px] mx-auto">
-                      {generationError}
+                      {(RFP_GENERATION_ERROR_COPY[generationError.code] || DEFAULT_GENERATION_ERROR_COPY).message}
                     </p>
+                    {generationError.requestId && (
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-tight">
+                        Reference: {generationError.requestId}
+                      </p>
+                    )}
                     <button
                       onClick={handleCreateRfp}
                       className="mt-2 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
