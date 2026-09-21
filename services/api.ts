@@ -4,8 +4,8 @@
  * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
  */
 
-// const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://3.109.133.35:5000'}/api`;
-const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
+const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://13.207.66.222:5000/'}/api`;
+// const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
 // const BASE_URL = "http://localhost:5000/api";
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');

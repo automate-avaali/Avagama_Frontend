@@ -34,6 +34,29 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   orchestration: 'Workflow Orchestration',
 };
 
+// Fetch every agent regardless of status (default + published + draft), deduped by _id.
+// Uses only the existing list endpoint and params already used elsewhere — additive, no
+// new endpoint — so the agent-access list is never missing published or draft agents.
+const fetchAllAgents = async (): Promise<AgentItem[]> => {
+  const toArr = (r: PromiseSettledResult<any>): any[] => {
+    if (r.status !== 'fulfilled') return [];
+    const v = r.value;
+    return Array.isArray(v?.data) ? v.data : Array.isArray(v?.agents) ? v.agents : Array.isArray(v) ? v : [];
+  };
+  const results = await Promise.allSettled([
+    apiService.standalone.agents.list(),
+    apiService.standalone.agents.list({ status: 'published' }),
+    apiService.standalone.agents.list({ status: 'draft' }),
+  ]);
+  const seen = new Set<string>();
+  return results.flatMap(toArr).filter((a: any) => {
+    const id = String(a?._id);
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
+
 type Mode = 'all' | 'restricted';
 
 const UserAccess: React.FC = () => {
@@ -70,7 +93,7 @@ const UserAccess: React.FC = () => {
       const [usersRes, catRes, agentsRes] = await Promise.allSettled([
         apiService.system.getUsers(),
         apiService.permissions.features(),
-        apiService.standalone.agents.list(),
+        fetchAllAgents(),
       ]);
 
       if (usersRes.status === 'fulfilled') {
@@ -82,9 +105,7 @@ const UserAccess: React.FC = () => {
         setCatalog(Array.isArray(d) ? d : []);
       }
       if (agentsRes.status === 'fulfilled') {
-        const v = agentsRes.value;
-        const d = Array.isArray(v?.data) ? v.data : Array.isArray(v?.agents) ? v.agents : Array.isArray(v) ? v : [];
-        setAgents(d);
+        setAgents(Array.isArray(agentsRes.value) ? agentsRes.value : []);
       }
       setLoadingLists(false);
     })();

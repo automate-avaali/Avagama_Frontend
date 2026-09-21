@@ -43,13 +43,30 @@ const StandaloneAgents: React.FC = () => {
   const fetchAgents = async () => {
     setLoading(true);
     try {
-      const params: any = {};
-      if (activeTab !== 'all') {
-        params.status = activeTab;
-      }
-      const response = await apiService.standalone.agents.list(params);
-      if (response.success) {
-        setAgents(response.data);
+      if (activeTab === 'all') {
+        // "All" must include published AND draft. Merge the default list with an
+        // explicit published + draft fetch so no status is hidden, whatever the
+        // default (no-status) response returns. Additive only — dedupe by _id.
+        const results = await Promise.allSettled([
+          apiService.standalone.agents.list(),
+          apiService.standalone.agents.list({ status: 'published' }),
+          apiService.standalone.agents.list({ status: 'draft' }),
+        ]);
+        const toArr = (r: PromiseSettledResult<any>): any[] =>
+          r.status === 'fulfilled' && Array.isArray(r.value?.data) ? r.value.data : [];
+        const seen = new Set<string>();
+        const merged = results.flatMap(toArr).filter((a: any) => {
+          const id = String(a?._id);
+          if (!id || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+        setAgents(merged);
+      } else {
+        const response = await apiService.standalone.agents.list({ status: activeTab });
+        if (response.success) {
+          setAgents(response.data);
+        }
       }
     } catch (error: any) {
       toast.error('Failed to load agents');
