@@ -94,6 +94,15 @@ const PublicChat: React.FC = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, sending]);
 
+  // Remember a private preview URL when it's opened without sign-in, so that after
+  // signing in through ANY entry point (this card or the top-nav Log in) the user is
+  // returned here instead of the default dashboard. Only affects this preview case.
+  useEffect(() => {
+    if (isPreview && !isAuthed) {
+      try { sessionStorage.setItem('postLoginRedirect', window.location.pathname + window.location.search); } catch {}
+    }
+  }, [isPreview, isAuthed, slug]);
+
   const send = async () => {
     const text = input.trim();
     if (!text || sending) return;
@@ -133,7 +142,7 @@ const PublicChat: React.FC = () => {
       <AccessGate
         title="Sign in required"
         message="This shared agent link is private. Please sign in with an account that has access to view it."
-        action={{ label: 'Log in', onClick: () => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`) }}
+        action={{ label: 'Log in', onClick: () => navigate('/login') }}
       />
     );
   }

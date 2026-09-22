@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import { useCortex } from '../../context/CortexContext';
 
@@ -17,15 +17,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const { refreshCredits } = useCortex();
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  // After sign-in, return to a shared link the user came from (e.g. /chat/...?token=...).
-  // Only honour internal, relative paths; otherwise fall back to the dashboard as before.
-  const redirectParam = searchParams.get('redirect');
-  const safeRedirect =
-    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
-      ? redirectParam
-      : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +50,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           await refreshCredits();
           onLogin();
+          // If the user arrived from a private preview link, return them there.
+          // Only internal, relative paths are honoured; otherwise the default dashboard.
+          const stored = sessionStorage.getItem('postLoginRedirect');
+          const safeRedirect =
+            stored && stored.startsWith('/') && !stored.startsWith('//') ? stored : null;
+          if (safeRedirect) sessionStorage.removeItem('postLoginRedirect');
           navigate(safeRedirect || "/dashboard");
         } else {
           setError("Login failed. No token received.");
