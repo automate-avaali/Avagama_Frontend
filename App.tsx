@@ -57,6 +57,16 @@ const ProtectedRoute = ({ children, isAuthenticated }: { children: React.ReactNo
   return <>{children}</>;
 };
 
+// After sign-in, return the user to a private preview link they opened while signed
+// out (stored by PublicChat). Only internal, relative paths are honoured; otherwise
+// null so the /login guard falls back to the dashboard exactly as before.
+const getPostLoginRedirect = (): string | null => {
+  try {
+    const s = sessionStorage.getItem('postLoginRedirect');
+    return s && s.startsWith('/') && !s.startsWith('//') ? s : null;
+  } catch { return null; }
+};
+
 // The footer is hidden ONLY on these full-screen app-shell routes (Admin Console,
 // Orchestration). Every other page renders the footer exactly as before.
 const FOOTER_HIDDEN_ROUTES = ['/admin/console', '/admin/orchestration'];
@@ -124,7 +134,7 @@ const App: React.FC = () => {
               {/* <Route path="/ceo" element={<CEO />} /> */}
               <Route path="/pricing" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Pricing />} />
               <Route path="/contact" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Support />} />
-              <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={() => setIsAuthenticated(true)} />} />
+              <Route path="/login" element={isAuthenticated ? <Navigate to={getPostLoginRedirect() || "/dashboard"} replace /> : <Login onLogin={() => setIsAuthenticated(true)} />} />
               <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
               <Route path="/forgot-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
               <Route path="/reset-password" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPassword />} />

@@ -52,10 +52,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           onLogin();
           // If the user arrived from a private preview link, return them there.
           // Only internal, relative paths are honoured; otherwise the default dashboard.
+          // Same target as the /login route guard in App.tsx, so whichever navigates
+          // first, the user still lands on the preview link (no dashboard race).
+          // PublicChat clears the stored value once the chat actually loads.
           const stored = sessionStorage.getItem('postLoginRedirect');
           const safeRedirect =
             stored && stored.startsWith('/') && !stored.startsWith('//') ? stored : null;
-          if (safeRedirect) sessionStorage.removeItem('postLoginRedirect');
           navigate(safeRedirect || "/dashboard");
         } else {
           setError("Login failed. No token received.");

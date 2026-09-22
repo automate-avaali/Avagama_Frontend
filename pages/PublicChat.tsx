@@ -98,9 +98,14 @@ const PublicChat: React.FC = () => {
   // signing in through ANY entry point (this card or the top-nav Log in) the user is
   // returned here instead of the default dashboard. Only affects this preview case.
   useEffect(() => {
-    if (isPreview && !isAuthed) {
-      try { sessionStorage.setItem('postLoginRedirect', window.location.pathname + window.location.search); } catch {}
-    }
+    try {
+      if (isPreview && !isAuthed) {
+        sessionStorage.setItem('postLoginRedirect', window.location.pathname + window.location.search);
+      } else if (isPreview && isAuthed) {
+        // Arrived on the preview chat while signed in — consume the stored redirect.
+        sessionStorage.removeItem('postLoginRedirect');
+      }
+    } catch {}
   }, [isPreview, isAuthed, slug]);
 
   const send = async () => {
