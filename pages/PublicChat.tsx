@@ -133,7 +133,7 @@ const PublicChat: React.FC = () => {
       <AccessGate
         title="Sign in required"
         message="This shared agent link is private. Please sign in with an account that has access to view it."
-        action={{ label: 'Log in', onClick: () => navigate('/login') }}
+        action={{ label: 'Log in', onClick: () => navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`) }}
       />
     );
   }
