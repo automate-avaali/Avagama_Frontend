@@ -1,0 +1,4 @@
+{
+  "records_text": "VENDOR MASTER EXTRACT\nAvaali Solutions - Master Data\nID | Name | Email / UoM | City\nV-1001 | Acme Corp | ap@acme.example | Chennai\nV-1188 | acme corp inc | accounts@acme.example | Chennai\nV-2040 | ACME CORPORATION | AP@ACME.EXAMPLE  | chennai",
+  "duplicate_risk": 60
+}

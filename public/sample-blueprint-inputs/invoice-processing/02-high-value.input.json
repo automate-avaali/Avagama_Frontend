@@ -1,0 +1,19 @@
+{
+  "invoice_text": "TAX INVOICE\nGlobex Manufacturing Ltd\nInvoice No: INV-8890\nInvoice Date: 2026-07-14\nPO Reference: PO-10233\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nItem code | Description | Qty | Unit price | Amount\nVMC-850 | Industrial CNC machining centre VMC-850 | 1 | 211,864.41 | 211,864.41\nSubtotal: 211,864.41\nGST 18%: 38,135.59\nTotal: INR 250,000.00\nDelivery: installation and commissioning included.",
+  "invoice_amount": 250000,
+  "po_number": "PO-10233",
+  "po_lines": [
+    {
+      "sku": "VMC-850",
+      "description": "Industrial CNC machining centre VMC-850",
+      "qty": 1,
+      "unit_price": 211864.41
+    }
+  ],
+  "grn_lines": [
+    {
+      "sku": "VMC-850",
+      "qty_received": 1
+    }
+  ]
+}

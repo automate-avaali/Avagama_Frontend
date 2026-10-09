@@ -1,0 +1,6 @@
+{
+  "payment_text": "PAYMENT VOUCHER\nAvaali Solutions - Accounts Payable\nVoucher No: PV-2026-0412\nPayee: XYZ Consulting LLP\nPayee PAN: AAFFX1234K\nNature of payment: Professional fees - process audit engagement\nGross amount: INR 200,000.00",
+  "payment_amount": 200000,
+  "vendor_pan": "AAFFX1234K",
+  "payer_type": "company"
+}

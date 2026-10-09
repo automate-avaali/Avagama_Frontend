@@ -1,0 +1,40 @@
+{
+  "delivery_note_text": "DELIVERY NOTE\nSteel Corp\nDelivery Note: DN-7781\nShip To: Avaali Solutions - Plant 2, Hosur\nVehicle: KA-01-AB-4471\nVendor description | Vendor code | Qty | UoM\nTMT steel rod 12mm, 6m | SC-R12 | 20 | EA\nBall bearing SKF 6205-2RS | SKF6205 | 5 | EA\nHex bolt M8 x 40, zinc | B-M8-40 | 100 | EA",
+  "vendor_name": "Steel Corp",
+  "material_master": [
+    {
+      "material_code": "MAT-100231",
+      "description": "TMT steel rod 12 mm, 6 m",
+      "vendor_part_numbers": [
+        "SC-R12"
+      ],
+      "uom": "EA"
+    },
+    {
+      "material_code": "MAT-200118",
+      "description": "Deep groove ball bearing 6205-2RS",
+      "vendor_part_numbers": [
+        "SKF6205",
+        "SKF-6205"
+      ],
+      "uom": "EA"
+    },
+    {
+      "material_code": "MAT-300045",
+      "description": "Hex bolt M8 x 40, zinc plated",
+      "vendor_part_numbers": [
+        "B-M8-40"
+      ],
+      "uom": "EA"
+    },
+    {
+      "material_code": "MAT-410077",
+      "description": "Hydraulic return line filter element",
+      "vendor_part_numbers": [
+        "R-FLT88",
+        "FLT-88"
+      ],
+      "uom": "EA"
+    }
+  ]
+}

@@ -19,7 +19,7 @@ import {
   ArrowRight,
   Loader2
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../../components/studio/notify';
 
 interface KnowledgeTabProps {
   agentId: string;
@@ -213,36 +213,39 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
 
   if (agentId === 'new') {
     return (
-      <div className="py-20 flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 mb-6">
+      <div className="py-14 flex flex-col items-center justify-center text-center">
+        <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-4">
           <Database size={32} />
         </div>
-        <h3 className="text-xl font-black text-gray-900 mb-2">Save Agent First</h3>
-        <p className="text-gray-500 font-medium max-w-sm">Please save your agent configuration before uploading knowledge sources.</p>
+        <h3 className="text-[18px] font-semibold text-slate-900 mb-2">Save Agent First</h3>
+        <p className="text-slate-500 font-medium max-w-sm">Please save your agent configuration before uploading knowledge sources.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 animate-fadeIn pb-10">
+    <div className="space-y-8 animate-fadeIn pb-10">
       {/* Action Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-           <h3 className="text-lg font-black text-gray-900">Knowledge Inventory</h3>
-           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Foundational data for RAG processing</p>
+        <div className="flex items-start gap-3">
+           <div className="w-10 h-10 shrink-0 rounded-lg bg-purple-50 flex items-center justify-center text-[#a26da8]"><Database size={20} /></div>
+           <div>
+              <h3 className="text-[17px] font-semibold text-slate-900 leading-tight">Knowledge Inventory</h3>
+              <p className="text-[13px] text-slate-500 mt-0.5">Foundational data for RAG processing</p>
+           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-           <button onClick={() => setAddingSource('file')} className="px-5 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
+           <button onClick={() => setAddingSource('file')} className="px-5 py-3 bg-white border border-slate-200 rounded-lg text-[12.5px] font-semibold text-slate-700 hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
               <FileText size={14} /> Add File
            </button>
-           <button onClick={() => setAddingSource('url')} className="px-5 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
+           <button onClick={() => setAddingSource('url')} className="px-5 py-3 bg-white border border-slate-200 rounded-lg text-[12.5px] font-semibold text-slate-700 hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
               <Globe size={14} /> Add Website
            </button>
-           <button onClick={() => setAddingSource('text')} className="px-5 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
+           <button onClick={() => setAddingSource('text')} className="px-5 py-3 bg-white border border-slate-200 rounded-lg text-[12.5px] font-semibold text-slate-700 hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
               <Type size={14} /> Add Text
            </button>
-           <button onClick={() => setAddingSource('qa')} className="px-5 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black text-gray-700 uppercase tracking-widest hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
+           <button onClick={() => setAddingSource('qa')} className="px-5 py-3 bg-white border border-slate-200 rounded-lg text-[12.5px] font-semibold text-slate-700 hover:border-purple-200 hover:text-[#a26da8] transition-all flex items-center gap-2">
               <HelpCircle size={14} /> Add QA
            </button>
         </div>
@@ -250,27 +253,27 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
 
       {/* Add Source Forms */}
       {addingSource !== 'none' && (
-        <div className="bg-gray-50 border border-gray-100 rounded-[32px] p-8 animate-slideDown">
-          <div className="flex justify-between items-center mb-8">
-            <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 animate-slideDown">
+          <div className="flex justify-between items-center mb-5">
+            <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
               {addingSource === 'file' && <FileText size={16} />}
               {addingSource === 'url' && <Globe size={16} />}
               {addingSource === 'text' && <Type size={16} />}
               {addingSource === 'qa' && <HelpCircle size={16} />}
               Configure New Source
             </h4>
-            <button onClick={() => setAddingSource('none')} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500">Cancel</button>
+            <button onClick={() => setAddingSource('none')} className="text-[12.5px] font-semibold text-slate-500 hover:text-red-500">Cancel</button>
           </div>
 
           {addingSource === 'file' && (
-            <div className="flex flex-col items-center justify-center p-12 bg-white border-2 border-dashed border-gray-200 rounded-[28px] hover:border-purple-200 transition-all group relative">
+            <div className="flex flex-col items-center justify-center p-8 bg-white border-2 border-dashed border-slate-300 rounded-xl hover:border-purple-200 transition-all group relative">
                <div className="flex flex-col items-center gap-4 text-center cursor-pointer">
                   <div className="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center text-[#a26da8] group-hover:scale-110 transition-transform">
                      <Plus size={32} />
                   </div>
                   <div>
-                    <p className="font-black text-gray-900 text-sm">Upload PDF, DOCX, or TXT</p>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Manual parsing handled locally</p>
+                    <p className="font-semibold text-slate-900 text-sm">Upload PDF, DOCX, or TXT</p>
+                    <p className="text-[13px] font-medium text-slate-500 mt-1">Manual parsing handled locally</p>
                   </div>
                </div>
                <input 
@@ -280,7 +283,7 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                 disabled={uploadingFile}
                />
                {uploadingFile && (
-                 <div className="absolute inset-0 bg-white/80 rounded-[28px] flex items-center justify-center">
+                 <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-[#a26da8] animate-spin" />
                  </div>
                )}
@@ -295,17 +298,17 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                   placeholder="Website URL (e.g. https://docs.example.com)"
                   value={urlData.url}
                   onChange={(e) => setUrlData({...urlData, url: e.target.value})}
-                  className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-100"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                  />
                  <input 
                   type="text" 
                   placeholder="Internal Title"
                   value={urlData.title}
                   onChange={(e) => setUrlData({...urlData, title: e.target.value})}
-                  className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-100"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                  />
                </div>
-               <button onClick={handleAddUrl} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Add Knowledge Link</button>
+               <button onClick={handleAddUrl} className="w-full py-2.5 bg-slate-900 text-white rounded-lg font-semibold text-[13px] hover:bg-black transition-all">Add Knowledge Link</button>
             </div>
           )}
 
@@ -316,16 +319,16 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                 placeholder="Topic Title"
                 value={textData.title}
                 onChange={(e) => setTextData({...textData, title: e.target.value})}
-                className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-100"
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                />
                <textarea 
                 rows={8}
                 placeholder="Paste direct information text here..."
                 value={textData.text}
                 onChange={(e) => setTextData({...textData, text: e.target.value})}
-                className="w-full px-8 py-6 bg-white border border-gray-100 rounded-[28px] text-sm font-medium shadow-sm focus:ring-2 focus:ring-purple-100"
+                className="w-full px-5 py-4 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                />
-               <button onClick={handleAddText} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Ingest Raw Text</button>
+               <button onClick={handleAddText} className="w-full py-2.5 bg-slate-900 text-white rounded-lg font-semibold text-[13px] hover:bg-black transition-all">Ingest Raw Text</button>
             </div>
           )}
 
@@ -336,21 +339,21 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                 placeholder="FAQ Set Title"
                 value={qaData.title}
                 onChange={(e) => setQaData({...qaData, title: e.target.value})}
-                className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-100"
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                />
                
                <div className="space-y-4 max-h-[500px] overflow-y-auto px-1 pr-2 scrollbar-thin scrollbar-thumb-gray-100 scrollbar-track-transparent">
                  {qaData.pairs.map((pair, idx) => (
-                   <div key={idx} className="p-6 bg-white border border-gray-100 rounded-[28px] space-y-4 relative group/pair shadow-sm">
+                   <div key={idx} className="p-6 bg-white border border-slate-200 rounded-xl space-y-4 relative group/pair shadow-sm">
                       <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Question {idx + 1}</span>
+                         <span className="text-[12.5px] font-semibold text-purple-400">Question {idx + 1}</span>
                          {qaData.pairs.length > 1 && (
                             <button 
                               onClick={() => {
                                 const newPairs = qaData.pairs.filter((_, i) => i !== idx);
                                 setQaData({...qaData, pairs: newPairs});
                               }}
-                              className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -364,7 +367,7 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                           newPairs[idx].q = e.target.value;
                           setQaData({...qaData, pairs: newPairs});
                         }}
-                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-100 transition-all"
+                        className="w-full px-5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal outline-none focus:ring-2 focus:ring-purple-100 transition-all focus:border-[#a26da8]"
                       />
                       <textarea 
                         rows={3}
@@ -375,7 +378,7 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                           newPairs[idx].a = e.target.value;
                           setQaData({...qaData, pairs: newPairs});
                         }}
-                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-100 min-h-[100px] transition-all"
+                        className="w-full px-5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal outline-none focus:ring-2 focus:ring-purple-100 min-h-[100px] transition-all focus:border-[#a26da8]"
                       />
                    </div>
                  ))}
@@ -384,13 +387,13 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                <div className="flex gap-4">
                  <button 
                   onClick={() => setQaData({...qaData, pairs: [...qaData.pairs, { q: '', a: '' }]})}
-                  className="flex-1 py-4 bg-white border border-gray-100 text-gray-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-purple-200 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold text-[13px] hover:border-purple-200 transition-all flex items-center justify-center gap-2"
                  >
                     <Plus size={16} /> Add Another Pair
                  </button>
                  <button 
                   onClick={handleAddQA}
-                  className="flex-[2] py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
+                  className="flex-[2] py-2.5 bg-slate-900 text-white rounded-lg font-semibold text-[13px] hover:bg-black transition-all"
                  >
                     Save FAQ Set
                  </button>
@@ -403,14 +406,14 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
       {/* Sources List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="flex justify-center py-20">
-             <Loader2 className="w-8 h-8 text-gray-200 animate-spin" />
+          <div className="flex justify-center py-14">
+             <Loader2 className="w-8 h-8 text-slate-300 animate-spin" />
           </div>
         ) : sources.length > 0 ? (
           sources.map((source: any) => (
-            <div key={source._id} className="group flex items-center justify-between p-6 bg-white border border-gray-100 rounded-[28px] hover:border-purple-100 hover:shadow-xl hover:shadow-purple-50 transition-all">
+            <div key={source._id} className="group flex items-center justify-between p-6 bg-white border border-slate-200 rounded-xl hover:border-purple-100 hover:shadow-sm transition-all">
                <div className="flex items-center gap-5">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
                     source.status === 'ready' ? 'bg-purple-50 text-[#a26da8]' :
                     (source.status === 'processing' || source.status === 'pending') ? 'bg-blue-50 text-blue-500' :
                     'bg-red-50 text-red-500'
@@ -422,8 +425,8 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                       <h5 className="text-sm font-black text-gray-900">{source.title}</h5>
-                       <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border flex items-center gap-1 ${
+                       <h5 className="text-sm font-semibold text-slate-900">{source.title}</h5>
+                       <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border flex items-center gap-1 capitalize ${
                          source.status === 'ready' ? (source.error_message ? 'border-amber-100 bg-amber-50 text-amber-600' : 'border-green-100 bg-green-50 text-green-600') :
                          (source.status === 'processing' || source.status === 'pending') ? 'border-blue-100 bg-blue-50 text-blue-500' :
                          'border-red-100 bg-red-50 text-red-500'
@@ -432,8 +435,8 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                          {source.status === 'ready' && source.error_message ? 'partial' : source.status}
                        </span>
                     </div>
-                    <div className="flex items-center gap-4 mt-1.5 text-[9px] font-bold text-gray-400 font-mono uppercase">
-                       <span>{source.type}</span>
+                    <div className="flex items-center gap-4 mt-1.5 text-[11.5px] font-medium text-slate-500 font-mono">
+                       <span className="uppercase">{source.type}</span>
                        <span>•</span>
                        {(source.status === 'processing' || source.status === 'pending') ? (
                          <span className="text-blue-500 flex items-center gap-1.5 normal-case tracking-normal">
@@ -446,12 +449,12 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                        <span>Added {new Date(source.createdAt).toLocaleDateString()}</span>
                     </div>
                     {source.status === 'ready' && source.error_message && (
-                      <div className="flex items-start gap-1.5 mt-2 text-[10px] font-bold text-amber-600">
+                      <div className="flex items-start gap-1.5 mt-2 text-[12.5px] font-medium text-amber-600">
                         <AlertTriangle size={12} className="shrink-0 mt-0.5" /> {source.error_message}
                       </div>
                     )}
                     {source.status === 'failed' && (
-                      <div className="flex items-start gap-1.5 mt-2 text-[10px] font-bold text-red-500">
+                      <div className="flex items-start gap-1.5 mt-2 text-[12.5px] font-medium text-red-500">
                         <AlertCircle size={12} className="shrink-0 mt-0.5" /> {source.error_message || 'Could not index this source. Try re-uploading.'}
                       </div>
                     )}
@@ -462,14 +465,14 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
                   <button 
                    onClick={() => handleReprocess(source._id)}
                    disabled={processingId === source._id}
-                   className="p-3 text-gray-400 hover:text-[#a26da8] hover:bg-purple-50 rounded-xl transition-all"
+                   className="p-3 text-slate-500 hover:text-[#a26da8] hover:bg-purple-50 rounded-xl transition-all"
                    title="Reprocess Source"
                   >
                     <RotateCw size={16} className={processingId === source._id ? 'animate-spin' : ''} />
                   </button>
                   <button 
                    onClick={() => handleDelete(source._id)}
-                   className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                   className="p-3 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                    title="Remove"
                   >
                     <Trash2 size={16} />
@@ -478,31 +481,31 @@ const KnowledgeTab: React.FC<KnowledgeTabProps> = ({ agentId, refreshKey }) => {
             </div>
           ))
         ) : (
-          <div className="py-20 border-2 border-dashed border-gray-100 rounded-[40px] flex flex-col items-center justify-center text-center">
-             <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-200 mb-6">
+          <div className="py-14 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center">
+             <div className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
                 <Database size={28} />
              </div>
-             <p className="font-black text-gray-400 text-xs uppercase tracking-widest">No knowledge sources attached yet.</p>
+             <p className="font-semibold text-slate-500 text-[13px]">No knowledge sources attached yet.</p>
           </div>
         )}
       </div>
 
       {/* Sync Status Footer */}
       {sources.length > 0 && (
-        <div className="p-8 bg-purple-50/30 rounded-[32px] border border-purple-100/50 flex items-center justify-between">
+        <div className="p-6 bg-purple-50/30 rounded-xl border border-purple-100/50 flex items-center justify-between">
            <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-green-500 shadow-sm">
                  <CheckCircle2 size={20} />
               </div>
               <div>
-                 <p className="text-xs font-black text-gray-900 uppercase tracking-tight">Vectore Index Synchronized</p>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Last updated: Just now</p>
+                 <p className="text-[13px] font-semibold text-slate-900">Vector index synchronized</p>
+                 <p className="text-[12.5px] font-medium text-slate-500 mt-0.5">Last updated: Just now</p>
               </div>
            </div>
            <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
-                 <span className="text-lg font-black text-gray-900">{sources.reduce((acc, s) => acc + s.chunk_count, 0)}</span>
-                 <span className="text-[9px] font-bold text-gray-400 uppercase">Active Chunks</span>
+                 <span className="text-[17px] font-semibold text-slate-900">{sources.reduce((acc, s) => acc + s.chunk_count, 0)}</span>
+                 <span className="text-[11.5px] font-medium text-slate-500">Active Chunks</span>
               </div>
               <button 
                 onClick={fetchSources}

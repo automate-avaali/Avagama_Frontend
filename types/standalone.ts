@@ -16,6 +16,7 @@ export interface AgentLLM {
   temperature: number;
   top_p: number;
   max_tokens: number;
+  allow_web_search?: boolean; // unset = allowed (backend contract F.4)
 }
 
 export interface AgentGuardrails {

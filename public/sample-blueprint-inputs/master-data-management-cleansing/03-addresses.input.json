@@ -1,0 +1,4 @@
+{
+  "records_text": "CUSTOMER MASTER EXTRACT\nAvaali Solutions - Master Data\nID | Name | Email / UoM | City\nC-3001 | Contoso Retail Pvt Ltd | orders@contoso.example | Bangalore\nC-3017 | Contoso Retail Private Limited | orders@contoso.example | Bengaluru\nC-3020 | Contoso Rtl |  | BLR",
+  "duplicate_risk": 35
+}

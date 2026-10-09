@@ -30,7 +30,22 @@ export interface Citation {
   line_end?: number;
   char_start?: number;
   char_end?: number;
+  // Live web-search sources (source_type "web") also carry these; KB sources do not.
+  source_title?: string;
+  source_type?: string;
+  url?: string;
+  published_date?: string;
+  snippet?: string;
 }
+
+// Only real http(s) links are made clickable.
+const safeUrl = (u?: string): string | null => (typeof u === 'string' && /^https?:\/\//i.test(u.trim()) ? u.trim() : null);
+const hostOf = (u: string): string => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+const fmtPublished = (d?: string): string => {
+  if (!d) return '';
+  const t = new Date(d);
+  return isNaN(t.getTime()) ? String(d) : t.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+};
 
 // Turn a run of tab-separated lines into a GitHub-flavoured Markdown table so it
 // renders as a real table instead of raw columns of text.
@@ -212,6 +227,16 @@ export const parseAgentContent = (
 // Hover label for a citation badge — rich when metadata is present, otherwise a
 // simple "Source N" (+ any inline location captured from a 【N†loc】 marker).
 const citationLabel = (c: Citation | undefined, fallbackTitle: string, num: string): string => {
+  if (c && (c.source_title || safeUrl(c.url))) {
+    // Web result: title · date · site. (Search snippets are often unrelated page text, so they are not shown.)
+    const url = safeUrl(c.url);
+    const bits = [`Source ${c.index}`];
+    if (c.source_title) bits.push(c.source_title);
+    const when = fmtPublished(c.published_date);
+    if (when) bits.push(when);
+    if (url) bits.push(hostOf(url));
+    return bits.filter(Boolean).join(' · ');
+  }
   if (c) {
     const bits = [`Source ${c.index}`];
     if (c.page != null) bits.push(`Page ${c.page}`);
@@ -239,8 +264,11 @@ const baseComponents: Record<string, any> = {
   p: (props: any) => <p className="mb-2 last:mb-0 break-words leading-relaxed" {...props} />,
   strong: (props: any) => <strong className="font-black text-gray-900" {...props} />,
   em: (props: any) => <em className="italic" {...props} />,
-  ul: (props: any) => <ul className="list-disc ml-5 space-y-1 my-2" {...props} />,
-  ol: (props: any) => <ol className="list-decimal ml-5 space-y-1 my-2" {...props} />,
+  // Bullet lists are shown numbered (nested ones lettered) so points are easy to refer to; checkbox task lists stay unnumbered.
+  ul: ({ node, className, ...props }: any) => /contains-task-list/.test(className || '')
+    ? <ul className={`list-none ml-1 space-y-1 my-2 ${className}`} {...props} />
+    : <ol className="list-decimal ml-5 space-y-1 my-2 [&_ol]:list-[lower-alpha]" {...props} />,
+  ol: (props: any) => <ol className="list-decimal ml-5 space-y-1 my-2 [&_ol]:list-[lower-alpha]" {...props} />,
   li: (props: any) => <li className="pl-1 break-words leading-relaxed" {...props} />,
   hr: (props: any) => <hr className="my-3 border-gray-100" {...props} />,
   blockquote: (props: any) => <blockquote className="border-l-4 border-purple-100 pl-4 py-1 my-3 italic text-gray-500" {...props} />,
@@ -260,14 +288,19 @@ const makeComponents = (byIndex: Record<number, Citation>): Record<string, any> 
     if (typeof href === 'string' && href.startsWith('#cite')) {
       const idx = Number(href.split(':')[1]);
       const c = Number.isFinite(idx) ? byIndex[idx] : undefined;
-      return (
+      const url = safeUrl(c?.url);
+      const badge = (
         <sup
           title={citationLabel(c, title, String(children))}
-          className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 ml-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline cursor-help"
+          className={`inline-flex items-center justify-center min-w-[15px] h-[15px] px-1 ml-0.5 rounded-md bg-purple-100 text-[#8e5a94] text-[9px] font-black align-super no-underline ${url ? 'cursor-pointer hover:bg-[#a26da8] hover:text-white transition-colors' : 'cursor-help'}`}
         >
           {children}
         </sup>
       );
+      // Web-search citations open the source article in a new tab.
+      return url
+        ? <a href={url} target="_blank" rel="noopener noreferrer" className="no-underline" aria-label={`Open source ${children}`}>{badge}</a>
+        : badge;
     }
     return <a href={href} title={title} className="text-[#a26da8] font-semibold hover:underline break-words" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
   },

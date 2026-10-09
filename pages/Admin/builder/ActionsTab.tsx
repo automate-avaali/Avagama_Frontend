@@ -21,7 +21,7 @@ import {
   MessageSquare,
   Tag
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../../components/studio/notify';
 
 interface ActionsTabProps {
   agentId: string;
@@ -150,28 +150,31 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
 
   if (agentId === 'new') {
     return (
-      <div className="py-20 flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 mb-6">
+      <div className="py-14 flex flex-col items-center justify-center text-center">
+        <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-4">
           <Zap size={32} />
         </div>
-        <h3 className="text-xl font-black text-gray-900 mb-2">Save Agent First</h3>
-        <p className="text-gray-500 font-medium max-w-sm">Define your agent's identity before configuring event-based actions.</p>
+        <h3 className="text-[18px] font-semibold text-slate-900 mb-2">Save Agent First</h3>
+        <p className="text-slate-500 font-medium max-w-sm">Define your agent's identity before configuring event-based actions.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 animate-fadeIn pb-10">
+    <div className="space-y-8 animate-fadeIn pb-10">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-           <h3 className="text-lg font-black text-gray-900">Agentic Actions</h3>
-           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Configure event-driven logic and external alerts</p>
+        <div className="flex items-start gap-3">
+           <div className="w-10 h-10 shrink-0 rounded-lg bg-purple-50 flex items-center justify-center text-[#a26da8]"><Zap size={20} /></div>
+           <div>
+              <h3 className="text-[17px] font-semibold text-slate-900 leading-tight">Agentic Actions</h3>
+              <p className="text-[13px] text-slate-500 mt-0.5">Configure event-driven logic and external alerts</p>
+           </div>
         </div>
 
         <button 
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-8 py-4 bg-gray-900 text-white rounded-[24px] font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-200"
+          className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg font-semibold text-[13px] hover:bg-black transition-all shadow-sm"
         >
           <Plus size={18} />
           Create New Action
@@ -180,9 +183,9 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
 
       {/* Add/Edit Form Overlay */}
       {(showAddForm || editingAction) && (
-        <div className="bg-white border-2 border-[#a26da8] rounded-[40px] p-10 space-y-10 shadow-2xl shadow-purple-100 animate-slideDown">
+        <div className="bg-white border-2 border-[#a26da8] rounded-xl p-6 space-y-8 shadow-lg animate-slideDown">
           <div className="flex justify-between items-center">
-             <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+             <h4 className="text-sm font-semibold text-slate-900">
                {editingAction ? 'Update Action Configuration' : 'New Autonomous Event Action'}
              </h4>
              <button 
@@ -190,15 +193,15 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                  setShowAddForm(false);
                  setEditingAction(null);
                }} 
-               className="text-[10px] font-black text-gray-400 hover:text-red-500 uppercase"
+               className="text-[12.5px] font-semibold text-slate-500 hover:text-red-500"
              >
                Dismiss
              </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Internal Ref Name</label>
+               <label className="text-[12.5px] font-semibold text-slate-500 ml-2">Internal Ref Name</label>
                <input 
                 type="text" 
                 placeholder="e.g. Compliance High Priority Alert"
@@ -207,17 +210,17 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                   ? setEditingAction({...editingAction, name: e.target.value})
                   : setNewAction({...newAction, name: e.target.value})
                 }
-                className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-purple-100"
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                />
             </div>
           </div>
 
-          <div className="h-px bg-gray-50" />
+          <div className="h-px bg-slate-50" />
 
           {/* Trigger Config */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
              <div className="space-y-6">
-                 <label className="text-[10px] font-black text-[#a26da8] uppercase tracking-widest ml-2">1. The Trigger Condition</label>
+                 <label className="text-[12.5px] font-semibold text-[#a26da8] ml-2">1. The Trigger Condition</label>
                  <div className="grid grid-cols-2 gap-3">
                     {TRIGGER_KINDS.map(tk => (
                       <button
@@ -226,14 +229,14 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           ? setEditingAction({...editingAction, trigger: {...editingAction.trigger, kind: tk.id}})
                           : setNewAction({...newAction, trigger: {...newAction.trigger, kind: tk.id}})
                         }
-                        className={`flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all ${
+                        className={`flex items-center gap-3 px-5 py-2.5 rounded-lg border-2 transition-all ${
                           (editingAction ? editingAction.trigger.kind : newAction.trigger.kind) === tk.id 
                           ? 'bg-purple-50 border-[#a26da8] text-[#a26da8]' 
-                          : 'bg-white border-gray-50 text-gray-400 hover:border-gray-200'
+                          : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300'
                         }`}
                       >
                         {tk.icon}
-                        <span className="text-[10px] font-black uppercase">{tk.name}</span>
+                        <span className="text-[12.5px] font-semibold">{tk.name}</span>
                       </button>
                     ))}
                  </div>
@@ -247,9 +250,9 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                         ? setEditingAction({...editingAction, trigger: {...editingAction.trigger, value: e.target.value}})
                         : setNewAction({...newAction, trigger: {...newAction.trigger, value: e.target.value}})
                       }
-                      className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-purple-100"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-normal focus:ring-2 focus:ring-purple-100 outline-none focus:border-[#a26da8]"
                      />
-                     <p className="text-[9px] text-gray-400 font-medium px-2 italic uppercase tracking-wider">
+                     <p className="text-[11.5px] text-slate-500 font-medium px-2">
                        {TRIGGER_KINDS.find(k => k.id === (editingAction ? editingAction.trigger.kind : newAction.trigger.kind))?.help}
                      </p>
                    </div>
@@ -257,7 +260,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
              </div>
 
              <div className="space-y-6">
-                 <label className="text-[10px] font-black text-[#4db6ac] uppercase tracking-widest ml-2">2. The Execution Effect</label>
+                 <label className="text-[12.5px] font-semibold text-[#4db6ac] ml-2">2. The Execution Effect</label>
                  <div className="grid grid-cols-2 gap-3">
                     {EFFECT_KINDS.map(ek => (
                       <button
@@ -266,20 +269,20 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           ? setEditingAction({...editingAction, effect: { kind: ek.id, config: {} }})
                           : setNewAction({...newAction, effect: { kind: ek.id, config: {} }})
                         }
-                        className={`flex items-center gap-3 px-5 py-4 rounded-2xl border-2 transition-all ${
+                        className={`flex items-center gap-3 px-5 py-2.5 rounded-lg border-2 transition-all ${
                           (editingAction ? editingAction.effect.kind : newAction.effect.kind) === ek.id 
                           ? 'bg-teal-50 border-[#4db6ac] text-[#4db6ac]' 
-                          : 'bg-white border-gray-50 text-gray-400 hover:border-gray-200'
+                          : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300'
                         }`}
                       >
                         {ek.icon}
-                        <span className="text-[10px] font-black uppercase">{ek.name}</span>
+                        <span className="text-[12.5px] font-semibold">{ek.name}</span>
                       </button>
                     ))}
                  </div>
                  
-                 <div className="p-6 bg-gray-50 rounded-[28px] space-y-4 border border-gray-100 shadow-inner">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Effect Parameters</p>
+                 <div className="p-6 bg-slate-50 rounded-xl space-y-4 border border-slate-200">
+                    <p className="text-[12.5px] font-semibold text-slate-500 mb-1">Effect Parameters</p>
                     
                     {(editingAction ? editingAction.effect.kind : newAction.effect.kind) === 'webhook' && (
                       <input 
@@ -289,7 +292,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                         onChange={(e) => editingAction
                           ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), url: e.target.value}}})
                           : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), url: e.target.value}}})}
-                        className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+                        className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#a26da8]"
                       />
                     )}
 
@@ -302,7 +305,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           onChange={(e) => editingAction
                             ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), webhook_url: e.target.value}}})
                             : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), webhook_url: e.target.value}}})}
-                          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+                          className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#a26da8]"
                         />
                         <textarea 
                           placeholder="Notification Template (use {{message}} for chat text, {{user}} for sender)"
@@ -310,10 +313,10 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           onChange={(e) => editingAction
                             ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), message_template: e.target.value}}})
                             : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), message_template: e.target.value}}})}
-                          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-teal-100 min-h-[80px]"
+                          className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 min-h-[80px] focus:border-[#a26da8]"
                         />
-                        <p className="text-[9px] text-gray-400 font-medium px-2">
-                          Need help? <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener noreferrer" className="text-[#a26da8] hover:underline font-bold">Create a Slack Webhook</a>
+                        <p className="text-[11.5px] text-slate-500 font-medium px-2">
+                          Need help? <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener noreferrer" className="text-[#a26da8] hover:underline font-medium">Create a Slack Webhook</a>
                         </p>
                       </div>
                     )}
@@ -327,7 +330,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           onChange={(e) => editingAction
                             ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), to: e.target.value}}})
                             : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), to: e.target.value}}})}
-                          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+                          className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#a26da8]"
                         />
                         <input 
                           type="text" 
@@ -336,7 +339,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           onChange={(e) => editingAction
                             ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), subject: e.target.value}}})
                             : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), subject: e.target.value}}})}
-                          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+                          className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#a26da8]"
                         />
                         <textarea 
                           placeholder="Email Body Content..."
@@ -344,7 +347,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                           onChange={(e) => editingAction
                             ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), body: e.target.value}}})
                             : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), body: e.target.value}}})}
-                          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-teal-100 min-h-[80px]"
+                          className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 min-h-[80px] focus:border-[#a26da8]"
                         />
                       </div>
                     )}
@@ -356,7 +359,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                         onChange={(e) => editingAction
                           ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), message: e.target.value}}})
                           : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), message: e.target.value}}})}
-                        className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-teal-100 min-h-[80px]"
+                        className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 min-h-[80px] focus:border-[#a26da8]"
                       />
                     )}
 
@@ -368,12 +371,12 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                         onChange={(e) => editingAction
                           ? setEditingAction({...editingAction, effect: {...editingAction.effect, config: {...(editingAction.effect?.config || {}), tag: e.target.value}}})
                           : setNewAction({...newAction, effect: {...newAction.effect, config: {...(newAction.effect?.config || {}), tag: e.target.value}}})}
-                        className="w-full px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+                        className="w-full px-5 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#a26da8]"
                       />
                     )}
 
                     {(editingAction ? editingAction.effect.kind : newAction.effect.kind) === 'handoff' && (
-                      <p className="text-[10px] font-medium text-gray-500 italic">No additional config required for human handoff.</p>
+                      <p className="text-[12.5px] font-medium text-slate-500">No additional config required for human handoff.</p>
                     )}
                  </div>
              </div>
@@ -381,7 +384,7 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
 
           <button 
            onClick={editingAction ? handleUpdate : handleCreate}
-           className="w-full py-5 bg-[#a26da8] text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] hover:bg-purple-700 transition-all shadow-xl shadow-purple-100"
+           className="w-full py-3 bg-[#a26da8] text-white rounded-lg font-semibold text-[13px] hover:bg-purple-700 transition-all shadow-sm"
           >
             {editingAction ? 'Save Changes' : 'Finalize Action Configuration'}
           </button>
@@ -391,64 +394,64 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
       {/* Actions List */}
       <div className="space-y-6">
         {loading ? (
-          <div className="flex justify-center py-20">
-             <Loader2 className="w-8 h-8 text-gray-200 animate-spin" />
+          <div className="flex justify-center py-14">
+             <Loader2 className="w-8 h-8 text-slate-300 animate-spin" />
           </div>
         ) : actions.length > 0 ? (
           actions.map((action) => (
-            <div key={action._id} className="group p-5 sm:p-7 bg-white border border-gray-100 rounded-[32px] hover:border-[#a26da8] hover:shadow-[0_20px_50px_-20px_rgba(162,109,168,0.15)] transition-all duration-300 relative">
+            <div key={action._id} className="group p-5 sm:p-5 bg-white border border-slate-200 rounded-xl hover:border-[#a26da8] transition-all duration-300 relative">
                {/* Invocations Badge - Positioned absolutely on mobile for space, relative on desk */}
-               <div className="absolute top-5 right-5 sm:relative sm:top-0 sm:right-0 sm:float-right px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 group-hover:bg-white group-hover:border-[#a26da8]/20 transition-all z-10">
-                  <p className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest text-center">Fired</p>
-                  <p className="text-xs sm:text-sm font-black text-gray-900 text-center">{(action.fire_count ?? action.fired_count ?? 0)}x</p>
+               <div className="absolute top-5 right-5 sm:relative sm:top-0 sm:right-0 sm:float-right px-4 py-2 bg-slate-50 rounded-lg border border-slate-200 group-hover:bg-white group-hover:border-[#a26da8]/20 transition-all z-10">
+                  <p className="text-[11px] sm:text-[11px] font-semibold text-slate-500 text-center">Fired</p>
+                  <p className="text-[13px] sm:text-sm font-semibold text-slate-900 text-center">{(action.fire_count ?? action.fired_count ?? 0)}x</p>
                </div>
 
                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                   {/* Icon and Title Section */}
                   <div className="flex items-start gap-4 sm:gap-6 min-w-0 lg:max-w-[30%]">
-                     <div className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-300 ${action.enabled ? 'bg-purple-100 text-[#a26da8] shadow-lg shadow-purple-50' : 'bg-gray-100 text-gray-400'}`}>
+                     <div className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-lg flex items-center justify-center transition-all duration-300 ${action.enabled ? 'bg-purple-100 text-[#a26da8] shadow-sm ' : 'bg-slate-100 text-slate-500'}`}>
                         <Zap size={20} className={action.enabled ? 'fill-[#a26da8]' : ''} />
                      </div>
                      <div className="min-w-0 pr-12 sm:pr-0">
-                        <h5 className="text-sm font-black text-gray-900 group-hover:text-[#a26da8] transition-colors truncate">{action.name}</h5>
-                        <p className="text-[10px] font-medium text-gray-400 mt-0.5 line-clamp-1 group-hover:text-gray-500 transition-colors">{getActionSummary(action)}</p>
+                        <h5 className="text-sm font-semibold text-slate-900 group-hover:text-[#a26da8] transition-colors truncate">{action.name}</h5>
+                        <p className="text-[12.5px] font-medium text-slate-500 mt-0.5 line-clamp-1 group-hover:text-slate-500 transition-colors">{getActionSummary(action)}</p>
                         <div className="flex items-center gap-2 mt-2">
-                           <span className="px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded text-[8px] font-black uppercase tracking-tighter text-gray-400">Priority {action.priority}</span>
-                           {!action.enabled && <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">Disabled</span>}
+                           <span className="px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded text-[11px] font-semibold text-slate-500">Priority {action.priority}</span>
+                           {!action.enabled && <span className="text-[11px] font-semibold text-red-400">Disabled</span>}
                         </div>
                      </div>
                   </div>
 
                   {/* Flow Section (Trigger -> Action) */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8 flex-1 py-4 lg:py-0 border-y lg:border-y-0 border-gray-50">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8 flex-1 py-2.5 lg:py-0 border-y lg:border-y-0 border-slate-100">
                      {/* Trigger */}
                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`p-2.5 rounded-xl shrink-0 ${action.enabled ? 'bg-purple-50 text-[#a26da8]' : 'bg-gray-50 text-gray-300'}`}>
+                        <div className={`p-2.5 rounded-xl shrink-0 ${action.enabled ? 'bg-purple-50 text-[#a26da8]' : 'bg-slate-50 text-slate-400'}`}>
                            {TRIGGER_KINDS.find(k => k.id === action.trigger.kind)?.icon || <Activity size={16} />}
                         </div>
                         <div className="min-w-0">
-                           <p className="text-[7px] font-black text-purple-400 uppercase tracking-widest mb-0.5">Condition</p>
+                           <p className="text-[11px] font-semibold text-purple-400 mb-0.5">Condition</p>
                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] font-black text-gray-900 capitalize whitespace-nowrap">{action.trigger.kind}</span>
+                              <span className="text-[13px] font-semibold text-slate-900 capitalize whitespace-nowrap">{action.trigger.kind}</span>
                               {action.trigger.value && (
-                                 <span className="px-2 py-0.5 bg-gray-900 text-white rounded-md text-[9px] font-black truncate max-w-[120px] uppercase tracking-tighter">{action.trigger.value}</span>
+                                 <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[11.5px] font-semibold truncate max-w-[120px]">{action.trigger.value}</span>
                               )}
                            </div>
                         </div>
                      </div>
 
-                     <div className="hidden sm:block text-gray-200">
+                     <div className="hidden sm:block text-slate-300">
                         <ArrowRight size={16} />
                      </div>
 
                      {/* Action */}
                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`p-2.5 rounded-xl shrink-0 ${action.enabled ? 'bg-teal-50 text-[#4db6ac]' : 'bg-gray-50 text-gray-300'}`}>
+                        <div className={`p-2.5 rounded-xl shrink-0 ${action.enabled ? 'bg-teal-50 text-[#4db6ac]' : 'bg-slate-50 text-slate-400'}`}>
                            {EFFECT_KINDS.find(k => k.id === action.effect.kind)?.icon || <ArrowRight size={16} />}
                         </div>
                         <div className="min-w-0">
-                           <p className="text-[7px] font-black text-teal-500 uppercase tracking-widest mb-0.5">Effect</p>
-                           <span className="text-[11px] font-black text-gray-900 capitalize block whitespace-nowrap">{action.effect.kind.replace('_', ' ')}</span>
+                           <p className="text-[11px] font-semibold text-teal-500 mb-0.5">Effect</p>
+                           <span className="text-[13px] font-semibold text-slate-900 capitalize block whitespace-nowrap">{action.effect.kind.replace('_', ' ')}</span>
                         </div>
                      </div>
                   </div>
@@ -457,19 +460,19 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
                   <div className="flex items-center justify-end gap-1 sm:gap-2">
                      <button 
                         onClick={() => setEditingAction(action)}
-                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-300 hover:text-[#a26da8] hover:bg-purple-50 rounded-xl transition-all"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-400 hover:text-[#a26da8] hover:bg-purple-50 rounded-xl transition-all"
                      >
                         <Settings2 size={18} />
                      </button>
                      <button 
                         onClick={() => handleToggle(action._id)}
-                        className={`w-9 h-9 sm:w-11 sm:h-10 flex items-center justify-center rounded-xl transition-all ${action.enabled ? 'text-[#a26da8] hover:bg-purple-50' : 'text-gray-300 hover:text-gray-600'}`}
+                        className={`w-9 h-9 sm:w-11 sm:h-10 flex items-center justify-center rounded-xl transition-all ${action.enabled ? 'text-[#a26da8] hover:bg-purple-50' : 'text-slate-400 hover:text-slate-600'}`}
                      >
                         {action.enabled ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
                      </button>
                      <button 
                         onClick={() => handleDelete(action._id)}
-                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                      >
                         <Trash2 size={18} />
                      </button>
@@ -478,11 +481,11 @@ const ActionsTab: React.FC<ActionsTabProps> = ({ agentId, refreshKey }) => {
             </div>
           ))
         ) : (
-          <div className="py-24 border-2 border-dashed border-gray-100 rounded-[40px] flex flex-col items-center justify-center text-center">
-             <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-200 mb-6">
+          <div className="py-16 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center">
+             <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
                 <Zap size={32} />
              </div>
-             <p className="font-black text-gray-400 text-xs uppercase tracking-[0.2em]">Deploy event listeners for your agents.</p>
+             <p className="font-semibold text-slate-500 text-[13px]">No actions yet. Create one to alert your team, tag a conversation or hand off to a human when a message matches a trigger.</p>
           </div>
         )}
       </div>

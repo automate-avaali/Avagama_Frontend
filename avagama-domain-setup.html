@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Avagama · Domain Setup Guide (avagama.app)</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1c2230; --ink:#e7ebf3; --muted:#9aa4b8;
+    --line:#2a3244; --accent:#a26da8; --accent2:#6fcbbd; --code:#0b0d12;
+    --warn-bg:#3a2a12; --warn-line:#8a6d2f; --warn-ink:#f4d58d;
+    --ok-bg:#12301f; --ok-line:#2f8a56; --ok-ink:#9be6b6;
+    --info-bg:#132235; --info-line:#2f6a8a; --info-ink:#9bd0f0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 20px 80px}
+  header.hero{border:1px solid var(--line);background:linear-gradient(135deg,#1a1430,#10231f);border-radius:20px;padding:30px 28px;margin-bottom:28px}
+  header.hero h1{margin:0 0 6px;font-size:28px;letter-spacing:-.5px}
+  header.hero p{margin:0;color:var(--muted)}
+  .pill{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;padding:4px 10px;border-radius:999px;background:#2a2140;color:#cbb3d6;margin-bottom:14px}
+  h2{margin:38px 0 12px;font-size:20px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{margin:24px 0 8px;font-size:16px;color:#dfe5f0}
+  a{color:var(--accent2)}
+  code{background:#222a38;padding:2px 6px;border-radius:6px;font-family:"SF Mono",Consolas,Menlo,monospace;font-size:13px;color:#ffd9f3}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;margin:12px 0}
+  pre code{background:none;padding:0;color:#d6e2f5;font-size:13px;line-height:1.55}
+  .step{display:flex;gap:14px;align-items:flex-start;margin:0 0 6px}
+  .num{flex:0 0 auto;width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#8e5a94);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#cdd6e6;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  td code{white-space:nowrap}
+  .box{border-radius:12px;padding:14px 16px;margin:14px 0;border:1px solid}
+  .warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-ink)}
+  .ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink)}
+  .info{background:var(--info-bg);border-color:var(--info-line);color:var(--info-ink)}
+  .box b{color:inherit}
+  .arch{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0;font-family:"SF Mono",Consolas,monospace;font-size:12.5px;color:#cfd8e8;white-space:pre;overflow:auto;line-height:1.5}
+  ul.check{list-style:none;padding:0;margin:14px 0}
+  ul.check li{padding:7px 0 7px 30px;position:relative;border-bottom:1px dashed var(--line)}
+  ul.check li:before{content:"☐";position:absolute;left:4px;top:6px;color:var(--accent2);font-size:16px}
+  .muted{color:var(--muted)}
+  .kbd{background:#222a38;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;font-size:12px;font-family:monospace}
+  footer{margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  .toc{columns:2;gap:24px;margin:0 0 10px;padding:0}
+  .toc a{display:block;padding:3px 0;font-size:14px;break-inside:avoid}
+  @media (max-width:640px){.toc{columns:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="pill">EC2 Deployment Runbook</span>
+    <h1>Point <code>avagama.app</code> at your EC2 instance</h1>
+    <p>Map a real domain + HTTPS onto your running services — frontend on <code>:3000</code>, backend on <code>:5000</code> — using Nginx as a reverse proxy and Let's Encrypt for SSL.</p>
+  </header>
+
+  <div class="box info">
+    <b>Your current setup</b><br>
+    • Server (EC2 public IP): <code>13.207.66.222</code><br>
+    • Frontend: <code>http://13.207.66.222:3000</code><br>
+    • Backend&nbsp;API: <code>http://13.207.66.222:5000</code><br>
+    <br><b>Target</b><br>
+    • Frontend → <code>https://avagama.app</code> (and <code>https://www.avagama.app</code>)<br>
+    • Backend&nbsp;API → <code>https://api.avagama.app</code>
+  </div>
+
+  <div class="box warn">
+    <b>⚠ Read this first — <code>.app</code> forces HTTPS.</b>
+    The <code>.app</code> TLD is on the browser <b>HSTS preload list</b>, so Chrome, Safari, Firefox and Edge will <b>only</b> ever load it over HTTPS — plain <code>http://avagama.app</code> will refuse to connect. That means <b>SSL (Step 6) is mandatory</b>; the site simply will not work until the certificate is installed. Everything below is ordered so HTTPS is ready before you rely on the domain.
+  </div>
+
+  <h2>The plan at a glance</h2>
+  <div class="toc">
+    <a href="#overview">0 · How it will fit together</a>
+    <a href="#eip">1 · Lock the IP (Elastic IP)</a>
+    <a href="#dns">2 · DNS records at your registrar</a>
+    <a href="#sg">3 · Open ports 80 &amp; 443</a>
+    <a href="#nginx">4 · Install Nginx</a>
+    <a href="#conf">5 · Nginx reverse-proxy config</a>
+    <a href="#ssl">6 · HTTPS with Certbot</a>
+    <a href="#front">7 · Repoint &amp; rebuild the frontend</a>
+    <a href="#cors">8 · Allow the domain in backend CORS</a>
+    <a href="#keep">9 · Keep services running</a>
+    <a href="#verify">10 · Verify</a>
+    <a href="#trouble">· Troubleshooting</a>
+    <a href="#checklist">· Final checklist</a>
+  </div>
+
+  <h2 id="overview">0 · How it will fit together</h2>
+  <p>Right now browsers hit your app <em>by IP and port</em>. We put <b>Nginx</b> in front on ports 80/443. Nginx terminates HTTPS and forwards (reverse-proxies) each hostname to the right local port. Your Node apps keep running exactly as they are on 3000 and 5000 — you don't expose those ports publicly any more.</p>
+  <div class="arch">
+                         ┌───────────────── EC2 (13.207.66.222) ─────────────────┐
+  Browser  ──HTTPS──▶    │   Nginx  :443 / :80                                     │
+  avagama.app            │     ├─ avagama.app, www.avagama.app ─▶ 127.0.0.1:3000  │  (frontend)
+  api.avagama.app        │     └─ api.avagama.app             ─▶ 127.0.0.1:5000  │  (backend)
+                         └────────────────────────────────────────────────────────┘
+  </div>
+  <div class="box info">Run every command below over SSH on the EC2 box: <code>ssh -i your-key.pem ubuntu@13.207.66.222</code> (user is <code>ubuntu</code> for Ubuntu AMIs, <code>ec2-user</code> for Amazon Linux). Commands assume Ubuntu; for Amazon Linux swap <code>apt</code> → <code>dnf</code>/<code>yum</code>.</div>
+
+  <h2 id="eip">1 · Lock the public IP with an Elastic IP</h2>
+  <p>A normal EC2 public IP <b>changes every time the instance stops/starts</b>. If that happens after you set DNS, your domain breaks. Attach a free <b>Elastic IP</b> so the address is permanent.</p>
+  <div class="step"><div class="num">a</div><div>AWS Console → <b>EC2</b> → <b>Network &amp; Security → Elastic IPs</b> → <b>Allocate Elastic IP address</b> → Allocate.</div></div>
+  <div class="step"><div class="num">b</div><div>Select it → <b>Actions → Associate</b> → choose your instance → Associate.</div></div>
+  <div class="step"><div class="num">c</div><div>Note the Elastic IP. <b>Use that IP in the DNS step.</b> It may differ from <code>13.207.66.222</code> — if so, use the new one everywhere below.</div></div>
+  <div class="box warn">If <code>13.207.66.222</code> is <b>already</b> an Elastic IP, just confirm it's associated and keep using it.</div>
+
+  <h2 id="dns">2 · Create DNS records at your registrar</h2>
+  <p>Wherever you registered <code>avagama.app</code> (Google Domains/Squarespace, GoDaddy, Namecheap, Cloudflare, or AWS Route 53), open its <b>DNS</b> settings and add three records pointing to your (Elastic) IP:</p>
+  <table>
+    <tr><th>Type</th><th>Name / Host</th><th>Value</th><th>TTL</th></tr>
+    <tr><td><code>A</code></td><td><code>@</code> (root)</td><td><code>13.207.66.222</code></td><td>300</td></tr>
+    <tr><td><code>A</code></td><td><code>www</code></td><td><code>13.207.66.222</code></td><td>300</td></tr>
+    <tr><td><code>A</code></td><td><code>api</code></td><td><code>13.207.66.222</code></td><td>300</td></tr>
+  </table>
+  <div class="box info">Some registrars don't allow an A record on <code>@</code> — in that case use an <b>ALIAS</b>/<b>ANAME</b> to the IP, or if you're on <b>Route 53</b> use an <b>A record · Alias</b>. On <b>Cloudflare</b>, set the proxy status to <b>DNS only (grey cloud)</b> while you issue the certificate, or Certbot's HTTP check can fail.</div>
+  <p>Check propagation (wait 5–30 min; occasionally longer):</p>
+  <pre><code>dig +short avagama.app
+dig +short www.avagama.app
+dig +short api.avagama.app
+# each should print your Elastic IP</code></pre>
+
+  <h2 id="sg">3 · Open ports 80 &amp; 443 in the Security Group</h2>
+  <p>EC2 → your instance → <b>Security</b> tab → click the <b>Security Group</b> → <b>Edit inbound rules</b> → add:</p>
+  <table>
+    <tr><th>Type</th><th>Protocol</th><th>Port</th><th>Source</th><th>Why</th></tr>
+    <tr><td>HTTP</td><td>TCP</td><td><code>80</code></td><td><code>0.0.0.0/0</code>, <code>::/0</code></td><td>Certbot challenge + HTTP→HTTPS redirect</td></tr>
+    <tr><td>HTTPS</td><td>TCP</td><td><code>443</code></td><td><code>0.0.0.0/0</code>, <code>::/0</code></td><td>Real traffic</td></tr>
+    <tr><td>SSH</td><td>TCP</td><td><code>22</code></td><td>your IP</td><td>Keep as-is</td></tr>
+  </table>
+  <div class="box ok"><b>Security win:</b> once Nginx is proxying, you can <b>remove</b> the public inbound rules for <code>3000</code> and <code>5000</code>. Those apps only need to be reachable from Nginx on the same box (<code>127.0.0.1</code>), not from the internet.</div>
+
+  <h2 id="nginx">4 · Install Nginx</h2>
+  <pre><code>sudo apt update
+sudo apt install -y nginx
+sudo systemctl enable --now nginx
+# visit http://13.207.66.222  — you should see the Nginx welcome page</code></pre>
+
+  <h2 id="conf">5 · Nginx reverse-proxy config</h2>
+  <p>Create one site config that handles both the frontend and the API subdomain. (This is the HTTP version; Certbot rewrites it for HTTPS in Step 6.)</p>
+  <pre><code>sudo nano /etc/nginx/sites-available/avagama</code></pre>
+  <p>Paste:</p>
+  <pre><code># ---- Frontend: avagama.app + www ----
+server {
+    listen 80;
+    server_name avagama.app www.avagama.app;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        # websockets / HMR, harmless for prod:
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        "upgrade";
+    }
+}
+
+# ---- Backend API: api.avagama.app ----
+server {
+    listen 80;
+    server_name api.avagama.app;
+
+    client_max_body_size 25m;   # allow file/invoice uploads
+
+    location / {
+        proxy_pass         http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;   # long-running agent/OCR calls
+    }
+}</code></pre>
+  <p>Enable it and reload:</p>
+  <pre><code>sudo ln -s /etc/nginx/sites-available/avagama /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default   # drop the welcome page
+sudo nginx -t          # test config — must say "syntax is ok"
+sudo systemctl reload nginx</code></pre>
+  <div class="box info">Prefer serving the built frontend as static files instead of proxying a dev server? Point the frontend <code>location /</code> at your build output instead: <code>root /var/www/avagama/dist; try_files $uri /index.html;</code> and drop the <code>proxy_pass</code>. Keep the proxy version if that's how you run <code>:3000</code> today — don't change two things at once.</div>
+
+  <h2 id="ssl">6 · Get HTTPS with Certbot (Let's Encrypt)</h2>
+  <p>Free, auto-renewing certificates. Install and let Certbot edit your Nginx config for all three hostnames:</p>
+  <pre><code>sudo apt install -y certbot python3-certbot-nginx
+
+sudo certbot --nginx \
+  -d avagama.app -d www.avagama.app -d api.avagama.app \
+  --redirect --agree-tos -m you@youremail.com --no-eff-email</code></pre>
+  <p><code>--redirect</code> makes Certbot add the HTTP→HTTPS redirect automatically. When it finishes, <code>sudo nginx -t &amp;&amp; sudo systemctl reload nginx</code>.</p>
+  <div class="box ok"><b>Auto-renewal</b> is installed as a systemd timer. Confirm it works: <code>sudo certbot renew --dry-run</code>.</div>
+  <div class="box warn">Certbot must reach your server over port <b>80</b> at those exact hostnames, so <b>DNS (Step 2) must have propagated</b> and <b>port 80 must be open</b> (Step 3) before you run this. If it fails with "challenge failed", re-check both.</div>
+
+  <h2 id="front">7 · Repoint the frontend at the new API URL &amp; rebuild</h2>
+  <p>Your frontend currently calls the API by IP:port. Update its environment to the HTTPS API domain, then rebuild — a <code>.app</code> page served over HTTPS <b>cannot</b> call an <code>http://</code> or mixed-content API, so this must change.</p>
+  <p>In the frontend project's <code>.env</code> (this repo uses <code>VITE_</code> vars — see <code>.env.example</code>):</p>
+  <pre><code>VITE_API_URL=https://api.avagama.app
+VITE_PUBLIC_APP_URL=https://avagama.app</code></pre>
+  <pre><code># from the frontend directory on the server (or rebuild locally & upload dist)
+npm run build
+# then restart however you serve :3000 (see Step 9)</code></pre>
+  <div class="box info"><b>Agent embed allow-list:</b> you earlier set some embedded agents' CSP <code>frame-ancestors</code> to include <code>https://avagama.dev</code> / <code>localhost</code>. If you're moving to <code>avagama.app</code>, add <code>https://avagama.app</code> to those agents' <code>frame-ancestors</code> too, or the inline embeds will be blocked on the new domain.</div>
+
+  <h2 id="cors">8 · Allow the new domain in backend CORS</h2>
+  <p>The backend must accept browser requests coming from <code>https://avagama.app</code>. Update its allowed-origins list (name varies by framework — <code>CORS_ORIGIN</code>, an allowlist array, etc.) to include:</p>
+  <pre><code>https://avagama.app
+https://www.avagama.app</code></pre>
+  <p>Then restart the backend. If cookies/sessions are used cross-site, also ensure cookies are <code>Secure</code> + <code>SameSite=None</code>.</p>
+  <div class="box info"><b>Teammate note (backend round 2):</b> a backend session reported new API behaviour is live on <code>:5000</code> (chat <code>guardrails</code> field, a <code>finance</code> connector, stricter run validation returning <code>400</code> with <code>issue_details</code>, RFP <code>404 {exists:false}</code> before creation). None of it changes these domain steps, but keep it in mind when you next wire those endpoints — the contract is in the backend's <code>AVAGAMA_ORCHESTRATION_API_CONTRACT.txt</code>, section F.</div>
+
+  <h2 id="keep">9 · Keep the apps running (survive reboots)</h2>
+  <p>Make sure <code>:3000</code> and <code>:5000</code> restart on crash/reboot. If you already use <b>PM2</b>, just make it persistent:</p>
+  <pre><code>pm2 start npm --name avagama-frontend -- run start   # or your serve command
+pm2 start npm --name avagama-backend  -- run start   # in the backend dir
+pm2 save
+pm2 startup        # run the line it prints, then: pm2 save</code></pre>
+  <p>Check: <code>pm2 status</code>. (If you use <code>systemd</code> services or Docker instead, keep those — Nginx proxies to the port regardless of how it's run.)</p>
+
+  <h2 id="verify">10 · Verify</h2>
+  <pre><code># HTTP should 301-redirect to HTTPS
+curl -I http://avagama.app
+
+# HTTPS frontend should return 200
+curl -I https://avagama.app
+
+# API over HTTPS (hit a real health/known route)
+curl -I https://api.avagama.app
+
+# certificate covers all three names
+echo | openssl s_client -servername avagama.app -connect avagama.app:443 2>/dev/null | openssl x509 -noout -subject -dates</code></pre>
+  <p>Then in a browser: <code>https://avagama.app</code> loads the app, the network tab shows calls going to <code>https://api.avagama.app</code> with no mixed-content or CORS errors.</p>
+
+  <h2 id="trouble">Troubleshooting</h2>
+  <table>
+    <tr><th>Symptom</th><th>Likely cause → fix</th></tr>
+    <tr><td>Browser: "can't connect" to <code>avagama.app</code></td><td>DNS not propagated, or Step 6 not done (<code>.app</code> needs HTTPS). Re-check <code>dig</code> + that Certbot succeeded.</td></tr>
+    <tr><td>Certbot "challenge failed"</td><td>Port 80 closed in Security Group, DNS not pointing to this IP yet, or Cloudflare proxy on (grey-cloud it).</td></tr>
+    <tr><td><code>502 Bad Gateway</code></td><td>The app on 3000/5000 isn't running or crashed. <code>pm2 status</code>, <code>pm2 logs</code>.</td></tr>
+    <tr><td>Frontend loads but API calls fail (CORS)</td><td>Step 8 — add <code>https://avagama.app</code> to backend allowed origins, restart.</td></tr>
+    <tr><td>"Mixed content" blocked in console</td><td>Frontend still calling <code>http://…:5000</code>. Step 7 — set <code>VITE_API_URL=https://api.avagama.app</code> and rebuild.</td></tr>
+    <tr><td>Embedded agent panel blank on new domain</td><td>Add <code>https://avagama.app</code> to that agent's CSP <code>frame-ancestors</code>.</td></tr>
+    <tr><td><code>413 Request Entity Too Large</code> on upload</td><td>Raise <code>client_max_body_size</code> in the <code>api</code> server block.</td></tr>
+  </table>
+
+  <h2 id="checklist">Final checklist</h2>
+  <ul class="check">
+    <li>Elastic IP allocated &amp; associated to the instance</li>
+    <li>A records for <code>@</code>, <code>www</code>, <code>api</code> → Elastic IP; <code>dig</code> confirms</li>
+    <li>Security Group inbound: 80 &amp; 443 open; 3000/5000 no longer public</li>
+    <li>Nginx installed, site config enabled, <code>nginx -t</code> passes</li>
+    <li>Certbot issued a cert for all three hostnames; <code>renew --dry-run</code> OK</li>
+    <li>HTTP redirects to HTTPS</li>
+    <li>Frontend rebuilt with <code>VITE_API_URL=https://api.avagama.app</code></li>
+    <li>Backend CORS allows <code>https://avagama.app</code> (+ <code>www</code>)</li>
+    <li>Agent CSP <code>frame-ancestors</code> updated for the new domain</li>
+    <li>PM2/systemd set to restart on reboot (<code>pm2 save</code> + <code>pm2 startup</code>)</li>
+    <li><code>https://avagama.app</code> loads; API calls succeed with no console errors</li>
+  </ul>
+
+  <footer>
+    Avagama · EC2 domain setup runbook · server <code>13.207.66.222</code> · frontend <code>:3000</code> · backend <code>:5000</code>.
+    Replace <code>avagama.app</code> / the IP with your actual values if they differ. Built from your current ports/IP + standard Nginx + Let's Encrypt practice (no existing deployment HTML guide was found in this repo to mirror).
+  </footer>
+
+</div>
+</body>
+</html>

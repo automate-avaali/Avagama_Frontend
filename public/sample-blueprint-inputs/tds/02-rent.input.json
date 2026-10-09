@@ -1,0 +1,6 @@
+{
+  "payment_text": "PAYMENT VOUCHER\nAvaali Solutions - Accounts Payable\nVoucher No: PV-2026-0413\nPayee: Prestige Estates Pvt Ltd\nPayee PAN: AABCP9876L\nNature of payment: Rent for office premises, July 2026\nGross amount: INR 500,000.00",
+  "payment_amount": 500000,
+  "vendor_pan": "AABCP9876L",
+  "payer_type": "company"
+}

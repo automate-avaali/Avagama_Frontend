@@ -69,7 +69,7 @@ const getPostLoginRedirect = (): string | null => {
 
 // The footer is hidden ONLY on these full-screen app-shell routes (Admin Console,
 // Orchestration). Every other page renders the footer exactly as before.
-const FOOTER_HIDDEN_ROUTES = ['/admin/console', '/admin/orchestration'];
+const FOOTER_HIDDEN_ROUTES = ['/admin/console', '/admin/orchestration', '/playground'];
 const FooterGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const hide = FOOTER_HIDDEN_ROUTES.some(p => location.pathname.startsWith(p));

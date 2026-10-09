@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { 
-  ArrowLeft, 
-  FileText, 
-  Sparkles, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Download, 
-  Loader2, 
-  Building, 
-  Globe, 
-  Percent,
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  ChevronRight,
+  Download,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Sparkles,
   Trash2,
-  X,
   Upload
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../components/studio/notify';
+import { Button, Callout, EmptyState, Field, IconButton, Input, KeyValue, Modal, PageHeader, Spinner, StudioTheme, Tag, cx, useFillHeight } from '../components/studio/ui';
+import { Elapsed, IndeterminateBar, RfpStatusTag, ScoreBar, sourceLabel } from './Admin/orchestration/rfpUi';
 import rfpSessionCache from '../services/rfpSessionCache';
+import { RFP_API_BASE } from '../services/api';
 
-const BASE_URL = 'https://avagama-backend-ckm9.onrender.com/api';
+const BASE_URL = RFP_API_BASE;
 
 interface UsecaseDetails {
   id?: string;
@@ -31,11 +30,16 @@ interface UsecaseDetails {
   industry: string;
   score: number | string | null;
   status: string;
+  displayTitle?: string;
+  displayCompany?: string;
+  displayIndustry?: string;
+  source?: string;
 }
 
 const RfpDetail: React.FC = () => {
   const { usecaseId } = useParams<{ usecaseId: string }>();
   const navigate = useNavigate();
+  const fillHeight = useFillHeight();
 
   // Load and initialization state
   const [loading, setLoading] = useState(true);
@@ -68,6 +72,9 @@ const RfpDetail: React.FC = () => {
   // Download preparation state
   const [downloadingFormat, setDownloadingFormat] = useState<'docx' | 'pdf' | null>(null);
 
+  // Body for POST /rfp/from-usecase, prepared on load; the RFP itself is created on the first explicit action.
+  const createPayloadRef = useRef<any>(null);
+
   // 1. Fetch or Create RFP on Load
   const checkOrCreateRfp = async () => {
     if (!usecaseId) {
@@ -90,7 +97,7 @@ const RfpDetail: React.FC = () => {
       // 1a. Fetch shortlisted usecases to enrich details
       let matchedUsecase: any = null;
       try {
-        const shortlistResponse = await fetch(`https://avagama-backend-ckm9.onrender.com/api/rfp/shortlisted-usecases`, {
+        const shortlistResponse = await fetch(`${BASE_URL}/rfp/shortlisted-usecases`, {
           method: 'GET',
           headers
         });
@@ -131,39 +138,18 @@ const RfpDetail: React.FC = () => {
         }
       }
 
-      // If no RFP exists yet (either non-ok response or missing ID), create it
-      if (!alreadyExists) {
-        const payload = {
-          usecaseId,
-          type: matchedUsecase?.type || matchedUsecase?.source || 'domain',
-          entityId: matchedUsecase?.entityId || matchedUsecase?.documentId || matchedUsecase?._id || matchedUsecase?.id || usecaseId
-        };
-
-        const createResponse = await fetch(`${BASE_URL}/rfp/from-usecase`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-
-        if (!createResponse.ok) {
-          const errBody = await createResponse.text().catch(() => '');
-          throw new Error(`Failed to initialize RFP container from usecase: ${createResponse.status} ${errBody}`);
-        }
-
-        const data = await createResponse.json();
-        const record = data?.rfp || data?.data || data;
-        const resolvedId = record?._id || record?.id;
-        
-        if (!resolvedId) {
-          throw new Error('RFP initialized but the server returned no record ID.');
-        }
-
-        rfpRecord = record;
-      }
+      // No RFP yet: viewing the page does not create one (backend contract F.8). It is created on the
+      // first explicit action — uploading a template or clicking Create RFP — via ensureRfpId().
+      createPayloadRef.current = {
+        usecaseId,
+        type: matchedUsecase?.type || matchedUsecase?.source || 'domain',
+        entityId: matchedUsecase?.entityId || matchedUsecase?.documentId || matchedUsecase?._id || matchedUsecase?.id || usecaseId
+      };
+      if (alreadyExists) createPayloadRef.current = null;
 
       // Populate states with resolved RFP record
       const finalRfpId = rfpRecord?._id || rfpRecord?.id;
-      setRfpId(finalRfpId);
+      setRfpId(finalRfpId || null);
 
       // Extract usecase details nested inside the RFP or direct properties
       const nestedUsecase = rfpRecord?.usecase || rfpRecord?.usecaseData || matchedUsecase || rfpRecord;
@@ -193,7 +179,11 @@ const RfpDetail: React.FC = () => {
         company,
         industry,
         score: score !== undefined && score !== null ? score : null,
-        status: (rfpRecord?.status || 'draft').toUpperCase()
+        status: (rfpRecord ? (rfpRecord.status || 'draft') : 'not_created').toUpperCase(),
+        displayTitle: String(rawTitle).replace(/^RFP\s*-\s*/i, '').trim() || 'Untitled use case',
+        displayCompany: matchedUsecase?.company_name || matchedUsecase?.company || nestedUsecase?.company_name || nestedUsecase?.company || '',
+        displayIndustry: matchedUsecase?.industry || matchedUsecase?.domain || nestedUsecase?.industry || nestedUsecase?.domain || '',
+        source: matchedUsecase?.type || matchedUsecase?.source || ''
       });
 
       // Entity/Company must reflect the Company Name provided at account creation,
@@ -238,16 +228,44 @@ const RfpDetail: React.FC = () => {
     checkOrCreateRfp();
   }, [usecaseId]);
 
+  // Returns the RFP id, creating the RFP first if it does not exist yet (POST is idempotent per use case).
+  const ensureRfpId = async (): Promise<string> => {
+    if (rfpId) return rfpId;
+    const token = sessionStorage.getItem('token');
+    const response = await fetch(`${BASE_URL}/rfp/from-usecase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(createPayloadRef.current || { usecaseId, type: 'domain', entityId: usecaseId })
+    });
+    if (!response.ok) {
+      const rawBody = await response.text().catch(() => '');
+      console.error('RFP create failed:', response.status, rawBody);
+      const err: any = new Error('Could not prepare the RFP for this use case. Please try again.');
+      err.status = response.status;
+      throw err;
+    }
+    const data = await response.json();
+    const record = data?.rfp || data?.data || data;
+    const id = record?._id || record?.id;
+    if (!id) throw new Error('Could not prepare the RFP for this use case. Please try again.');
+    setRfpId(id);
+    setUsecaseData(prev => prev ? { ...prev, status: String(record?.status || 'draft').toUpperCase() } : prev);
+    return id;
+  };
+
   // 2. Trigger RFP Generation
   // Error copy shown for the RFP generation failure state — never the raw
   // response body. Unknown/missing codes fall back to GENERATION_FAILED's copy.
   const RFP_GENERATION_ERROR_COPY: Record<string, { heading: string; message: string }> = {
     UPSTREAM_UNAVAILABLE: {
-      heading: 'Generation Unavailable',
+      heading: 'Generation unavailable',
       message: "We're unable to generate your RFP right now. Please try again in a few moments.",
     },
     GENERATION_FAILED: {
-      heading: 'Generation Failed',
+      heading: 'Generation failed',
       message: 'Something went wrong while generating the RFP. Please try again.',
     },
   };
@@ -269,11 +287,6 @@ const RfpDetail: React.FC = () => {
   };
 
   const handleCreateRfp = async () => {
-    if (!rfpId) {
-      toast.error('Unable to generate: No RFP ID has been resolved yet.');
-      return;
-    }
-
     if (!entityCompany.trim()) {
       toast.error('Entity/Company is required to generate the RFP document.');
       return;
@@ -308,8 +321,11 @@ const RfpDetail: React.FC = () => {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       };
 
+      // 0. Create the RFP on this explicit action if it does not exist yet
+      const currentId = await ensureRfpId();
+
       // 1. Get the GET /api/rfp/:id key
-      const getResponse = await fetch(`${BASE_URL}/rfp/${rfpId}`, {
+      const getResponse = await fetch(`${BASE_URL}/rfp/${currentId}`, {
         method: 'GET',
         headers
       });
@@ -322,7 +338,7 @@ const RfpDetail: React.FC = () => {
 
       const getResponseData = await getResponse.json();
       const rfpRecord = getResponseData?.rfp || getResponseData?.data || getResponseData;
-      const resolvedId = rfpRecord?._id || rfpRecord?.id || rfpId;
+      const resolvedId = rfpRecord?._id || rfpRecord?.id || currentId;
 
       // 2. Pass it to the POST /api/rfp/:id/generate
       const response = await fetch(`${BASE_URL}/rfp/${resolvedId}/generate`, {
@@ -400,18 +416,14 @@ const RfpDetail: React.FC = () => {
       return;
     }
 
-    if (!rfpId) {
-      toast.error('Unable to upload: No RFP ID has been resolved yet.');
-      return;
-    }
-
     setIsUploadingTemplate(true);
     try {
+      const currentId = await ensureRfpId();
       const token = sessionStorage.getItem('token');
       const formData = new FormData();
       formData.append('template', file);
 
-      const response = await fetch(`${BASE_URL}/rfp/${rfpId}/template`, {
+      const response = await fetch(`${BASE_URL}/rfp/${currentId}/template`, {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -536,26 +548,7 @@ const RfpDetail: React.FC = () => {
     } catch (err: any) {
       console.error('Download error:', err);
       const message = getDownloadErrorMessage(err);
-      toast(
-        <span className="normal-case font-semibold tracking-normal text-slate-600">{message}</span>,
-        {
-          duration: 6000,
-          icon: '⚠️',
-          style: {
-            background: '#fff',
-            color: '#475569',
-            borderRadius: '20px',
-            padding: '16px 20px',
-            fontSize: '12px',
-            fontWeight: '600',
-            textTransform: 'none',
-            letterSpacing: 'normal',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            maxWidth: '420px',
-          }
-        }
-      );
+      toast.warning(message, { duration: 6000 });
     } finally {
       setDownloadingFormat(null);
     }
@@ -607,475 +600,396 @@ const RfpDetail: React.FC = () => {
     }
   };
 
+  const goBack = () => navigate('/admin/orchestration', { state: { selectedMenu: 'proposal-forge' } });
+  const locked = generationSuccess || isGenerating;
+  const isGeneratedStatus = generationSuccess || /^(GENERATED|COMPLETED)$/.test(usecaseData?.status || '');
+  const errorCopy = generationError ? (RFP_GENERATION_ERROR_COPY[generationError.code] || DEFAULT_GENERATION_ERROR_COPY) : null;
+  const displayTitle = usecaseData?.displayTitle || usecaseData?.title || 'Untitled use case';
+  // Friendly copy for the load failure; the technical detail stays in the console.
+  const loadErrorText = !error ? ''
+    : /failed to fetch|networkerror/i.test(error) ? "We couldn't reach the server. Check your connection and try again."
+    : error === 'Usecase ID is missing from the URL route.' ? 'This link does not include a use case. Open the RFP from the RFP Creation list.'
+    : 'Something went wrong while preparing the RFP for this use case. Please try again.';
+
   return (
-    <div className="bg-[#fafafc] min-h-screen pb-24" id="rfp-detail-page-container">
-      {/* Upper Navigation Banner */}
-      <div className="bg-white border-b border-slate-100 py-6" id="rfp-detail-header-banner">
-        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/admin/orchestration', { state: { selectedMenu: 'proposal-forge' } })}
-            className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-            id="rfp-detail-back-button"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to RFP creation
-          </button>
+    <StudioTheme accent="avagama" className="bg-[#f4f5f7]" style={{ minHeight: fillHeight ?? undefined }}>
+      <div className="pb-12" id="rfp-detail-page-container">
+        {/* Header bar */}
+        <div className="border-b border-slate-200 bg-white" id="rfp-detail-header-banner">
+          <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-6">
+            <button
+              type="button"
+              onClick={goBack}
+              title="Back to RFP Creation"
+              aria-label="Back to RFP Creation"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              id="rfp-detail-back-button"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <nav className="flex min-w-0 items-center gap-1.5 text-[13.5px]" aria-label="Breadcrumb">
+              <button type="button" onClick={goBack} className="shrink-0 text-slate-500 hover:text-slate-900">Orchestration</button>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+              <button type="button" onClick={goBack} className="shrink-0 text-slate-500 hover:text-slate-900">RFP Creation</button>
+              {!loading && !error && usecaseData && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                  <span className="truncate font-semibold text-slate-900">{displayTitle}</span>
+                </>
+              )}
+            </nav>
+          </div>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-10">
-        {loading ? (
-          <div className="bg-white border border-slate-100 rounded-[32px] p-20 text-center space-y-6 shadow-sm" id="rfp-detail-loading-state">
-            <Loader2 className="w-12 h-12 text-[#a26da8] animate-spin mx-auto" />
-            <div className="space-y-1">
-              <h3 className="text-sm font-black text-slate-850 uppercase tracking-widest">Resolving RFP Authorization State</h3>
-              <p className="text-xs text-slate-400 font-semibold uppercase tracking-tight">Accessing shortlisted process ledger templates</p>
+        <div className="mx-auto max-w-6xl px-6 pt-6">
+          {loading ? (
+            <div className="rounded-lg border border-slate-200 bg-white" id="rfp-detail-loading-state">
+              <Spinner label="Opening the RFP for this use case…" className="py-20" />
             </div>
-          </div>
-        ) : error ? (
-          <div className="bg-white border border-slate-100 rounded-[32px] p-16 text-center max-w-2xl mx-auto space-y-6 shadow-sm" id="rfp-detail-error-state">
-            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto border border-rose-100">
-              <AlertTriangle className="w-8 h-8 text-rose-500" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-base font-black text-rose-800 uppercase tracking-widest">Resolution Failed</h3>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                {error}
-              </p>
-            </div>
-            <div className="pt-4 flex justify-center gap-4">
-              <button
-                onClick={checkOrCreateRfp}
-                className="px-6 py-3 bg-slate-950 hover:bg-black text-white text-xs font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
-              >
-                Retry Load
-              </button>
-              <button
-                onClick={() => navigate('/admin/orchestration', { state: { selectedMenu: 'proposal-forge' } })}
-                className="px-6 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
-              >
-                Back to RFP creation
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto bg-white border border-slate-150 rounded-[32px] p-8 md:p-10 shadow-sm space-y-8" id="usecase-details-panel">
-            <div className="space-y-2 border-b border-slate-100 pb-6">
-              <div className="flex items-center gap-2 text-[#a26da8]">
-                <FileText className="w-5 h-5" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] font-mono">Process Scope Specifications</span>
-              </div>
-              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none">
-                {usecaseData?.title}
-              </h2>
-            </div>
-
-            {/* Descriptions & Parameters */}
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono block">Functional Objective Description</span>
-                <div className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50/50 p-5 rounded-2xl border border-slate-100/50">
-                  {usecaseData?.description}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-slate-100 rounded-2xl p-5 space-y-2">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Building className="w-4 h-4" />
-                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">
-                      ENTITY/COMPANY <span className="text-rose-500">*</span>
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    value={entityCompany}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setEntityCompany(value);
-                      try {
-                        if (usecaseId) localStorage.setItem(`rfp-entity-company-${usecaseId}`, value);
-                      } catch (err) {
-                        console.error('Failed to persist entity/company override', err);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        setEntityCompany(e.currentTarget.value);
-                        e.currentTarget.blur();
-                      }
-                    }}
-                    onBlur={(e) => {
-                      // Committed on blur rather than on every keystroke — the
-                      // cache update rewrites the whole list, which is not worth
-                      // doing per character. Enter blurs the field, so both ways
-                      // of finishing the edit land here.
-                      if (usecaseId) {
-                        rfpSessionCache.updateOne(usecaseId, { company_name: e.target.value.trim() });
-                      }
-                    }}
-                    placeholder="Enter entity/company name"
-                    required
-                    disabled={generationSuccess || isGenerating}
-                    autoComplete="off"
-                    id="entity-company-input"
-                    className={`w-full text-sm font-black uppercase tracking-tight bg-white [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:shadow-[0_0_0px_1000px_white_inset] border-b outline-none pb-1 ${
-                      generationSuccess || isGenerating
-                        ? 'text-slate-400 border-slate-100 cursor-not-allowed'
-                        : entityCompany.trim()
-                          ? 'text-slate-800 border-slate-200 focus:border-slate-900'
-                          : 'text-slate-800 border-rose-300 focus:border-rose-500'
-                    }`}
-                  />
-                </div>
-
-                <div className="border border-slate-100 rounded-2xl p-5 space-y-2">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Globe className="w-4 h-4" />
-                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">INDUSTRY/DOMAIN</span>
-                  </div>
-                  <span className="text-sm font-black text-slate-800 uppercase tracking-tight block">
-                    {usecaseData?.industry}
-                  </span>
-                </div>
-
-                {usecaseData?.score !== undefined && usecaseData?.score !== null && (
-                  <div className="border border-slate-100 rounded-2xl p-5 space-y-2">
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <Percent className="w-4 h-4" />
-                      <span className="text-[9px] font-black uppercase tracking-widest font-mono">PRIORITY SCORE</span>
-                    </div>
-                    <span className="text-sm font-black text-[#6fcbbd] block">
-                      {Math.round(Number(usecaseData.score))} / 100
-                    </span>
+          ) : error ? (
+            <div className="rounded-lg border border-slate-200 bg-white" id="rfp-detail-error-state">
+              <EmptyState
+                icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
+                title="We couldn't open this RFP"
+                description={loadErrorText}
+                action={(
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button variant="primary" onClick={checkOrCreateRfp} icon={<RefreshCw className="h-4 w-4" />}>Try again</Button>
+                    <Button onClick={goBack}>Back to RFP Creation</Button>
                   </div>
                 )}
+              />
+            </div>
+          ) : (
+            <>
+              <PageHeader
+                breadcrumb={<span className="inline-flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />RFP document</span>}
+                title={displayTitle}
+                subtitle="Review the use case, confirm the issuing company and create the RFP document."
+                actions={<RfpStatusTag generated={isGeneratedStatus} status={usecaseData?.status} />}
+              />
 
-                <div className="border border-slate-100 rounded-2xl p-5 space-y-2">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-slate-400" />
-                    <span className="text-[9px] font-black uppercase tracking-widest font-mono">SYNC STATUS</span>
-                  </div>
-                  <span className="text-sm font-black text-slate-700 uppercase tracking-tight block">
-                    {usecaseData?.status || 'DRAFT'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Optional RFP Template Upload */}
-              <div className="space-y-2" id="rfp-template-upload-section">
-                <span className="text-xs font-black text-slate-600 uppercase tracking-widest font-mono block">Upload RFP Template (Optional)</span>
-
-                {isUploadingTemplate ? (
-                  <div className="flex items-center gap-3 border border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50/50" id="rfp-template-uploading-state">
-                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
-                    <span className="text-xs font-semibold text-slate-500">
-                      {templateInfo ? 'Replacing template...' : 'Uploading template...'}
-                    </span>
-                  </div>
-                ) : templateInfo ? (
-                  <div
-                    className={`flex items-center justify-between gap-3 border rounded-2xl p-5 ${
-                      generationSuccess || isGenerating ? 'border-slate-100 bg-slate-50' : 'border-emerald-200 bg-emerald-50/50'
-                    }`}
-                    id="rfp-template-applied-state"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <FileText className={`w-4 h-4 shrink-0 ${generationSuccess || isGenerating ? 'text-slate-400' : 'text-emerald-600'}`} />
-                      <div className="min-w-0">
-                        <p className={`text-xs font-black truncate ${generationSuccess || isGenerating ? 'text-slate-500' : 'text-slate-800'}`}>
-                          {templateInfo.filename}
-                        </p>
+              <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_400px]" id="usecase-details-panel">
+                {/* Left: the use case the RFP is written for */}
+                <div className="min-w-0 space-y-5">
+                  <section className="rounded-lg border border-slate-200 bg-white">
+                    <div className="border-b border-slate-200 px-5 py-3">
+                      <h2 className="text-[14.5px] font-semibold text-slate-900">Use case</h2>
+                    </div>
+                    <div className="space-y-5 px-5 py-4">
+                      <div>
+                        <div className="mb-1 text-[12.5px] font-medium text-slate-500">Objective</div>
+                        <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-slate-800">{usecaseData?.description}</p>
                       </div>
+                      <KeyValue
+                        items={[
+                          ['Company', usecaseData?.displayCompany || <span className="text-slate-400">Not specified</span>],
+                          ['Industry / domain', usecaseData?.displayIndustry || <span className="text-slate-400">Not specified</span>],
+                          ...(usecaseData?.source ? [['Source', sourceLabel(usecaseData.source)] as [React.ReactNode, React.ReactNode]] : []),
+                          ['Priority score', <ScoreBar score={usecaseData?.score} />],
+                          ['RFP status', <RfpStatusTag generated={isGeneratedStatus} status={usecaseData?.status} />],
+                        ]}
+                      />
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <label
-                        htmlFor="rfp-template-upload-input"
-                        className={`text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-lg transition border ${
-                          generationSuccess || isGenerating
-                            ? 'text-slate-300 border-slate-100 cursor-not-allowed'
-                            : 'text-slate-500 border-slate-200 hover:text-slate-900 hover:border-slate-300 cursor-pointer'
-                        }`}
-                      >
-                        Replace
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowDeleteTemplateConfirm(true)}
-                        disabled={generationSuccess || isGenerating || isDeletingTemplate}
-                        className="p-2 rounded-lg text-rose-500 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
-                        id="delete-template-button"
-                      >
-                        {isDeletingTemplate ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label
-                    htmlFor="rfp-template-upload-input"
-                    className={`flex items-center justify-between gap-3 border border-dashed rounded-2xl p-5 transition ${
-                      generationSuccess || isGenerating
-                        ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
-                        : 'border-slate-200 hover:border-slate-300 cursor-pointer bg-slate-50/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Upload className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span className="text-xs font-semibold text-slate-600 truncate">
-                        Choose a .docx file
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Browse</span>
-                  </label>
-                )}
+                  </section>
 
-                <input
-                  id="rfp-template-upload-input"
-                  type="file"
-                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  className="hidden"
-                  disabled={generationSuccess || isGenerating || isUploadingTemplate}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    handleTemplateFileSelect(file);
-                    e.target.value = '';
-                  }}
-                />
+                  <section className="rounded-lg border border-slate-200 bg-white px-5 py-4">
+                    <h2 className="mb-3 text-[14.5px] font-semibold text-slate-900">How it works</h2>
+                    <ol className="space-y-3">
+                      {[
+                        ['Confirm the issuing company', 'It appears in the RFP as the organisation issuing it.'],
+                        ['Add your template (optional)', 'Upload a Word (.docx) template to use your own layout and branding.'],
+                        ['Create the RFP', 'Avagama drafts the scope, requirements, evaluation criteria and SLAs. This usually takes a minute or two.'],
+                        ['Download', 'Get the document as Word (.docx) or PDF. Delete it if you want to create it again.'],
+                      ].map(([step, detail], i) => (
+                        <li key={step} className="flex gap-3">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--sx-primary-soft)] text-[12px] font-semibold text-[var(--sx-primary)]">{i + 1}</span>
+                          <div className="min-w-0">
+                            <div className="text-[13.5px] font-medium text-slate-800">{step}</div>
+                            <div className="text-[12.5px] text-slate-500">{detail}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                </div>
 
-                {templateUploadError && (
-                  <p className="text-[10px] text-rose-500 font-semibold uppercase tracking-tight">{templateUploadError}</p>
-                )}
-
-                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
-                  Supports only .docx format (max 15 MB)
-                </p>
-              </div>
-
-              {/* Actions Area - placed at the bottom of the section shown in the screenshot */}
-              <div className="pt-6 border-t border-slate-100 space-y-4" id="rfp-generation-controls-panel">
-                {isGenerating ? (
-                  <div className="py-6 text-center space-y-4" id="generation-spinner-state">
-                    <Loader2 className="w-10 h-10 text-[#a26da8] animate-spin mx-auto" />
-                    <div className="space-y-1">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-700 animate-pulse">Working on RFP Creation</p>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight max-w-[280px] mx-auto leading-relaxed">
-                        {generationStatusText}
-                      </p>
-                    </div>
-                  </div>
-                ) : generationError ? (
-                  <div className="bg-rose-50 border border-rose-100 p-6 rounded-2xl text-center space-y-3" id="generation-failed-state">
-                    <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto" />
-                    <h4 className="text-xs font-black text-rose-800 uppercase tracking-widest">
-                      {(RFP_GENERATION_ERROR_COPY[generationError.code] || DEFAULT_GENERATION_ERROR_COPY).heading}
-                    </h4>
-                    <p className="text-[10px] text-rose-650 leading-relaxed font-semibold max-w-[280px] mx-auto">
-                      {(RFP_GENERATION_ERROR_COPY[generationError.code] || DEFAULT_GENERATION_ERROR_COPY).message}
+                {/* Right: create and download */}
+                <section className="rounded-lg border border-slate-200 bg-white lg:sticky lg:top-4" id="rfp-generation-controls-panel">
+                  <div className="border-b border-slate-200 px-5 py-3">
+                    <h2 className="text-[14.5px] font-semibold text-slate-900">{generationSuccess ? 'RFP document' : 'Create RFP'}</h2>
+                    <p className="mt-0.5 text-[12.5px] text-slate-500">
+                      {generationSuccess ? 'Your document is ready to download.' : 'Fill in the details below, then create the document.'}
                     </p>
-                    {generationError.requestId && (
-                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-tight">
-                        Reference: {generationError.requestId}
-                      </p>
-                    )}
-                    <button
-                      onClick={handleCreateRfp}
-                      className="mt-2 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
+                  </div>
+
+                  <div className="space-y-5 px-5 py-4">
+                    <Field
+                      label="Issuing company"
+                      required
+                      error={!locked && !entityCompany.trim() ? 'Enter the company name to create the RFP.' : undefined}
+                      hint={generationSuccess ? 'Locked after the RFP is created. Delete the RFP to change it.' : 'Shown in the RFP as the organisation issuing it.'}
                     >
-                      Retry Generation
-                    </button>
-                  </div>
-                ) : generationSuccess ? (
-                  <div className="space-y-6">
-                    <div className="py-2 text-center space-y-2" id="generation-completed-state">
-                      <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Proposal Document Ready</h4>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-tight">
-                          Access the document assets below.
-                        </p>
-                      </div>
-                    </div>
+                      <Input
+                        type="text"
+                        value={entityCompany}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setEntityCompany(value);
+                          try {
+                            if (usecaseId) localStorage.setItem(`rfp-entity-company-${usecaseId}`, value);
+                          } catch (err) {
+                            console.error('Failed to persist entity/company override', err);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            setEntityCompany(e.currentTarget.value);
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Committed on blur rather than on every keystroke — the
+                          // cache update rewrites the whole list, which is not worth
+                          // doing per character. Enter blurs the field, so both ways
+                          // of finishing the edit land here.
+                          if (usecaseId) {
+                            rfpSessionCache.updateOne(usecaseId, { company_name: e.target.value.trim() });
+                          }
+                        }}
+                        placeholder="Company name"
+                        required
+                        disabled={locked}
+                        autoComplete="off"
+                        id="entity-company-input"
+                        className={cx(!locked && !entityCompany.trim() && '!border-red-300 focus:!border-red-500 focus:!ring-red-500/15')}
+                      />
+                    </Field>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="rfp-download-buttons">
-                      <button
-                        onClick={() => handleDownloadFile('docx')}
-                        disabled={downloadingFormat !== null}
-                        className="w-full py-4 bg-slate-950 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-200 disabled:opacity-80"
-                        id="download-docx-button"
-                      >
-                        {downloadingFormat === 'docx' ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 text-[#6fcbbd] animate-spin" />
-                            <span>Preparing DOCX download...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Download className="w-3.5 h-3.5 text-[#6fcbbd]" />
-                            <span>Download .docx</span>
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDownloadFile('pdf')}
-                        disabled={downloadingFormat !== null}
-                        className="w-full py-4 bg-slate-950 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-200 disabled:opacity-80"
-                        id="download-pdf-button"
-                      >
-                        {downloadingFormat === 'pdf' ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 text-[#a26da8] animate-spin" />
-                            <span>Preparing PDF download...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Download className="w-3.5 h-3.5 text-[#a26da8]" />
-                            <span>Download .pdf</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    {/* Optional RFP template */}
+                    <div id="rfp-template-upload-section">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="text-[12.5px] font-medium text-slate-700">RFP template</span>
+                        <Tag>Optional</Tag>
+                      </div>
 
-                    {/* Delete RFP Document Button */}
-                    <div className="pt-2" id="rfp-delete-button-container">
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        disabled={isDeleting}
-                        className="w-full py-3.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                        id="delete-rfp-button"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Delete RFP Document</span>
-                      </button>
+                      {isUploadingTemplate ? (
+                        <div className="flex items-center gap-2.5 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[13px] text-slate-600" id="rfp-template-uploading-state">
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-400" />
+                          {templateInfo ? 'Replacing template…' : 'Uploading template…'}
+                        </div>
+                      ) : templateInfo ? (
+                        <div
+                          className={cx('flex items-center justify-between gap-3 rounded-md border px-3 py-2.5', locked ? 'border-slate-200 bg-slate-50' : 'border-emerald-200 bg-emerald-50/60')}
+                          id="rfp-template-applied-state"
+                        >
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <FileText className={cx('h-4 w-4 shrink-0', locked ? 'text-slate-400' : 'text-emerald-600')} />
+                            <div className="min-w-0">
+                              <div className={cx('truncate text-[13px] font-medium', locked ? 'text-slate-500' : 'text-slate-800')} title={templateInfo.filename}>{templateInfo.filename}</div>
+                              <div className="text-[12px] text-slate-500">Template applied</div>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <label
+                              htmlFor="rfp-template-upload-input"
+                              className={cx('inline-flex h-8 items-center rounded-md border px-2.5 text-[13px] font-medium transition-colors',
+                                locked ? 'cursor-not-allowed border-slate-200 text-slate-300' : 'cursor-pointer border-slate-300 bg-white text-slate-700 hover:bg-slate-50')}
+                            >
+                              Replace
+                            </label>
+                            <IconButton
+                              label="Remove template"
+                              tone="danger"
+                              onClick={() => setShowDeleteTemplateConfirm(true)}
+                              disabled={locked || isDeletingTemplate}
+                              id="delete-template-button"
+                            >
+                              {isDeletingTemplate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </IconButton>
+                          </div>
+                        </div>
+                      ) : (
+                        <label
+                          htmlFor="rfp-template-upload-input"
+                          className={cx('flex items-center gap-3 rounded-md border border-dashed px-3 py-3 transition-colors',
+                            locked ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60' : 'cursor-pointer border-slate-300 bg-slate-50/60 hover:border-[var(--sx-primary)] hover:bg-[var(--sx-primary-soft)]')}
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-slate-500 ring-1 ring-slate-200">
+                            <Upload className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[13px] font-medium text-slate-700">Choose a .docx file</span>
+                            <span className="block text-[12px] text-slate-500">Word only, up to 15 MB</span>
+                          </span>
+                          <span className="shrink-0 text-[13px] font-medium text-[var(--sx-primary)]">Browse</span>
+                        </label>
+                      )}
+
+                      <input
+                        id="rfp-template-upload-input"
+                        type="file"
+                        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        className="hidden"
+                        disabled={generationSuccess || isGenerating || isUploadingTemplate}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          handleTemplateFileSelect(file);
+                          e.target.value = '';
+                        }}
+                      />
+
+                      {templateUploadError
+                        ? <p className="mt-1 text-[12px] text-red-600">{templateUploadError}</p>
+                        : <p className="mt-1 text-[12px] text-slate-500">Without a template, the default RFP format is used.</p>}
                     </div>
                   </div>
-                ) : (
-                  <button
-                    onClick={handleCreateRfp}
-                    disabled={isGenerating}
-                    className="w-full py-5 bg-slate-950 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-2xl transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                    id="create-rfp-button"
-                  >
-                    <Sparkles className="w-4 h-4 text-[#6fcbbd] fill-current" />
-                    <span>Create RFP</span>
-                  </button>
-                )}
+
+                  <div className="border-t border-slate-200 px-5 py-4">
+                    {isGenerating ? (
+                      <div className="rounded-md border border-[var(--sx-primary-soft)] bg-[var(--sx-primary-soft)] px-4 py-3.5" id="generation-spinner-state">
+                        <div className="flex items-center gap-2.5">
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--sx-primary)]" />
+                          <div className="flex-1 text-[13.5px] font-semibold text-slate-900">Creating the RFP document</div>
+                          <span className="font-mono text-[12px] tabular-nums text-slate-500" title="Elapsed time"><Elapsed /></span>
+                        </div>
+                        <IndeterminateBar className="mt-2.5" />
+                        <p className="mt-2.5 text-[12.5px] text-slate-700">{generationStatusText}</p>
+                        <p className="mt-1 text-[12px] text-slate-500">This can take a couple of minutes. Keep this page open.</p>
+                      </div>
+                    ) : generationError && errorCopy ? (
+                      <div className="space-y-3" id="generation-failed-state">
+                        <Callout tone="danger" icon={<AlertTriangle className="h-4 w-4" />} title={errorCopy.heading}>
+                          {errorCopy.message}
+                          {generationError.requestId && (
+                            <div className="mt-1 text-[12px] opacity-80">Reference: <span className="font-mono">{generationError.requestId}</span></div>
+                          )}
+                        </Callout>
+                        <Button variant="primary" className="h-10 w-full" onClick={handleCreateRfp} icon={<RefreshCw className="h-4 w-4" />}>Try again</Button>
+                      </div>
+                    ) : generationSuccess ? (
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-2.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5" id="generation-completed-state">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                          <div>
+                            <div className="text-[13.5px] font-semibold text-emerald-900">RFP document ready</div>
+                            <div className="text-[12.5px] text-emerald-800">Download it as Word or PDF.</div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2" id="rfp-download-buttons">
+                          <Button
+                            variant="primary"
+                            onClick={() => handleDownloadFile('docx')}
+                            disabled={downloadingFormat !== null}
+                            loading={downloadingFormat === 'docx'}
+                            icon={<Download className="h-4 w-4" />}
+                            id="download-docx-button"
+                          >
+                            {downloadingFormat === 'docx' ? 'Preparing…' : 'Word (.docx)'}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => handleDownloadFile('pdf')}
+                            disabled={downloadingFormat !== null}
+                            loading={downloadingFormat === 'pdf'}
+                            icon={<Download className="h-4 w-4" />}
+                            id="download-pdf-button"
+                          >
+                            {downloadingFormat === 'pdf' ? 'Preparing…' : 'PDF'}
+                          </Button>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-3" id="rfp-delete-button-container">
+                          <Button
+                            variant="danger"
+                            className="w-full"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            disabled={isDeleting}
+                            icon={<Trash2 className="h-4 w-4" />}
+                            id="delete-rfp-button"
+                          >
+                            Delete RFP document
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        className="h-10 w-full"
+                        onClick={handleCreateRfp}
+                        disabled={isGenerating}
+                        icon={<Sparkles className="h-4 w-4" />}
+                        id="create-rfp-button"
+                      >
+                        Create RFP
+                      </Button>
+                    )}
+                  </div>
+                </section>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Delete RFP Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" id="delete-rfp-modal">
-          <div className="bg-white max-w-md w-full rounded-[28px] p-6 md:p-8 shadow-2xl border border-slate-100 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5 text-rose-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Delete RFP Document</h3>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Confirm Action</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              Are you sure you want to delete the generated RFP document? This action cannot be undone.
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-                className="px-5 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
-                id="cancel-delete-button"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteRfp}
-                disabled={isDeleting}
-                className="px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                id="confirm-delete-button"
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete RFP Document</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+      {/* Delete RFP confirmation */}
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => { if (!isDeleting) setShowDeleteConfirm(false); }}
+        dismissable={!isDeleting}
+        title="Delete RFP document"
+        width={460}
+        footer={(
+          <>
+            <Button onClick={() => setShowDeleteConfirm(false)} disabled={isDeleting} id="cancel-delete-button">Cancel</Button>
+            <Button
+              variant="primary"
+              className="!bg-red-600 hover:!bg-red-700"
+              onClick={handleDeleteRfp}
+              loading={isDeleting}
+              icon={<Trash2 className="h-4 w-4" />}
+              id="confirm-delete-button"
+            >
+              {isDeleting ? 'Deleting…' : 'Delete RFP document'}
+            </Button>
+          </>
+        )}
+      >
+        <div className="text-[13.5px] text-slate-600" id="delete-rfp-modal">
+          Delete the generated RFP document for <span className="font-medium text-slate-900">{displayTitle}</span>? This can't be undone.
         </div>
-      )}
+      </Modal>
 
-      {/* Delete RFP Template Confirmation Modal */}
-      {showDeleteTemplateConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" id="delete-template-modal">
-          <div className="bg-white max-w-md w-full rounded-[28px] p-6 md:p-8 shadow-2xl border border-slate-100 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5 text-rose-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Remove Template</h3>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Confirm Action</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              Remove this template? Future downloads will use the default RFP format.
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowDeleteTemplateConfirm(false)}
-                disabled={isDeletingTemplate}
-                className="px-5 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
-                id="cancel-delete-template-button"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteTemplate}
-                disabled={isDeletingTemplate}
-                className="px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                id="confirm-delete-template-button"
-              >
-                {isDeletingTemplate ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Removing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove Template</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+      {/* Remove template confirmation */}
+      <Modal
+        open={showDeleteTemplateConfirm}
+        onClose={() => { if (!isDeletingTemplate) setShowDeleteTemplateConfirm(false); }}
+        dismissable={!isDeletingTemplate}
+        title="Remove template"
+        width={460}
+        footer={(
+          <>
+            <Button onClick={() => setShowDeleteTemplateConfirm(false)} disabled={isDeletingTemplate} id="cancel-delete-template-button">Cancel</Button>
+            <Button
+              variant="primary"
+              className="!bg-red-600 hover:!bg-red-700"
+              onClick={handleDeleteTemplate}
+              loading={isDeletingTemplate}
+              icon={<Trash2 className="h-4 w-4" />}
+              id="confirm-delete-template-button"
+            >
+              {isDeletingTemplate ? 'Removing…' : 'Remove template'}
+            </Button>
+          </>
+        )}
+      >
+        <div className="text-[13.5px] text-slate-600" id="delete-template-modal">
+          Remove <span className="font-medium text-slate-900">{templateInfo?.filename || 'this template'}</span>? Future downloads will use the default RFP format.
         </div>
-      )}
-    </div>
+      </Modal>
+    </StudioTheme>
   );
 };
 

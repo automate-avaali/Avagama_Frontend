@@ -1,0 +1,3 @@
+{
+  "query": "VENDOR EMAIL\naccounts@acmesupplies.example\nFrom: accounts@acmesupplies.example\nTo: ap-helpdesk@avaali.com\nSubject: Status of invoice INV-3321\nHello team, could you share the status of our invoice INV-3321 dated 2 July 2026 for INR 84,500? It was submitted against PO-77102. Thanks, Priya (Acme Supplies)"
+}

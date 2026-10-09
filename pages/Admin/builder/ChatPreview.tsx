@@ -3,14 +3,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, Loader2, Minimize2, Maximize2, RotateCcw, X, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiService } from '../../../services/api';
-import toast from 'react-hot-toast';
+import toast from '../../../components/studio/notify';
 import AgentMessage from '../../../components/AgentMessage';
+import { GuardrailNote } from './GuardrailNote';
 
 interface Message {
   role: 'user' | 'bot';
   content: string;
   timestamp: Date;
   citations?: any[];
+  guardrails?: any;      // reply: what the AI Guardrails did (contract F.7)
+  piiTypes?: string[];   // user message: personal data found in it
+  piiAction?: string;    // mask | flag
 }
 
 interface ChatPreviewProps {
@@ -48,11 +52,15 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
     try {
       const response = await apiService.standalone.agents.conversations.get(agentId, sid);
       if (response.success && response.data.messages) {
-        setMessages(response.data.messages.map((m: any) => ({
+        const raw = response.data.messages;
+        setMessages(raw.map((m: any, i: number) => ({
           role: m.role === 'assistant' ? 'bot' : 'user',
           content: m.content,
           citations: m.citations,
-          timestamp: new Date(m.ts || m.createdAt)
+          timestamp: new Date(m.ts || m.createdAt),
+          guardrails: m.role === 'assistant' ? m.guardrail : undefined,
+          piiTypes: m.role !== 'assistant' && m.pii_detected ? m.pii_types : undefined,
+          piiAction: m.role !== 'assistant' ? raw[i + 1]?.guardrail?.pii?.action : undefined
         })));
       }
     } catch (error) {
@@ -96,9 +104,20 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
           role: 'bot',
           content: response.data.reply,
           citations: response.data.citations,
-          timestamp: new Date()
+          timestamp: new Date(),
+          guardrails: response.data.guardrails
         };
-        setMessages(prev => [...prev, botMsg]);
+        const pii = response.data.guardrails?.pii;
+        setMessages(prev => {
+          const next = [...prev];
+          // Personal data was found in the message just sent — note it on that user message.
+          if (pii?.detected?.length) {
+            for (let i = next.length - 1; i >= 0; i--) {
+              if (next[i].role === 'user') { next[i] = { ...next[i], piiTypes: pii.detected, piiAction: pii.action }; break; }
+            }
+          }
+          return [...next, botMsg];
+        });
         if (response.data.session_id) {
           setSessionId(response.data.session_id);
           localStorage.setItem(`agent_chat_${agentId}`, response.data.session_id);
@@ -124,7 +143,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-28 w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 group"
+        className="fixed bottom-8 right-28 w-16 h-16 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-50 group"
         title="Open Agent Preview"
       >
         <Bot size={28} className="group-hover:rotate-12 transition-transform" />
@@ -140,20 +159,20 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
         opacity: 1, 
         y: 0, 
         scale: 1,
-        height: isMinimized ? '80px' : '600px',
-        width: isMinimized ? '300px' : '450px'
+        height: isMinimized ? '80px' : '640px',
+        width: isMinimized ? '300px' : '500px'
       }}
-      className="fixed bottom-8 right-28 bg-white rounded-[32px] shadow-2xl border border-gray-100 flex flex-col overflow-hidden z-50 transition-all duration-300"
+      className="fixed bottom-8 right-28 bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col overflow-hidden z-50 transition-all duration-300"
     >
       {/* Header */}
-      <div className={`shrink-0 px-6 py-4 flex items-center justify-between border-b border-gray-50 bg-white ${isMinimized ? 'h-full' : ''}`}>
+      <div className={`shrink-0 px-4 py-2.5 flex items-center justify-between border-b border-slate-100 bg-white ${isMinimized ? 'h-full' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-[#a26da8]">
             <Bot size={20} />
           </div>
           <div>
-            <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">{agentName || 'Agent Preview'}</h3>
-            <p className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+            <h3 className="text-[13px] font-semibold text-slate-900">{agentName || 'Agent Preview'}</h3>
+            <p className="text-[11.5px] font-semibold text-green-500 flex items-center gap-1.5 mt-0.5">
               <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
               Live Simulation
             </p>
@@ -163,7 +182,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
           {!isMinimized && (
             <button 
               onClick={handleReset}
-              className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
+              className="p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-200"
               title="Reset Conversation"
             >
               <RotateCcw size={16} />
@@ -171,14 +190,14 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
           )}
           <button 
             onClick={() => setIsMinimized(!isMinimized)}
-            className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
+            className="p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-200"
             title={isMinimized ? "Expand Preview" : "Minimize Preview"}
           >
             {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </button>
           <button 
             onClick={() => setIsOpen(false)}
-            className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
+            className="p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-200"
             title="Close Preview"
           >
             <X size={16} />
@@ -191,26 +210,27 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
         <>
           <div 
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#fafafa]"
+            className="flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50/60"
           >
             {(isDirty || agentId === 'new') ? (
               <div className="h-full flex flex-col items-center justify-center space-y-6 animate-fadeIn py-10">
-                 <div className="w-20 h-20 bg-purple-50 rounded-[28px] flex items-center justify-center text-[#a26da8] shadow-sm ring-4 ring-white">
+                 <div className="w-20 h-20 bg-purple-50 rounded-xl flex items-center justify-center text-[#a26da8] shadow-sm ring-4 ring-white">
                     <Save size={32} className="opacity-80" />
                  </div>
-                 <div className="text-center space-y-2 px-6">
-                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight">Save first to test</h4>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-loose max-w-[220px] mx-auto">
+                 <div className="text-center space-y-2 px-4">
+                    <h4 className="text-sm font-semibold text-slate-900">Save first to test</h4>
+                    <p className="text-[12.5px] font-medium text-slate-500 leading-loose max-w-[220px] mx-auto">
                       You have unsaved configuration changes. Please save your progress to test the updated agent logic.
                     </p>
                  </div>
                </div>
             ) : messages.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center opacity-40 grayscale mt-10">
-                <Bot size={48} className="mb-4 text-gray-300" />
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center max-w-[200px] leading-loose">
-                  Start a conversation to test your agent logic
-                </p>
+              <div className="h-full flex flex-col items-center justify-center text-center px-6">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-purple-50 text-[#a26da8]">
+                  <Bot size={24} />
+                </div>
+                <p className="text-[13.5px] font-semibold text-slate-800">Start a conversation</p>
+                <p className="mt-1 max-w-[260px] text-[12.5px] text-slate-500">Ask a question to test how your agent answers with its saved configuration.</p>
               </div>
             )}
             
@@ -219,22 +239,25 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
                 key={idx}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`flex gap-2.5 ${msg.role === 'user' ? 'max-w-[85%] flex-row-reverse' : 'max-w-[94%] flex-row'}`}>
                   <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm ${
-                    msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-white text-[#a26da8] border border-purple-50'
+                    msg.role === 'user' ? 'bg-slate-900 text-white' : 'bg-white text-[#a26da8] border border-purple-50'
                   }`}>
                     {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                   </div>
-                  <div className={`px-5 py-3.5 rounded-2xl text-[11px] font-bold leading-relaxed shadow-sm break-words whitespace-pre-wrap ${
-                    msg.role === 'user' 
-                    ? 'bg-gray-900 text-white rounded-tr-none' 
-                    : 'bg-white text-gray-600 border border-gray-50 rounded-tl-none'
-                  }`}>
-                    {msg.role === 'user' ? (
-                      msg.content
-                    ) : (
-                      <AgentMessage content={msg.content} citations={msg.citations} />
-                    )}
+                  <div className="min-w-0">
+                    <div className={`px-4 py-3 rounded-lg text-[13.5px] leading-relaxed break-words ${
+                      msg.role === 'user'
+                      ? 'bg-slate-900 text-white rounded-tr-none whitespace-pre-wrap'
+                      : 'bg-white text-slate-700 border border-slate-200 rounded-tl-none shadow-sm [&_strong]:!font-semibold [&_strong]:!text-slate-900 [&_li]:!my-0.5'
+                    }`}>
+                      {msg.role === 'user' ? (
+                        msg.content
+                      ) : (
+                        <AgentMessage content={msg.content} citations={msg.citations} />
+                      )}
+                    </div>
+                    <GuardrailNote guardrails={msg.guardrails} piiTypes={msg.piiTypes} piiAction={msg.piiAction} align={msg.role === 'user' ? 'right' : 'left'} />
                   </div>
                 </div>
               </div>
@@ -246,10 +269,10 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
                   <div className="shrink-0 w-8 h-8 rounded-lg bg-white text-[#a26da8] border border-purple-50 flex items-center justify-center">
                     <Loader2 size={14} className="animate-spin" />
                   </div>
-                  <div className="px-5 py-3.5 bg-white border border-gray-50 rounded-2xl rounded-tl-none flex items-center gap-2">
-                    <span className="w-1 h-1 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1 h-1 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1 h-1 bg-gray-300 rounded-full animate-bounce" />
+                  <div className="px-5 py-2.5 bg-white border border-slate-100 rounded-lg rounded-tl-none flex items-center gap-2">
+                    <span className="w-1 h-1 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1 h-1 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1 h-1 bg-slate-300 rounded-full animate-bounce" />
                   </div>
                 </div>
               </div>
@@ -257,23 +280,27 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ agentId, agentName, status, i
           </div>
 
           {/* Input */}
-          <div className="p-6 bg-white border-t border-gray-50">
-            <form 
+          <div className="p-3 bg-white border-t border-slate-200">
+            <form
               onSubmit={handleSend}
-              className="relative"
+              className={`flex items-center gap-2 rounded-lg border pl-3 pr-1.5 py-1.5 transition-colors focus-within:border-[#a26da8] focus-within:ring-2 focus-within:ring-purple-100 ${
+                agentId === 'new' || isDirty ? 'border-slate-200 bg-slate-50' : 'border-slate-300 bg-white'
+              }`}
             >
-              <input 
+              <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={isDirty || agentId === 'new' ? "Please save to test..." : "Type your message..."}
                 disabled={agentId === 'new' || isDirty}
-                className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-[11px] font-bold text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-purple-100 transition-all pr-14"
+                className="min-w-0 flex-1 border-0 bg-transparent py-1.5 text-[13.5px] text-slate-900 placeholder:text-slate-400 outline-none focus:ring-0 disabled:cursor-not-allowed"
               />
-              <button 
+              <button
                 type="submit"
                 disabled={!input.trim() || loading || agentId === 'new' || isDirty}
-                className="absolute right-2 top-2 w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-gray-200"
+                title="Send"
+                aria-label="Send message"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#a26da8] text-white transition-colors hover:bg-[#8e5a94] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
                 <Send size={16} />
               </button>

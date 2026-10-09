@@ -1,0 +1,19 @@
+{
+  "invoice_text": "TAX INVOICE\nAcme Supplies Pvt Ltd\nInvoice No: INV-4472\nInvoice Date: 2026-07-12\nPO Reference: PO-99812\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nItem code | Description | Qty | Unit price | Amount\nCHAIR-01 | Ergonomic office chair, mesh back | 12 | 275.00 | 3,300.00\nSubtotal: 3,300.00\nGST 0%: 0.00\nTotal: INR 3,300.00",
+  "invoice_amount": 3300,
+  "po_number": "PO-99812",
+  "po_lines": [
+    {
+      "sku": "CHAIR-01",
+      "description": "Ergonomic office chair, mesh back",
+      "qty": 12,
+      "unit_price": 250.0
+    }
+  ],
+  "grn_lines": [
+    {
+      "sku": "CHAIR-01",
+      "qty_received": 12
+    }
+  ]
+}

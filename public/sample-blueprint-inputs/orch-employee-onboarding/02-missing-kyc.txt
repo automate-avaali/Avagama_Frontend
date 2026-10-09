@@ -1,0 +1,9 @@
+JOINER FORM
+Avaali Solutions - HR
+Employee: Karthik Menon
+Role: Data Engineer
+Department: Analytics
+Manager: Suhas U
+Joining date: 2026-11-10
+KYC documents: PAN (received), Aadhaar (NOT RECEIVED), passport photo (received).
+Access requested: Email, Teams, Databricks, VPN.

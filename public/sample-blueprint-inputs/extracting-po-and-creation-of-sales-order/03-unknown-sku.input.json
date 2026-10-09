@@ -1,0 +1,22 @@
+{
+  "customer_po_text": "CUSTOMER PURCHASE ORDER\nFreshBasket\nPO Number: FB-3310\nCustomer: FreshBasket\nRequested delivery: 2026-08-20\nShip To: FreshBasket DC, Pune\nSKU | Description | Qty | Unit price | Amount\nSKU-ALPHA | Alpha smart bulb 9W | 40 | 450.00 | 18,000.00\nSKU-ZETA | Zeta solar lantern | 25 | 1,200.00 | 30,000.00",
+  "order_value": 48000,
+  "catalog": [
+    {
+      "sku": "SKU-ALPHA",
+      "description": "Alpha smart bulb 9W",
+      "unit_price": 450,
+      "aliases": [
+        "ALPHA"
+      ]
+    },
+    {
+      "sku": "SKU-BETA",
+      "description": "Beta LED panel 2x2",
+      "unit_price": 600,
+      "aliases": [
+        "BETA"
+      ]
+    }
+  ]
+}

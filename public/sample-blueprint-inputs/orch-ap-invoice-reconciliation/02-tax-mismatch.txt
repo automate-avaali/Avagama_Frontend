@@ -1,0 +1,14 @@
+TAX INVOICE
+Globex Manufacturing Ltd
+Invoice No: INV-2026-0519
+Invoice Date: 2026-10-03
+PO Reference: PO-7790
+Bill To: Avaali Solutions Pvt. Ltd., Bengaluru
+Currency: INR
+Payment Terms: Net 30
+Description | Qty | Unit price | Amount
+Hydraulic press HP-60T | 1 | 845,000.00 | 845,000.00
+Subtotal: 845,000.00
+GST 18%: 142,000.00
+Total: INR 987,000.00
+Note: GST stated as 1,42,000.00 (calculated 18% would be 1,52,100.00).

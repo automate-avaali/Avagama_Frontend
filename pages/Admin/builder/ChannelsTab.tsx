@@ -2,7 +2,7 @@
 import React from 'react';
 import { AgentChannel } from '../../../types/standalone';
 import { Globe, MessageSquare, Share2, ExternalLink, Copy, QrCode, Rocket, Loader2, Key, Plus, Trash2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../../components/studio/notify';
 import { apiService } from '../../../services/api';
 
 interface ChannelsTabProps {
@@ -138,7 +138,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
   const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/;
 
   return (
-    <div className="space-y-12 animate-fadeIn pb-10">
+    <div className="space-y-8 animate-fadeIn pb-10">
       {/* Share & Deployment Section */}
       <section className="space-y-6">
          <div className="flex items-center gap-3">
@@ -146,36 +146,36 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                <Share2 size={20} />
             </div>
             <div>
-               <h3 className="text-lg font-black text-gray-900 tracking-tight">Public Access & Deployment</h3>
-               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Control how users interact with your agent</p>
+               <h3 className="text-[17px] font-semibold text-slate-900">Public Access & Deployment</h3>
+               <p className="text-[13px] font-medium text-slate-500 mt-0.5">Control how users interact with your agent</p>
             </div>
          </div>
 
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Share Link Card */}
-            <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm flex flex-col justify-between group hover:border-purple-100 transition-all">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between group hover:border-purple-100 transition-all">
                <div>
-                  <div className="flex justify-between items-start mb-6">
-                     <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-purple-100 group-hover:text-[#a26da8] transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                     <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center text-slate-500 group-hover:bg-purple-100 group-hover:text-[#a26da8] transition-all">
                         <Share2 size={24} />
                      </div>
-                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${shareToken ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                     <span className={`px-3 py-1 rounded-full text-[11.5px] font-semibold ${shareToken ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
                         {shareToken ? 'Published' : 'Draft'}
                      </span>
                   </div>
-                  <h4 className="text-base font-black text-gray-900 mb-2">Shareable Preview Link</h4>
-                  <p className="text-xs font-medium text-gray-500 leading-relaxed mb-6">Standard ephemeral test link for internal sharing and quick feedback.</p>
+                  <h4 className="text-[15px] font-semibold text-slate-900 mb-2">Shareable Preview Link</h4>
+                  <p className="text-[13px] font-medium text-slate-500 leading-relaxed mb-4">Standard ephemeral test link for internal sharing and quick feedback.</p>
                   
                   <div className="space-y-4">
                      <div className="relative">
                         <input 
                            readOnly 
                            value={`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`}
-                           className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-xs font-mono text-gray-600 outline-none pr-12"
+                           className="w-full px-5 py-2.5 bg-white border border-slate-300 rounded-lg text-[13px] font-mono text-slate-600 outline-none pr-12 focus:border-[#a26da8]"
                         />
                         <button
                            onClick={() => copyShareLink(`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`)}
-                           className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-900 transition-all"
+                           className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-slate-900 transition-all"
                         >
                            <Copy size={16} />
                         </button>
@@ -183,10 +183,10 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                   </div>
                </div>
 
-               <div className="mt-8 flex gap-3">
+               <div className="mt-5 flex gap-3">
                   <button 
                      onClick={() => window.open(`${PUBLIC_APP_URL}/chat/${shareSlug}${shareToken ? `?token=${shareToken}` : ''}`, '_blank')}
-                     className="flex-1 py-4 bg-gray-50 text-gray-900 rounded-[20px] font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+                     className="flex-1 py-2.5 bg-slate-50 text-slate-900 rounded-lg font-semibold text-[12.5px] hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                   >
                      <ExternalLink size={14} />
                      Preview Link
@@ -195,27 +195,27 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
             </div>
 
             {/* Production Deployment Card */}
-            <div className={`rounded-[32px] p-8 border transition-all duration-500 flex flex-col justify-between ${
+            <div className={`rounded-xl p-6 border transition-all duration-500 flex flex-col justify-between ${
                deployment?.is_deployed 
-               ? 'bg-white border-green-100 shadow-2xl shadow-green-50' 
-               : 'bg-white border-gray-100 shadow-sm'
+               ? 'bg-white border-green-100 shadow-lg ' 
+               : 'bg-white border-slate-200 shadow-sm'
             }`}>
                <div>
-                  <div className="flex justify-between items-start mb-6">
-                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-                        deployment?.is_deployed ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'
+                  <div className="flex justify-between items-start mb-4">
+                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all ${
+                        deployment?.is_deployed ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-500'
                      }`}>
                         <Rocket size={24} />
                      </div>
-                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                        deployment?.is_deployed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
+                     <span className={`px-3 py-1 rounded-full text-[11.5px] font-semibold ${
+                        deployment?.is_deployed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
                      }`}>
                         {deployment?.is_deployed ? '● Deployed to Production' : 'Not Deployed'}
                      </span>
                   </div>
                   
-                  <h4 className="text-base font-black text-gray-900 mb-2">Deploy Agent</h4>
-                  <p className="text-xs font-medium text-gray-500 leading-relaxed mb-6">
+                  <h4 className="text-[15px] font-semibold text-slate-900 mb-2">Deploy Agent</h4>
+                  <p className="text-[13px] font-medium text-slate-500 leading-relaxed mb-4">
                      {deployment?.is_deployed 
                         ? 'Your agent index is live at a stable, slug-based production URL.' 
                         : 'Mint a stable production URL for your agent on our enterprise-grade infrastructure.'}
@@ -224,20 +224,20 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                   {deployment?.is_deployed ? (
                      <div className="space-y-4 animate-fadeIn">
                         <div>
-                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Production Slug</p>
-                           <p className="text-xs font-mono font-bold text-gray-900 bg-gray-50 px-4 py-3 rounded-xl inline-block">{deployment.slug}</p>
+                           <p className="text-[12.5px] font-semibold text-slate-500 mb-2">Production Slug</p>
+                           <p className="text-[13px] font-mono font-medium text-slate-900 bg-slate-50 px-4 py-3 rounded-xl inline-block">{deployment.slug}</p>
                         </div>
                         <div>
-                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Public Chat URL</p>
+                           <p className="text-[12.5px] font-semibold text-slate-500 mb-2">Public Chat URL</p>
                            <div className="relative">
                               <input 
                                  readOnly 
                                  value={deployment.public_url}
-                                 className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-xs font-mono text-gray-600 outline-none pr-12"
+                                 className="w-full px-5 py-2.5 bg-white border border-slate-300 rounded-lg text-[13px] font-mono text-slate-600 outline-none pr-12 focus:border-[#a26da8]"
                               />
                               <button 
                                  onClick={() => copyShareLink(deployment.public_url)}
-                                 className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-900 transition-all"
+                                 className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-slate-900 transition-all"
                               >
                                  <Copy size={16} />
                               </button>
@@ -245,35 +245,35 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                         </div>
                         <div className="flex items-center gap-6 pt-2">
                            <div>
-                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Deployed At</p>
-                              <p className="text-[10px] font-bold text-gray-600">{new Date(deployment.deployed_at).toLocaleDateString()} · {new Date(deployment.deployed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="text-[11.5px] font-semibold text-slate-500 mb-1">Deployed At</p>
+                              <p className="text-[12.5px] font-medium text-slate-600">{new Date(deployment.deployed_at).toLocaleDateString()} · {new Date(deployment.deployed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                            </div>
                            <div>
-                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Chats</p>
-                              <p className="text-[10px] font-bold text-gray-600">{deployment.chat_count || 0}</p>
+                              <p className="text-[11.5px] font-semibold text-slate-500 mb-1">Active Chats</p>
+                              <p className="text-[12.5px] font-medium text-slate-600">{deployment.chat_count || 0}</p>
                            </div>
                         </div>
                      </div>
                   ) : (
                      <div className="space-y-6">
-                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                            <button 
                               onClick={() => setShowAdvanced(!showAdvanced)}
-                              className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-all"
+                              className="text-[12.5px] font-semibold text-slate-500 hover:text-slate-900 transition-all"
                            >
                               {showAdvanced ? '▼ Hide Advanced Options' : '▶ Advanced Deployment Options'}
                            </button>
                            {showAdvanced && (
                               <div className="mt-4 space-y-4 animate-fadeIn">
                                  <div>
-                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Custom Deployment Slug</label>
+                                    <label className="text-[11.5px] font-semibold text-slate-500 mb-2 block">Custom Deployment Slug</label>
                                     <input 
                                        placeholder="e.g. dental-clinic-bot (optional)"
                                        value={customSlug}
                                        onChange={(e) => setCustomSlug(e.target.value.toLowerCase())}
-                                       className="w-full p-4 bg-white border border-gray-100 rounded-xl text-xs font-mono text-gray-600 focus:border-[#a26da8] outline-none transition-all"
+                                       className="w-full p-4 bg-white border border-slate-300 rounded-lg text-[13px] font-mono text-slate-600 focus:border-[#a26da8] outline-none transition-all"
                                     />
-                                    <p className="text-[9px] font-medium text-gray-400 mt-2">2-64 chars. Lowercase letters, digits, and hyphens only.</p>
+                                    <p className="text-[11.5px] font-medium text-slate-500 mt-2">2-64 chars. Lowercase letters, digits, and hyphens only.</p>
                                  </div>
                               </div>
                            )}
@@ -281,7 +281,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                         <button 
                            onClick={handleDeploy}
                            disabled={isDeploying || (!!customSlug && !SLUG_RE.test(customSlug))}
-                           className="w-full py-5 bg-gray-900 text-white rounded-[24px] font-black text-[11px] uppercase tracking-widest hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3"
+                           className="w-full py-3 bg-slate-900 text-white rounded-lg font-semibold text-[13px] hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-3"
                         >
                            {isDeploying ? <Loader2 size={18} className="animate-spin" /> : <Rocket size={18} />}
                            {isDeploying ? 'Deploying...' : 'Deploy Agent'}
@@ -291,10 +291,10 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                </div>
 
                {deployment?.is_deployed && (
-                  <div className="mt-8 flex gap-3 pt-6 border-t border-gray-50">
+                  <div className="mt-5 flex gap-3 pt-6 border-t border-slate-100">
                      <button 
                         onClick={() => window.open(deployment.public_url.replace('/chat', '/info'), '_blank')}
-                        className="flex-1 py-3.5 bg-gray-50 text-gray-900 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-100 transition-all"
+                        className="flex-1 py-2.5 bg-slate-50 text-slate-900 rounded-xl font-semibold text-[11.5px] hover:bg-slate-100 transition-all"
                      >
                         Check Endpoints
                      </button>
@@ -307,7 +307,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                             setIsConfirmingUndeploy(true);
                           }
                         }}
-                        className={`px-6 py-3.5 border rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${
+                        className={`px-4 py-2.5 border rounded-xl font-semibold text-[11.5px] transition-all ${
                           isConfirmingUndeploy 
                           ? 'bg-red-500 border-red-500 text-white hover:bg-red-600' 
                           : 'bg-white border-red-50 text-red-400 hover:bg-red-50 hover:text-red-500'
@@ -325,69 +325,69 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
       {/* Programmatic API Access (only when deployed) */}
       {deployment?.is_deployed && (
         <>
-          <div className="h-px bg-gray-50" />
+          <div className="h-px bg-slate-50" />
           <section className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white">
                 <Key size={18} />
               </div>
               <div>
-                <h3 className="text-lg font-black text-gray-900 tracking-tight">Programmatic API Access</h3>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Let external apps call this agent with an API key</p>
+                <h3 className="text-[17px] font-semibold text-slate-900">Programmatic API Access</h3>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5">Let external apps call this agent with an API key</p>
               </div>
             </div>
 
             {createdKey && (
-              <div className="bg-amber-50 border border-amber-200 rounded-[24px] p-6 animate-fadeIn">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 animate-fadeIn">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><Key size={16} /></div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-black text-amber-900">Copy your API key now</h4>
-                    <p className="text-[11px] font-medium text-amber-700 mb-3">This is the only time the full key is shown. Store it securely — it can't be retrieved later.</p>
+                    <h4 className="text-sm font-semibold text-amber-900">Copy your API key now</h4>
+                    <p className="text-[13px] font-medium text-amber-700 mb-3">This is the only time the full key is shown. Store it securely — it can't be retrieved later.</p>
                     <div className="relative">
-                      <input readOnly value={createdKey} className="w-full px-4 py-3 bg-white border border-amber-200 rounded-xl text-xs font-mono text-gray-800 outline-none pr-12" />
+                      <input readOnly value={createdKey} className="w-full px-4 py-3 bg-white border border-amber-200 rounded-lg text-[13px] font-mono text-slate-800 outline-none pr-12 focus:border-[#a26da8]" />
                       <button onClick={() => copyText(createdKey)} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-amber-600 hover:text-amber-900"><Copy size={16} /></button>
                     </div>
-                    <button onClick={() => setCreatedKey(null)} className="mt-3 text-[10px] font-black text-amber-700 uppercase tracking-widest hover:underline">I've saved it — dismiss</button>
+                    <button onClick={() => setCreatedKey(null)} className="mt-3 text-[12.5px] font-semibold text-amber-700 hover:underline">I've saved it — dismiss</button>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm space-y-6">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
               {invokeUrl && (
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Invoke Endpoint (POST)</p>
+                  <p className="text-[12.5px] font-semibold text-slate-500 mb-2">Invoke Endpoint (POST)</p>
                   <div className="relative">
-                    <input readOnly value={invokeUrl} className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl text-xs font-mono text-gray-600 outline-none pr-12" />
-                    <button onClick={() => copyText(invokeUrl)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-900"><Copy size={16} /></button>
+                    <input readOnly value={invokeUrl} className="w-full px-5 py-2.5 bg-white border border-slate-300 rounded-lg text-[13px] font-mono text-slate-600 outline-none pr-12 focus:border-[#a26da8]" />
+                    <button onClick={() => copyText(invokeUrl)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-slate-900"><Copy size={16} /></button>
                   </div>
-                  <p className="text-[10px] font-medium text-gray-400 mt-2">POST <code className="text-[#a26da8]">{'{ "session_id", "message" }'}</code> with header <code className="text-[#a26da8]">Authorization: Bearer &lt;key&gt;</code>.</p>
+                  <p className="text-[12.5px] font-medium text-slate-500 mt-2">POST <code className="text-[#a26da8]">{'{ "session_id", "message" }'}</code> with header <code className="text-[#a26da8]">Authorization: Bearer &lt;key&gt;</code>.</p>
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                <h4 className="text-sm font-black text-gray-900">API Keys</h4>
-                <button onClick={() => setShowCreate(s => !s)} className="flex items-center gap-2 px-4 py-2.5 bg-[#a26da8] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#8e5a94] transition-all">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <h4 className="text-sm font-semibold text-slate-900">API Keys</h4>
+                <button onClick={() => setShowCreate(s => !s)} className="flex items-center gap-2 px-4 py-2.5 bg-[#a26da8] text-white rounded-xl text-[12.5px] font-semibold hover:bg-[#8e5a94] transition-all">
                   <Plus size={14} /> Create Key
                 </button>
               </div>
 
               {showCreate && (
-                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-4 animate-fadeIn">
+                <div className="bg-slate-50 rounded-lg p-5 border border-slate-200 space-y-4 animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Key Name</label>
-                      <input value={keyName} onChange={e => setKeyName(e.target.value)} placeholder="e.g. Zapier integration" className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl text-xs font-bold outline-none focus:border-purple-200" />
+                      <label className="text-[11.5px] font-semibold text-slate-500 block mb-1.5">Key Name</label>
+                      <input value={keyName} onChange={e => setKeyName(e.target.value)} placeholder="e.g. Zapier integration" className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:border-purple-200 focus:border-[#a26da8]" />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Rate Limit (per min)</label>
-                      <input type="number" min={1} value={keyRate} onChange={e => setKeyRate(Number(e.target.value))} className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl text-xs font-bold outline-none focus:border-purple-200" />
+                      <label className="text-[11.5px] font-semibold text-slate-500 block mb-1.5">Rate Limit (per min)</label>
+                      <input type="number" min={1} value={keyRate} onChange={e => setKeyRate(Number(e.target.value))} className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-[13px] font-normal outline-none focus:border-purple-200 focus:border-[#a26da8]" />
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => setShowCreate(false)} className="px-4 py-2.5 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-gray-600">Cancel</button>
-                    <button onClick={createKey} disabled={creating} className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 flex items-center gap-2">
+                    <button onClick={() => setShowCreate(false)} className="px-4 py-2.5 text-slate-500 rounded-xl text-[12.5px] font-semibold hover:text-slate-600">Cancel</button>
+                    <button onClick={createKey} disabled={creating} className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[12.5px] font-semibold hover:bg-black disabled:opacity-50 flex items-center gap-2">
                       {creating ? <Loader2 size={14} className="animate-spin" /> : <Key size={14} />} Generate
                     </button>
                   </div>
@@ -395,27 +395,27 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
               )}
 
               {loadingKeys ? (
-                <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-gray-300" size={24} /></div>
+                <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-slate-400" size={24} /></div>
               ) : keys.length === 0 ? (
-                <p className="text-xs text-gray-400 font-medium py-6 text-center">No API keys yet. Create one to let external apps call this agent.</p>
+                <p className="text-[13px] text-slate-500 font-medium py-4 text-center">No API keys yet. Create one to let external apps call this agent.</p>
               ) : (
                 <div className="space-y-3">
                   {keys.map(k => (
-                    <div key={k.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div key={k.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-black text-gray-900">{k.name}</span>
-                          <span className="text-[10px] font-mono text-gray-500 bg-white border border-gray-100 px-2 py-0.5 rounded">{k.key_prefix}…</span>
+                          <span className="text-[13px] font-semibold text-slate-900">{k.name}</span>
+                          <span className="text-[12.5px] font-mono text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded">{k.key_prefix}…</span>
                           {k.is_active
-                            ? <span className="text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-600 px-2 py-0.5 rounded-full">Active</span>
-                            : <span className="text-[8px] font-black uppercase tracking-widest bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Revoked</span>}
+                            ? <span className="text-[11px] font-semibold bg-green-50 text-green-600 px-2 py-0.5 rounded-full">Active</span>
+                            : <span className="text-[11px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Revoked</span>}
                         </div>
-                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                        <div className="text-[11.5px] font-medium text-slate-500 mt-1">
                           {k.usage_count || 0} calls · {k.rate_limit_per_min}/min{k.last_used_at ? ` · last used ${new Date(k.last_used_at).toLocaleDateString()}` : ''}
                         </div>
                       </div>
                       {k.is_active && (
-                        <button onClick={() => revokeKey(k.id)} className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Revoke key">
+                        <button onClick={() => revokeKey(k.id)} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Revoke key">
                           <Trash2 size={16} />
                         </button>
                       )}
@@ -428,7 +428,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
         </>
       )}
 
-      <div className="h-px bg-gray-50" />
+      <div className="h-px bg-slate-50" />
 
       {/* Omnichannel Section */}
       <section className="space-y-8">
@@ -437,8 +437,8 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
                <Globe size={20} />
             </div>
             <div>
-               <h3 className="text-lg font-black text-gray-900 tracking-tight">Channel Connectivity</h3>
-               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Publish your agent across multiple platforms</p>
+               <h3 className="text-[17px] font-semibold text-slate-900">Channel Connectivity</h3>
+               <p className="text-[13px] font-medium text-slate-500 mt-0.5">Publish your agent across multiple platforms</p>
             </div>
          </div>
 
@@ -446,27 +446,27 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({
             {CHANNELS.map(ch => {
               const active = getChannel(ch.type)?.enabled;
               return (
-                <div key={ch.type} className={`group p-8 rounded-[40px] border transition-all duration-300 ${active ? 'bg-white border-[#a26da8] shadow-2xl shadow-purple-100' : 'bg-white border-gray-100'}`}>
-                   <div className="flex justify-between items-start mb-8">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${active ? 'bg-purple-100 text-[#a26da8]' : 'bg-gray-50 text-gray-400'}`}>
+                <div key={ch.type} className={`group p-6 rounded-xl border transition-all duration-300 ${active ? 'bg-white border-[#a26da8] shadow-lg ' : 'bg-white border-slate-200'}`}>
+                   <div className="flex justify-between items-start mb-5">
+                      <div className={`w-14 h-14 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-purple-100 text-[#a26da8]' : 'bg-slate-50 text-slate-500'}`}>
                          {ch.icon}
                       </div>
                       <button 
                         onClick={() => onToggle(ch.type as any)}
-                        className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                        className={`px-5 py-2.5 rounded-full text-[11.5px] font-semibold transition-all ${
                           active 
-                          ? 'bg-[#a26da8] text-white shadow-lg shadow-purple-200' 
-                          : 'bg-white border border-gray-100 text-gray-400 hover:text-gray-900'
+                          ? 'bg-[#a26da8] text-white shadow-sm ' 
+                          : 'bg-white border border-slate-200 text-slate-500 hover:text-slate-900'
                         }`}
                       >
                          {active ? 'Enabled' : 'Configure'}
                       </button>
                    </div>
-                   <h4 className="text-base font-black text-gray-900 mb-2 truncate">{ch.name}</h4>
-                   <p className="text-xs font-medium text-gray-500 leading-relaxed mb-6">{ch.desc}</p>
+                   <h4 className="text-[15px] font-semibold text-slate-900 mb-2 truncate">{ch.name}</h4>
+                   <p className="text-[13px] font-medium text-slate-500 leading-relaxed mb-4">{ch.desc}</p>
                    
                    {active && (
-                     <div className="flex items-center gap-2 pt-6 border-t border-gray-50 text-[10px] font-black text-[#a26da8] uppercase tracking-tight">
+                     <div className="flex items-center gap-2 pt-6 border-t border-slate-100 text-[12.5px] font-semibold text-[#a26da8]">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         Live Connection Established
                      </div>

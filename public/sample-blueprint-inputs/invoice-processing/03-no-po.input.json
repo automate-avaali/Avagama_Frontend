@@ -1,0 +1,4 @@
+{
+  "invoice_text": "TAX INVOICE\nNorthwind Logistics\nInvoice No: NW-2026-1187\nInvoice Date: 2026-07-21\nPO Reference: (not provided)\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nDescription | Qty | Unit price | Amount\nInbound freight - Chennai to Bengaluru, 2 trucks | 2 | 14,500.00 | 29,000.00\nLoading / unloading charges | 1 | 12,000.00 | 12,000.00\nSubtotal: 41,000.00\nGST 18%: 7,380.00\nTotal: INR 48,380.00\nNo purchase order referenced on this invoice.",
+  "invoice_amount": 48380.0
+}

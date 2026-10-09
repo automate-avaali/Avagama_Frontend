@@ -1,0 +1,14 @@
+TAX INVOICE
+Acme Supplies Pvt Ltd
+Invoice No: INV-2026-0442
+Invoice Date: 2026-10-01
+PO Reference: PO-7781
+Bill To: Avaali Solutions Pvt. Ltd., Bengaluru
+Currency: INR
+Payment Terms: Net 30
+Description | Qty | Unit price | Amount
+Office chair, high back | 10 | 4,500.00 | 45,000.00
+Workstation desk 1400mm | 5 | 9,000.00 | 45,000.00
+Subtotal: 90,000.00
+GST 18%: 16,200.00
+Total: INR 106,200.00

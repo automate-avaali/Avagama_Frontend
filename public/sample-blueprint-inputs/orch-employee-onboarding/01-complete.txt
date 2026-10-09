@@ -1,0 +1,10 @@
+JOINER FORM
+Avaali Solutions - HR
+Employee: Ananya Rao
+Role: Associate Consultant
+Department: Innovation
+Manager: Suhas U
+Joining date: 2026-11-03
+Location: Bengaluru
+KYC documents: PAN (verified), Aadhaar (verified), passport photo (received).
+Access requested: Email, Teams, Jira, VPN, Avagama AI workspace.

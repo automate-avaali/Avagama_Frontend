@@ -4,9 +4,20 @@
  * Integrated with Render backend at https://avagama-backend-ckm9.onrender.com/api
  */
 
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://13.207.66.222:5000'}/api`;
+// const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://13.207.66.222:5000'}/api`;
 // const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
-// const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = "http://localhost:5000/api";
+// Exposed for the Orchestration live-update WebSocket (ws(s)://<api-host>/ws).
+export const API_BASE_URL = BASE_URL;
+// RFP endpoints. Production still calls the original Render host; the main API now serves /api/rfp as
+// well (backend contract F.8). Once that backend is deployed, change this one line to BASE_URL.
+export const RFP_API_BASE = 'https://avagama-backend-ckm9.onrender.com/api';
+const toQuery = (params?: Record<string, any>) => {
+  if (!params) return '';
+  const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+  const qs = new URLSearchParams(clean as Record<string, string>).toString();
+  return qs ? `?${qs}` : '';
+};
 const getHeaders = (isJson = true) => {
   const token = sessionStorage.getItem('token');
   return {
@@ -1032,6 +1043,76 @@ export const apiService = {
       return handleResponse(response);
     },
 
+    // ── v1 contract additions (W-01 long request, W-08/09/10, W-18..24) ──
+    // W-01 typically takes 40–60 s and can take ~3 min: the caller passes an AbortSignal
+    // so the UI controls the ≥5 min timeout instead of the browser default.
+    createPipeline: async (usecase: any, options?: any, signal?: AbortSignal) => {
+      const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(options ? { usecase, options } : { usecase }),
+        signal,
+      });
+      return handleResponse(response);
+    },
+    listExecutions: async (params?: { status?: string; pipeline_id?: string; trigger_type?: string; trigger_id?: string; page?: number; limit?: number }) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions${toQuery(params)}`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    getExecutionStats: async (pipelineId?: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/stats${toQuery({ pipeline_id: pipelineId })}`, { headers: getHeaders() });
+      return handleResponse(response);
+    },
+    retryExecution: async (execId: string) => {
+      const response = await fetch(`${BASE_URL}/workflows/executions/${execId}/retry`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    },
+    triggers: {
+      list: async (pipelineId?: string) => {
+        const response = await fetch(`${BASE_URL}/workflows/triggers${toQuery({ pipeline_id: pipelineId })}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      get: async (triggerId: string) => {
+        const response = await fetch(`${BASE_URL}/workflows/triggers/${triggerId}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      create: async (pipelineId: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/workflows/pipelines/${pipelineId}/triggers`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      update: async (triggerId: string, data: any) => {
+        const response = await fetch(`${BASE_URL}/workflows/triggers/${triggerId}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+      },
+      delete: async (triggerId: string) => {
+        const response = await fetch(`${BASE_URL}/workflows/triggers/${triggerId}`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(response);
+      },
+      run: async (triggerId: string, input?: any) => {
+        const response = await fetch(`${BASE_URL}/workflows/triggers/${triggerId}/run`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(input !== undefined ? { input } : {}),
+        });
+        return handleResponse(response);
+      },
+      rotateToken: async (triggerId: string) => {
+        const response = await fetch(`${BASE_URL}/workflows/triggers/${triggerId}/rotate-token`, { method: 'POST', headers: getHeaders() });
+        return handleResponse(response);
+      },
+    },
+
     // Legacy fallback bindings to prevent code breaks
     list: async () => {
       const response = await fetch(`${BASE_URL}/workflows/pipelines`, {
@@ -1590,6 +1671,10 @@ export const apiService = {
           body: data ? JSON.stringify(data) : undefined
         });
         return handleResponse(response);
+      },
+      duplicate: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/flows/${id}/duplicate`, { method: 'POST', headers: getHeaders() });
+        return handleResponse(response);
       }
     },
     runs: {
@@ -1610,10 +1695,31 @@ export const apiService = {
         });
         return handleResponse(response);
       },
+      // P-15 with a Human Task outcome label (config.outcomes[].label) instead of approved/rejected.
+      respondOutcome: async (id: string, outcome: string) => {
+        const response = await fetch(`${BASE_URL}/playground/runs/${id}/approve`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ outcome })
+        });
+        return handleResponse(response);
+      },
       cancel: async (id: string) => {
         const response = await fetch(`${BASE_URL}/playground/runs/${id}/cancel`, {
           method: 'POST',
           headers: getHeaders()
+        });
+        return handleResponse(response);
+      },
+      stats: async (flowId?: string) => {
+        const response = await fetch(`${BASE_URL}/playground/runs/stats${toQuery({ flow_id: flowId })}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      retry: async (id: string, vars?: Record<string, any>) => {
+        const response = await fetch(`${BASE_URL}/playground/runs/${id}/retry`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(vars && Object.keys(vars).length ? { vars } : {})
         });
         return handleResponse(response);
       }
@@ -1642,6 +1748,22 @@ export const apiService = {
       },
       delete: async (id: string) => {
         const response = await fetch(`${BASE_URL}/playground/schedules/${id}`, { method: 'DELETE', headers: getHeaders() });
+        return handleResponse(response);
+      },
+      get: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/schedules/${id}`, { headers: getHeaders() });
+        return handleResponse(response);
+      },
+      run: async (id: string, input?: any) => {
+        const response = await fetch(`${BASE_URL}/playground/schedules/${id}/run`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(input !== undefined ? { input } : {})
+        });
+        return handleResponse(response);
+      },
+      rotateToken: async (id: string) => {
+        const response = await fetch(`${BASE_URL}/playground/schedules/${id}/rotate-token`, { method: 'POST', headers: getHeaders() });
         return handleResponse(response);
       }
     },

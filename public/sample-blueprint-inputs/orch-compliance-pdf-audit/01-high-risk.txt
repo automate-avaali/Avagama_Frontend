@@ -1,0 +1,9 @@
+MASTER SERVICES AGREEMENT
+Northwind Systems
+Agreement: MSA-NW-2026-07
+Parties: Northwind Systems and Avaali Solutions
+Term: 3 years, auto-renew
+7. Liability: Vendor liability is unlimited for all claims of any kind.
+9. IP: All intellectual property, including pre-existing vendor IP, vests in the Client.
+12. Termination: Either party may terminate immediately on any breach, without cure period.
+14. Data: Vendor may store client data in any jurisdiction.

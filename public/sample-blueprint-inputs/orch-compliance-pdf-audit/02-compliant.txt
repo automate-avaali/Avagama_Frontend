@@ -1,0 +1,8 @@
+MUTUAL NDA
+Contoso Ltd
+Agreement: NDA-CT-2026-03
+Term: 2 years
+3. Confidentiality obligations are mutual and survive 3 years.
+5. Liability capped at fees paid in the preceding 12 months.
+8. Either party may terminate with 30 days notice; 15-day cure period for breach.
+10. Governing law: India; venue Bengaluru.

@@ -1,0 +1,899 @@
+{
+  "version": 1,
+  "note": "Fictitious sample inputs for Avagama AI blueprint demos and testing.",
+  "playground": [
+    {
+      "template": "Invoice Processing",
+      "slug": "invoice-processing",
+      "samples": [
+        {
+          "id": "standard",
+          "label": "Full match - auto-posts",
+          "expect": "Invoice = PO = goods receipt and below 1,00,000 - posted automatically without approval.",
+          "input": {
+            "invoice_text": "TAX INVOICE\nAcme Supplies Pvt Ltd\nInvoice No: INV-4471\nInvoice Date: 2026-07-10\nPO Reference: PO-99812\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nItem code | Description | Qty | Unit price | Amount\nCHAIR-01 | Ergonomic office chair, mesh back | 12 | 250.00 | 3,000.00\nSubtotal: 3,000.00\nGST 0%: 0.00\nTotal: INR 3,000.00",
+            "invoice_amount": 3000,
+            "po_number": "PO-99812",
+            "po_lines": [
+              {
+                "sku": "CHAIR-01",
+                "description": "Ergonomic office chair, mesh back",
+                "qty": 12,
+                "unit_price": 250.0
+              }
+            ],
+            "grn_lines": [
+              {
+                "sku": "CHAIR-01",
+                "qty_received": 12
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "01-standard.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/invoice-processing/01-standard.pdf"
+            },
+            {
+              "name": "01-standard.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/invoice-processing/01-standard.input.json"
+            }
+          ]
+        },
+        {
+          "id": "high-value",
+          "label": "High-value invoice - needs approval",
+          "expect": "Clean 3-way match but 2,50,000 >= 1,00,000 - pauses on AP Manager Approval; approve to post.",
+          "input": {
+            "invoice_text": "TAX INVOICE\nGlobex Manufacturing Ltd\nInvoice No: INV-8890\nInvoice Date: 2026-07-14\nPO Reference: PO-10233\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nItem code | Description | Qty | Unit price | Amount\nVMC-850 | Industrial CNC machining centre VMC-850 | 1 | 211,864.41 | 211,864.41\nSubtotal: 211,864.41\nGST 18%: 38,135.59\nTotal: INR 250,000.00\nDelivery: installation and commissioning included.",
+            "invoice_amount": 250000,
+            "po_number": "PO-10233",
+            "po_lines": [
+              {
+                "sku": "VMC-850",
+                "description": "Industrial CNC machining centre VMC-850",
+                "qty": 1,
+                "unit_price": 211864.41
+              }
+            ],
+            "grn_lines": [
+              {
+                "sku": "VMC-850",
+                "qty_received": 1
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "02-high-value.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/invoice-processing/02-high-value.pdf"
+            },
+            {
+              "name": "02-high-value.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/invoice-processing/02-high-value.input.json"
+            }
+          ]
+        },
+        {
+          "id": "no-po",
+          "label": "Invoice without a PO - exception",
+          "expect": "No PO reference - AP Exception Review; never posted automatically.",
+          "input": {
+            "invoice_text": "TAX INVOICE\nNorthwind Logistics\nInvoice No: NW-2026-1187\nInvoice Date: 2026-07-21\nPO Reference: (not provided)\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nDescription | Qty | Unit price | Amount\nInbound freight - Chennai to Bengaluru, 2 trucks | 2 | 14,500.00 | 29,000.00\nLoading / unloading charges | 1 | 12,000.00 | 12,000.00\nSubtotal: 41,000.00\nGST 18%: 7,380.00\nTotal: INR 48,380.00\nNo purchase order referenced on this invoice.",
+            "invoice_amount": 48380.0
+          },
+          "files": [
+            {
+              "name": "03-no-po.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/invoice-processing/03-no-po.pdf"
+            },
+            {
+              "name": "03-no-po.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/invoice-processing/03-no-po.input.json"
+            }
+          ]
+        },
+        {
+          "id": "price-mismatch",
+          "label": "Price above the PO - needs approval",
+          "expect": "Unit price 275 vs PO 250 (10%, tolerance 2%) - AP Manager Approval with the variance shown.",
+          "input": {
+            "invoice_text": "TAX INVOICE\nAcme Supplies Pvt Ltd\nInvoice No: INV-4472\nInvoice Date: 2026-07-12\nPO Reference: PO-99812\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nItem code | Description | Qty | Unit price | Amount\nCHAIR-01 | Ergonomic office chair, mesh back | 12 | 275.00 | 3,300.00\nSubtotal: 3,300.00\nGST 0%: 0.00\nTotal: INR 3,300.00",
+            "invoice_amount": 3300,
+            "po_number": "PO-99812",
+            "po_lines": [
+              {
+                "sku": "CHAIR-01",
+                "description": "Ergonomic office chair, mesh back",
+                "qty": 12,
+                "unit_price": 250.0
+              }
+            ],
+            "grn_lines": [
+              {
+                "sku": "CHAIR-01",
+                "qty_received": 12
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "04-price-mismatch.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/invoice-processing/04-price-mismatch.pdf"
+            },
+            {
+              "name": "04-price-mismatch.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/invoice-processing/04-price-mismatch.input.json"
+            }
+          ]
+        },
+        {
+          "id": "missing-grn",
+          "label": "Goods not received yet - exception",
+          "expect": "No goods receipt (GRN) - AP Exception Review; rejecting holds the invoice (not posted).",
+          "input": {
+            "invoice_text": "TAX INVOICE\nAcme Supplies Pvt Ltd\nInvoice No: INV-4473\nInvoice Date: 2026-07-14\nPO Reference: PO-99812\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nItem code | Description | Qty | Unit price | Amount\nCHAIR-01 | Ergonomic office chair, mesh back | 12 | 250.00 | 3,000.00\nSubtotal: 3,000.00\nGST 0%: 0.00\nTotal: INR 3,000.00",
+            "invoice_amount": 3000,
+            "po_number": "PO-99812",
+            "po_lines": [
+              {
+                "sku": "CHAIR-01",
+                "description": "Ergonomic office chair, mesh back",
+                "qty": 12,
+                "unit_price": 250.0
+              }
+            ],
+            "grn_lines": []
+          },
+          "files": [
+            {
+              "name": "05-missing-grn.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/invoice-processing/05-missing-grn.pdf"
+            },
+            {
+              "name": "05-missing-grn.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/invoice-processing/05-missing-grn.input.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template": "PO & Contract Match",
+      "slug": "po-contract-match",
+      "samples": [
+        {
+          "id": "compliant",
+          "label": "Compliant PO - auto",
+          "expect": "Price and terms match the contract - finalised automatically.",
+          "input": {
+            "po_details": "PURCHASE ORDER\nAvaali Solutions Pvt. Ltd.\nPO Number: PO-5521\nVendor: Widget Works Inc\nPayment Terms: Net 30\nDelivery: Within 14 days to Bengaluru plant\nItem | Qty | Unit price (USD) | Amount (USD)\nWidget-A | 500 | 10.00 | 5,000.00",
+            "contract_terms": "SUPPLY CONTRACT\nWidget Works Inc\nContract Ref: CT-WW-2026-01\nBuyer: Avaali Solutions Pvt. Ltd.\nValidity: 2026-01-01 to 2026-12-31\n1. Price: Widget-A at USD 10.00 per unit.\n2. Payment terms: Net 30.\n3. Minimum order quantity: 100 units.",
+            "deviation_score": 5
+          },
+          "files": [
+            {
+              "name": "01-compliant.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/po-contract-match/01-compliant.pdf"
+            },
+            {
+              "name": "01-compliant-contract.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/po-contract-match/01-compliant-contract.pdf"
+            },
+            {
+              "name": "01-compliant.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/po-contract-match/01-compliant.input.json"
+            }
+          ]
+        },
+        {
+          "id": "price-deviation",
+          "label": "Price deviation - escalates to buyer",
+          "expect": "Deviation score >= 20 - the buyer approval step is required.",
+          "input": {
+            "po_details": "PURCHASE ORDER\nAvaali Solutions Pvt. Ltd.\nPO Number: PO-5522\nVendor: Widget Works Inc\nPayment Terms: Net 15\nDelivery: Within 14 days to Bengaluru plant\nItem | Qty | Unit price (USD) | Amount (USD)\nWidget-A | 500 | 14.00 | 7,000.00",
+            "contract_terms": "SUPPLY CONTRACT\nWidget Works Inc\nContract Ref: CT-WW-2026-01\nBuyer: Avaali Solutions Pvt. Ltd.\nValidity: 2026-01-01 to 2026-12-31\n1. Price: Widget-A at USD 10.00 per unit.\n2. Payment terms: Net 30.",
+            "deviation_score": 40
+          },
+          "files": [
+            {
+              "name": "02-price-deviation.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/po-contract-match/02-price-deviation.pdf"
+            },
+            {
+              "name": "02-price-deviation-contract.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/po-contract-match/02-price-deviation-contract.pdf"
+            },
+            {
+              "name": "02-price-deviation.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/po-contract-match/02-price-deviation.input.json"
+            }
+          ]
+        },
+        {
+          "id": "terms-borderline",
+          "label": "Payment-terms change, low deviation - edge case",
+          "expect": "Score below 20 - auto path, but the match result should call out Net 45 vs Net 30.",
+          "input": {
+            "po_details": "PURCHASE ORDER\nAvaali Solutions Pvt. Ltd.\nPO Number: PO-5530\nVendor: Widget Works Inc\nPayment Terms: Net 45\nDelivery: Within 14 days to Bengaluru plant\nItem | Qty | Unit price (USD) | Amount (USD)\nWidget-A | 300 | 10.00 | 3,000.00\nWidget-B | 120 | 22.50 | 2,700.00",
+            "contract_terms": "SUPPLY CONTRACT\nWidget Works Inc\nContract Ref: CT-WW-2026-01\nBuyer: Avaali Solutions Pvt. Ltd.\nValidity: 2026-01-01 to 2026-12-31\n1. Price: Widget-A USD 10.00; Widget-B USD 22.50 per unit.\n2. Payment terms: Net 30.\n3. Late delivery penalty: 1% per week, capped at 5%.",
+            "deviation_score": 18
+          },
+          "files": [
+            {
+              "name": "03-terms-borderline.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/po-contract-match/03-terms-borderline.pdf"
+            },
+            {
+              "name": "03-terms-borderline-contract.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/po-contract-match/03-terms-borderline-contract.pdf"
+            },
+            {
+              "name": "03-terms-borderline.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/po-contract-match/03-terms-borderline.input.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template": "Vendor Query Bot",
+      "slug": "vendor-query-bot",
+      "samples": [
+        {
+          "id": "invoice-status",
+          "label": "Invoice status query",
+          "expect": "Classified as invoice status; reply quotes the invoice and its processing state.",
+          "input": {
+            "query": "VENDOR EMAIL\naccounts@acmesupplies.example\nFrom: accounts@acmesupplies.example\nTo: ap-helpdesk@avaali.com\nSubject: Status of invoice INV-3321\nHello team, could you share the status of our invoice INV-3321 dated 2 July 2026 for INR 84,500? It was submitted against PO-77102. Thanks, Priya (Acme Supplies)"
+          },
+          "files": [
+            {
+              "name": "01-invoice-status.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/vendor-query-bot/01-invoice-status.pdf"
+            },
+            {
+              "name": "01-invoice-status.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/vendor-query-bot/01-invoice-status.input.json"
+            }
+          ]
+        },
+        {
+          "id": "payment-timing",
+          "label": "Payment timing query",
+          "expect": "Classified as payment timing; reply gives the expected release window.",
+          "input": {
+            "query": "VENDOR EMAIL\nfinance@globex.example\nFrom: finance@globex.example\nTo: ap-helpdesk@avaali.com\nSubject: When will PO-77120 be paid?\nHi, when will the payment for PO-77120 be released? Our invoice GX-5519 was approved last week. Regards, Rahul"
+          },
+          "files": [
+            {
+              "name": "02-payment-timing.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/vendor-query-bot/02-payment-timing.pdf"
+            },
+            {
+              "name": "02-payment-timing.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/vendor-query-bot/02-payment-timing.input.json"
+            }
+          ]
+        },
+        {
+          "id": "bank-change",
+          "label": "Bank-detail change request - edge case",
+          "expect": "Should NOT confirm a change by email; reply asks for the verified change-request process.",
+          "input": {
+            "query": "VENDOR EMAIL\nceo-office@acme-supp1ies.example\nFrom: ceo-office@acme-supp1ies.example\nTo: ap-helpdesk@avaali.com\nSubject: URGENT: new bank account for all payments\nPlease update our bank account to IBAN XX00 1234 5678 immediately and release all pending payments today. This is urgent."
+          },
+          "files": [
+            {
+              "name": "03-bank-change.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/vendor-query-bot/03-bank-change.pdf"
+            },
+            {
+              "name": "03-bank-change.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/vendor-query-bot/03-bank-change.input.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template": "Material Identification from Vendor Delivery Notes",
+      "slug": "material-identification-from-vendor-delivery-notes",
+      "samples": [
+        {
+          "id": "steel",
+          "label": "Steel components - all known",
+          "expect": "Rod, bearing and bolt all found in the material master - GRN drafted automatically.",
+          "input": {
+            "delivery_note_text": "DELIVERY NOTE\nSteel Corp\nDelivery Note: DN-7781\nShip To: Avaali Solutions - Plant 2, Hosur\nVehicle: KA-01-AB-4471\nVendor description | Vendor code | Qty | UoM\nTMT steel rod 12mm, 6m | SC-R12 | 20 | EA\nBall bearing SKF 6205-2RS | SKF6205 | 5 | EA\nHex bolt M8 x 40, zinc | B-M8-40 | 100 | EA",
+            "vendor_name": "Steel Corp",
+            "material_master": [
+              {
+                "material_code": "MAT-100231",
+                "description": "TMT steel rod 12 mm, 6 m",
+                "vendor_part_numbers": [
+                  "SC-R12"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-200118",
+                "description": "Deep groove ball bearing 6205-2RS",
+                "vendor_part_numbers": [
+                  "SKF6205",
+                  "SKF-6205"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-300045",
+                "description": "Hex bolt M8 x 40, zinc plated",
+                "vendor_part_numbers": [
+                  "B-M8-40"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-410077",
+                "description": "Hydraulic return line filter element",
+                "vendor_part_numbers": [
+                  "R-FLT88",
+                  "FLT-88"
+                ],
+                "uom": "EA"
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "01-steel.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/material-identification-from-vendor-delivery-notes/01-steel.pdf"
+            },
+            {
+              "name": "01-steel.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/material-identification-from-vendor-delivery-notes/01-steel.input.json"
+            }
+          ]
+        },
+        {
+          "id": "hydraulic",
+          "label": "Hydraulic parts - one unknown",
+          "expect": "Filter found (MAT-410077); the gear pump R-HP220 is not in the master - Master Data Review, no code invented.",
+          "input": {
+            "delivery_note_text": "DELIVERY NOTE\nBosch Rexroth\nDelivery Note: DN-9210\nShip To: Avaali Solutions - Plant 2, Hosur\nVehicle: KA-01-AB-4471\nVendor description | Vendor code | Qty | UoM\nHydraulic gear pump HP-220 | R-HP220 | 3 | PAL\nReturn line filter FLT-88 | R-FLT88 | 12 | EA",
+            "vendor_name": "Bosch Rexroth",
+            "material_master": [
+              {
+                "material_code": "MAT-100231",
+                "description": "TMT steel rod 12 mm, 6 m",
+                "vendor_part_numbers": [
+                  "SC-R12"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-200118",
+                "description": "Deep groove ball bearing 6205-2RS",
+                "vendor_part_numbers": [
+                  "SKF6205",
+                  "SKF-6205"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-300045",
+                "description": "Hex bolt M8 x 40, zinc plated",
+                "vendor_part_numbers": [
+                  "B-M8-40"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-410077",
+                "description": "Hydraulic return line filter element",
+                "vendor_part_numbers": [
+                  "R-FLT88",
+                  "FLT-88"
+                ],
+                "uom": "EA"
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "02-hydraulic.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/material-identification-from-vendor-delivery-notes/02-hydraulic.pdf"
+            },
+            {
+              "name": "02-hydraulic.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/material-identification-from-vendor-delivery-notes/02-hydraulic.input.json"
+            }
+          ]
+        },
+        {
+          "id": "ambiguous",
+          "label": "Ambiguous descriptions - edge case",
+          "expect": "No part numbers to match - every line goes to Master Data Review for manual mapping.",
+          "input": {
+            "delivery_note_text": "DELIVERY NOTE\nLocal Traders\nDelivery Note: DN-1044\nShip To: Avaali Solutions - Plant 2, Hosur\nVehicle: KA-01-AB-4471\nVendor description | Vendor code | Qty | UoM\nMisc fasteners assorted | - | 1 | BOX\nPipe 2 inch | - | 6 | NOS\nSpare part as discussed | - | 1 | LOT",
+            "vendor_name": "Local Traders",
+            "material_master": [
+              {
+                "material_code": "MAT-100231",
+                "description": "TMT steel rod 12 mm, 6 m",
+                "vendor_part_numbers": [
+                  "SC-R12"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-200118",
+                "description": "Deep groove ball bearing 6205-2RS",
+                "vendor_part_numbers": [
+                  "SKF6205",
+                  "SKF-6205"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-300045",
+                "description": "Hex bolt M8 x 40, zinc plated",
+                "vendor_part_numbers": [
+                  "B-M8-40"
+                ],
+                "uom": "EA"
+              },
+              {
+                "material_code": "MAT-410077",
+                "description": "Hydraulic return line filter element",
+                "vendor_part_numbers": [
+                  "R-FLT88",
+                  "FLT-88"
+                ],
+                "uom": "EA"
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "03-ambiguous.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/material-identification-from-vendor-delivery-notes/03-ambiguous.pdf"
+            },
+            {
+              "name": "03-ambiguous.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/material-identification-from-vendor-delivery-notes/03-ambiguous.input.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template": "Extracting PO and Creation of Sales Order",
+      "slug": "extracting-po-and-creation-of-sales-order",
+      "samples": [
+        {
+          "id": "standard",
+          "label": "Standard order - auto",
+          "expect": "Both SKUs in the catalog and below 5,00,000 - sales order created automatically.",
+          "input": {
+            "customer_po_text": "CUSTOMER PURCHASE ORDER\nContoso Retail\nPO Number: CR-7781\nCustomer: Contoso Retail\nRequested delivery: 2026-08-15\nShip To: Contoso Retail DC, Pune\nSKU | Description | Qty | Unit price | Amount\nSKU-ALPHA | Alpha smart bulb 9W | 200 | 450.00 | 90,000.00\nSKU-BETA | Beta LED panel 2x2 | 50 | 600.00 | 30,000.00",
+            "order_value": 120000,
+            "catalog": [
+              {
+                "sku": "SKU-ALPHA",
+                "description": "Alpha smart bulb 9W",
+                "unit_price": 450,
+                "aliases": [
+                  "ALPHA"
+                ]
+              },
+              {
+                "sku": "SKU-BETA",
+                "description": "Beta LED panel 2x2",
+                "unit_price": 600,
+                "aliases": [
+                  "BETA"
+                ]
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "01-standard.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/extracting-po-and-creation-of-sales-order/01-standard.pdf"
+            },
+            {
+              "name": "01-standard.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/extracting-po-and-creation-of-sales-order/01-standard.input.json"
+            }
+          ]
+        },
+        {
+          "id": "large",
+          "label": "Large order - credit review",
+          "expect": "Order value >= 5,00,000 - pauses on Credit Review; approve to create the order.",
+          "input": {
+            "customer_po_text": "CUSTOMER PURCHASE ORDER\nMegaMart\nPO Number: MM-9902\nCustomer: MegaMart\nRequested delivery: 2026-09-01\nShip To: MegaMart DC, Pune\nSKU | Description | Qty | Unit price | Amount\nSKU-ALPHA | Alpha smart bulb 9W | 2000 | 450.00 | 900,000.00",
+            "order_value": 900000,
+            "catalog": [
+              {
+                "sku": "SKU-ALPHA",
+                "description": "Alpha smart bulb 9W",
+                "unit_price": 450,
+                "aliases": [
+                  "ALPHA"
+                ]
+              },
+              {
+                "sku": "SKU-BETA",
+                "description": "Beta LED panel 2x2",
+                "unit_price": 600,
+                "aliases": [
+                  "BETA"
+                ]
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "02-large.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/extracting-po-and-creation-of-sales-order/02-large.pdf"
+            },
+            {
+              "name": "02-large.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/extracting-po-and-creation-of-sales-order/02-large.input.json"
+            }
+          ]
+        },
+        {
+          "id": "unknown-sku",
+          "label": "Unknown SKU - exception",
+          "expect": "SKU-ZETA is not in the catalog - Order Exception Review; no order is created until it is resolved.",
+          "input": {
+            "customer_po_text": "CUSTOMER PURCHASE ORDER\nFreshBasket\nPO Number: FB-3310\nCustomer: FreshBasket\nRequested delivery: 2026-08-20\nShip To: FreshBasket DC, Pune\nSKU | Description | Qty | Unit price | Amount\nSKU-ALPHA | Alpha smart bulb 9W | 40 | 450.00 | 18,000.00\nSKU-ZETA | Zeta solar lantern | 25 | 1,200.00 | 30,000.00",
+            "order_value": 48000,
+            "catalog": [
+              {
+                "sku": "SKU-ALPHA",
+                "description": "Alpha smart bulb 9W",
+                "unit_price": 450,
+                "aliases": [
+                  "ALPHA"
+                ]
+              },
+              {
+                "sku": "SKU-BETA",
+                "description": "Beta LED panel 2x2",
+                "unit_price": 600,
+                "aliases": [
+                  "BETA"
+                ]
+              }
+            ]
+          },
+          "files": [
+            {
+              "name": "03-unknown-sku.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/extracting-po-and-creation-of-sales-order/03-unknown-sku.pdf"
+            },
+            {
+              "name": "03-unknown-sku.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/extracting-po-and-creation-of-sales-order/03-unknown-sku.input.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template": "TDS",
+      "slug": "tds",
+      "samples": [
+        {
+          "id": "professional-fees",
+          "label": "Professional fees (194J)",
+          "expect": "Section 194J(b), professional services, at 10% (TDS 20,000); Tax Approval before posting.",
+          "input": {
+            "payment_text": "PAYMENT VOUCHER\nAvaali Solutions - Accounts Payable\nVoucher No: PV-2026-0412\nPayee: XYZ Consulting LLP\nPayee PAN: AAFFX1234K\nNature of payment: Professional fees - process audit engagement\nGross amount: INR 200,000.00",
+            "payment_amount": 200000,
+            "vendor_pan": "AAFFX1234K",
+            "payer_type": "company"
+          },
+          "files": [
+            {
+              "name": "01-professional-fees.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/tds/01-professional-fees.pdf"
+            },
+            {
+              "name": "01-professional-fees.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/tds/01-professional-fees.input.json"
+            }
+          ]
+        },
+        {
+          "id": "rent",
+          "label": "Office rent paid by a company (194-I)",
+          "expect": "Section 194-I(b), rent of land/building, at 10% (TDS 50,000); Tax Approval before posting.",
+          "input": {
+            "payment_text": "PAYMENT VOUCHER\nAvaali Solutions - Accounts Payable\nVoucher No: PV-2026-0413\nPayee: Prestige Estates Pvt Ltd\nPayee PAN: AABCP9876L\nNature of payment: Rent for office premises, July 2026\nGross amount: INR 500,000.00",
+            "payment_amount": 500000,
+            "vendor_pan": "AABCP9876L",
+            "payer_type": "company"
+          },
+          "files": [
+            {
+              "name": "02-rent.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/tds/02-rent.pdf"
+            },
+            {
+              "name": "02-rent.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/tds/02-rent.input.json"
+            }
+          ]
+        },
+        {
+          "id": "no-pan",
+          "label": "Contractor without PAN - edge case",
+          "expect": "No PAN - section 206AA higher rate of 20% (TDS 70,000) and Tax Exception Review.",
+          "input": {
+            "payment_text": "PAYMENT VOUCHER\nAvaali Solutions - Accounts Payable\nVoucher No: PV-2026-0420\nPayee: Sri Lakshmi Contractors\nPayee PAN: (not available)\nNature of payment: Civil works contract - canteen renovation\nGross amount: INR 350,000.00",
+            "payment_amount": 350000,
+            "payer_type": "company"
+          },
+          "files": [
+            {
+              "name": "03-no-pan.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/tds/03-no-pan.pdf"
+            },
+            {
+              "name": "03-no-pan.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/tds/03-no-pan.input.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template": "Master Data Management Cleansing",
+      "slug": "master-data-management-cleansing",
+      "samples": [
+        {
+          "id": "duplicates",
+          "label": "Likely duplicates - steward review",
+          "expect": "Duplicate risk >= 30 - data steward approval required before update.",
+          "input": {
+            "records_text": "VENDOR MASTER EXTRACT\nAvaali Solutions - Master Data\nID | Name | Email / UoM | City\nV-1001 | Acme Corp | ap@acme.example | Chennai\nV-1188 | acme corp inc | accounts@acme.example | Chennai\nV-2040 | ACME CORPORATION | AP@ACME.EXAMPLE  | chennai",
+            "duplicate_risk": 60
+          },
+          "files": [
+            {
+              "name": "01-duplicates.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/master-data-management-cleansing/01-duplicates.pdf"
+            },
+            {
+              "name": "01-duplicates.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/master-data-management-cleansing/01-duplicates.input.json"
+            }
+          ]
+        },
+        {
+          "id": "minor",
+          "label": "Minor cleanup - auto",
+          "expect": "Duplicate risk below 30 - cleansed and updated automatically.",
+          "input": {
+            "records_text": "MATERIAL MASTER EXTRACT\nAvaali Solutions - Master Data\nID | Name | Email / UoM | City\nM-5501 | Bolt M8 | (missing UoM) | -\nM-5502 | bolt-m8 | EA | -\nM-5503 | M8 BOLT | Each | -",
+            "duplicate_risk": 15
+          },
+          "files": [
+            {
+              "name": "02-minor.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/master-data-management-cleansing/02-minor.pdf"
+            },
+            {
+              "name": "02-minor.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/master-data-management-cleansing/02-minor.input.json"
+            }
+          ]
+        },
+        {
+          "id": "addresses",
+          "label": "Customer addresses - edge case",
+          "expect": "Risk 35 - steward review; enrichment should standardise city/state names.",
+          "input": {
+            "records_text": "CUSTOMER MASTER EXTRACT\nAvaali Solutions - Master Data\nID | Name | Email / UoM | City\nC-3001 | Contoso Retail Pvt Ltd | orders@contoso.example | Bangalore\nC-3017 | Contoso Retail Private Limited | orders@contoso.example | Bengaluru\nC-3020 | Contoso Rtl |  | BLR",
+            "duplicate_risk": 35
+          },
+          "files": [
+            {
+              "name": "03-addresses.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/master-data-management-cleansing/03-addresses.pdf"
+            },
+            {
+              "name": "03-addresses.input.json",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/master-data-management-cleansing/03-addresses.input.json"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "orchestration": [
+    {
+      "blueprint": "Standard AP invoice reconciliation",
+      "slug": "orch-ap-invoice-reconciliation",
+      "field": "document",
+      "samples": [
+        {
+          "id": "matched",
+          "label": "Invoice matches PO",
+          "expect": "Totals and GST check out against PO-7781 - routed to auto-approve.",
+          "text": "TAX INVOICE\nAcme Supplies Pvt Ltd\nInvoice No: INV-2026-0442\nInvoice Date: 2026-10-01\nPO Reference: PO-7781\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nDescription | Qty | Unit price | Amount\nOffice chair, high back | 10 | 4,500.00 | 45,000.00\nWorkstation desk 1400mm | 5 | 9,000.00 | 45,000.00\nSubtotal: 90,000.00\nGST 18%: 16,200.00\nTotal: INR 106,200.00",
+          "files": [
+            {
+              "name": "01-matched.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/orch-ap-invoice-reconciliation/01-matched.pdf"
+            },
+            {
+              "name": "01-matched.txt",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/orch-ap-invoice-reconciliation/01-matched.txt"
+            }
+          ]
+        },
+        {
+          "id": "tax-mismatch",
+          "label": "High value with a GST mismatch",
+          "expect": "Stated GST differs from the calculated amount - routed to human review / exception.",
+          "text": "TAX INVOICE\nGlobex Manufacturing Ltd\nInvoice No: INV-2026-0519\nInvoice Date: 2026-10-03\nPO Reference: PO-7790\nBill To: Avaali Solutions Pvt. Ltd., Bengaluru\nCurrency: INR\nPayment Terms: Net 30\nDescription | Qty | Unit price | Amount\nHydraulic press HP-60T | 1 | 845,000.00 | 845,000.00\nSubtotal: 845,000.00\nGST 18%: 142,000.00\nTotal: INR 987,000.00\nNote: GST stated as 1,42,000.00 (calculated 18% would be 1,52,100.00).",
+          "files": [
+            {
+              "name": "02-tax-mismatch.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/orch-ap-invoice-reconciliation/02-tax-mismatch.pdf"
+            },
+            {
+              "name": "02-tax-mismatch.txt",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/orch-ap-invoice-reconciliation/02-tax-mismatch.txt"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blueprint": "Employee onboarding with manager sign-off",
+      "slug": "orch-employee-onboarding",
+      "field": "document",
+      "samples": [
+        {
+          "id": "complete",
+          "label": "Complete joiner form",
+          "expect": "All documents present - pauses for manager sign-off, then provisions.",
+          "text": "JOINER FORM\nAvaali Solutions - HR\nEmployee: Ananya Rao\nRole: Associate Consultant\nDepartment: Innovation\nManager: Suhas U\nJoining date: 2026-11-03\nLocation: Bengaluru\nKYC documents: PAN (verified), Aadhaar (verified), passport photo (received).\nAccess requested: Email, Teams, Jira, VPN, Avagama AI workspace.",
+          "files": [
+            {
+              "name": "01-complete.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/orch-employee-onboarding/01-complete.pdf"
+            },
+            {
+              "name": "01-complete.txt",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/orch-employee-onboarding/01-complete.txt"
+            }
+          ]
+        },
+        {
+          "id": "missing-kyc",
+          "label": "Missing KYC document",
+          "expect": "Aadhaar missing - flagged; provisioning should not proceed without sign-off.",
+          "text": "JOINER FORM\nAvaali Solutions - HR\nEmployee: Karthik Menon\nRole: Data Engineer\nDepartment: Analytics\nManager: Suhas U\nJoining date: 2026-11-10\nKYC documents: PAN (received), Aadhaar (NOT RECEIVED), passport photo (received).\nAccess requested: Email, Teams, Databricks, VPN.",
+          "files": [
+            {
+              "name": "02-missing-kyc.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/orch-employee-onboarding/02-missing-kyc.pdf"
+            },
+            {
+              "name": "02-missing-kyc.txt",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/orch-employee-onboarding/02-missing-kyc.txt"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blueprint": "Compliance PDF audit",
+      "slug": "orch-compliance-pdf-audit",
+      "field": "document",
+      "samples": [
+        {
+          "id": "high-risk",
+          "label": "Vendor agreement with deviations",
+          "expect": "Uncapped liability, one-sided IP and no cure period flagged as high severity.",
+          "text": "MASTER SERVICES AGREEMENT\nNorthwind Systems\nAgreement: MSA-NW-2026-07\nParties: Northwind Systems and Avaali Solutions\nTerm: 3 years, auto-renew\n7. Liability: Vendor liability is unlimited for all claims of any kind.\n9. IP: All intellectual property, including pre-existing vendor IP, vests in the Client.\n12. Termination: Either party may terminate immediately on any breach, without cure period.\n14. Data: Vendor may store client data in any jurisdiction.",
+          "files": [
+            {
+              "name": "01-high-risk.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/orch-compliance-pdf-audit/01-high-risk.pdf"
+            },
+            {
+              "name": "01-high-risk.txt",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/orch-compliance-pdf-audit/01-high-risk.txt"
+            }
+          ]
+        },
+        {
+          "id": "compliant",
+          "label": "Compliant mutual NDA",
+          "expect": "Clauses match policy - low risk summary with no high-severity findings.",
+          "text": "MUTUAL NDA\nContoso Ltd\nAgreement: NDA-CT-2026-03\nTerm: 2 years\n3. Confidentiality obligations are mutual and survive 3 years.\n5. Liability capped at fees paid in the preceding 12 months.\n8. Either party may terminate with 30 days notice; 15-day cure period for breach.\n10. Governing law: India; venue Bengaluru.",
+          "files": [
+            {
+              "name": "02-compliant.pdf",
+              "kind": "document",
+              "url": "/sample-blueprint-inputs/orch-compliance-pdf-audit/02-compliant.pdf"
+            },
+            {
+              "name": "02-compliant.txt",
+              "kind": "input",
+              "url": "/sample-blueprint-inputs/orch-compliance-pdf-audit/02-compliant.txt"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "po_details": "PURCHASE ORDER\nAvaali Solutions Pvt. Ltd.\nPO Number: PO-5521\nVendor: Widget Works Inc\nPayment Terms: Net 30\nDelivery: Within 14 days to Bengaluru plant\nItem | Qty | Unit price (USD) | Amount (USD)\nWidget-A | 500 | 10.00 | 5,000.00",
+  "contract_terms": "SUPPLY CONTRACT\nWidget Works Inc\nContract Ref: CT-WW-2026-01\nBuyer: Avaali Solutions Pvt. Ltd.\nValidity: 2026-01-01 to 2026-12-31\n1. Price: Widget-A at USD 10.00 per unit.\n2. Payment terms: Net 30.\n3. Minimum order quantity: 100 units.",
+  "deviation_score": 5
+}

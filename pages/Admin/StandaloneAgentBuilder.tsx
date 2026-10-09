@@ -9,7 +9,6 @@ import LLMTab from './builder/LLMTab';
 import KnowledgeTab from './builder/KnowledgeTab';
 import ActionsTab from './builder/ActionsTab';
 import ToolsTab from './builder/ToolsTab';
-import PlaygroundTab from './builder/PlaygroundTab';
 import ChannelsTab from './builder/ChannelsTab';
 import HistoryTab from './builder/HistoryTab';
 import ChatPreview from './builder/ChatPreview';
@@ -31,17 +30,16 @@ import {
   ChevronRight,
   Sparkles
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../components/studio/notify';
 
 const TABS = [
-  { id: 'persona', name: 'AI Persona', icon: <Settings2 size={16} /> },
-  { id: 'llm', name: 'LLM Config', icon: <Brain size={16} /> },
-  { id: 'knowledge', name: 'Knowledge Base', icon: <Database size={16} /> },
-  { id: 'actions', name: 'Actions', icon: <Zap size={16} /> },
-  { id: 'tools', name: 'Tools', icon: <Puzzle size={16} /> },
-  { id: 'playground', name: 'Agent Playground', icon: <Sparkles size={16} /> },
-  { id: 'channels', name: 'Channels & Share', icon: <Globe size={16} /> },
-  { id: 'history', name: 'Conversations', icon: <History size={16} /> },
+  { id: 'persona', name: 'AI Persona', hint: 'Role, goal and instructions', icon: <Settings2 size={16} /> },
+  { id: 'llm', name: 'LLM Config', hint: 'Model and guardrails', icon: <Brain size={16} /> },
+  { id: 'knowledge', name: 'Knowledge Base', hint: 'Files, websites, text and Q&A', icon: <Database size={16} /> },
+  { id: 'actions', name: 'Actions', hint: 'Triggers and follow-up actions', icon: <Zap size={16} /> },
+  { id: 'tools', name: 'Tools', hint: 'Integrations the agent can call', icon: <Puzzle size={16} /> },
+  { id: 'channels', name: 'Channels & Share', hint: 'Deploy and share links', icon: <Globe size={16} /> },
+  { id: 'history', name: 'Conversations', hint: 'Chat history', icon: <History size={16} /> },
 ];
 
 const INITIAL_PERSONA: AgentPersona = {
@@ -218,8 +216,14 @@ const StandaloneAgentBuilder: React.FC = () => {
       });
       
       if (response.success && response.data?.spec) {
+        // "fallback" = the AI models were unavailable and the backend returned placeholders:
+        // keep what the user already has instead of overwriting it.
+        if (response.data?.meta?.generated_by === 'fallback') {
+          toast.warning('AI generation is unavailable right now, so nothing was changed. Please try Generate again in a minute.', { duration: 7000 });
+          return;
+        }
         const spec = response.data.spec;
-        
+
         // Populate basic info
         setName((spec.name || '').replace(/^[:\s-]+/, '').trim());
         setDescription((spec.description || '').trim());
@@ -313,108 +317,121 @@ const StandaloneAgentBuilder: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
-         <div className="flex flex-col items-center gap-6">
-            <div className="w-16 h-16 border-4 border-purple-100 border-t-[#a26da8] rounded-full animate-spin" />
-            <p className="text-gray-400 font-black text-xs uppercase tracking-[0.4em] animate-pulse">Mounting Builder Workspace...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f7f9]">
+         <div className="flex items-center gap-3 text-[14px] text-slate-500">
+            <Loader2 size={20} className="animate-spin text-[#a26da8]" />
+            Loading agent builder…
          </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] pb-20">
+    <div className="min-h-screen bg-[#f6f7f9] pb-20">
       {/* Header Sticky */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 px-10 py-6">
-        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-             <button 
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-6 lg:px-10 py-4">
+        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+             <button
               onClick={() => navigate('/admin/standalone')}
-              className="p-3 bg-gray-50 text-gray-400 hover:text-gray-900 rounded-2xl transition-all"
+              title="Back to agents"
+              aria-label="Back to agents"
+              className="h-10 w-10 shrink-0 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
              >
-               <ArrowLeft size={20} />
+               <ArrowLeft size={18} />
              </button>
-             <div className="w-px h-10 bg-gray-100" />
-             <div>
-                <div className="flex items-center gap-3">
-                   <h1 className="text-xl font-black text-gray-900 tracking-tight">{name || 'New Custom Agent'}</h1>
-                   <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${
-                     agent?.status === 'published' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'
+             <div className="min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                   <h1 className="truncate text-[19px] font-semibold text-slate-900 leading-tight">{name || 'New Custom Agent'}</h1>
+                   <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-[12px] font-medium capitalize ${
+                     agent?.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
                    }`}>
+                     <span className={`h-1.5 w-1.5 rounded-full ${agent?.status === 'published' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                      {agent?.status || 'draft'}
                    </span>
+                   {agent?.deployment?.is_deployed && (
+                     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-blue-50 px-2 py-0.5 text-[12px] font-medium text-blue-700">
+                       <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                       Deployed
+                     </span>
+                   )}
                 </div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Autonomous Agent Configuration Builder</p>
+                <p className="mt-0.5 text-[13px] text-slate-500">Autonomous agent configuration builder</p>
              </div>
           </div>
 
-          <div className="flex items-center gap-3">
-             <button 
+          <div className="flex items-center gap-2.5">
+             <button
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="flex items-center gap-2.5 px-6 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-purple-200 hover:text-[#a26da8] transition-all shadow-sm"
+              className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-[13.5px] font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
              >
                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-               Save Configuration
+               Save configuration
              </button>
 
              {agent?.status === 'draft' && (
-               <button 
+               <button
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="flex items-center gap-2.5 px-8 py-3.5 bg-[#a26da8] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#8e5a94] transition-all shadow-xl shadow-purple-100"
+                className="flex h-10 items-center gap-2 rounded-lg bg-[#a26da8] px-4 text-[13.5px] font-medium text-white shadow-sm hover:bg-[#8e5a94] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                >
-                 Publish Agent
                  <Rocket size={16} />
+                 Publish agent
                </button>
              )}
 
              {agent?.status === 'published' && !agent?.deployment?.is_deployed && (
-               <button 
+               <button
                 onClick={() => handleDeploy()}
                 disabled={saving}
-                className="flex items-center gap-2.5 px-8 py-3.5 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-200"
+                className="flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-[13.5px] font-medium text-white shadow-sm hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                >
-                 Deploy Agent
                  <Rocket size={16} />
+                 Deploy agent
                </button>
              )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-10 mt-10">
-         <div className="flex flex-col lg:flex-row gap-10">
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 mt-8">
+         <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Navigation */}
             <div className="w-full lg:w-72 shrink-0">
-               <div className="sticky top-32 space-y-1.5">
-                  {TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center justify-between px-6 py-4 rounded-[20px] transition-all relative overflow-hidden group ${
-                        activeTab === tab.id 
-                        ? 'bg-white shadow-xl shadow-purple-100/50 text-[#a26da8] border border-purple-100' 
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 relative z-10">
-                         <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-purple-100 text-[#a26da8]' : 'bg-gray-50 text-gray-400 group-hover:text-gray-600'}`}>
-                           {tab.icon}
-                         </div>
-                         <span className="text-[11px] font-black uppercase tracking-tight">{tab.name}</span>
-                      </div>
-                      {activeTab === tab.id && <ChevronRight size={14} className="relative z-10" />}
-                    </button>
-                  ))}
+               <div className="sticky top-28 space-y-4">
+                  <nav className="rounded-xl border border-slate-200 bg-white p-2 space-y-0.5" aria-label="Agent builder sections">
+                    {TABS.map((tab) => {
+                      const active = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          aria-current={active ? 'page' : undefined}
+                          className={`relative w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                            active ? 'bg-[#a26da8]/10 text-[#7d4f83]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-[#8a5a90]" />}
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors ${active ? 'bg-white text-[#8a5a90] shadow-sm' : 'bg-slate-50 text-slate-500'}`}>
+                            {tab.icon}
+                          </span>
+                          <span className="min-w-0">
+                            <span className={`block truncate text-[13.5px] ${active ? 'font-semibold' : 'font-medium'}`}>{tab.name}</span>
+                            <span className="block truncate text-[12px] text-slate-500">{tab.hint}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </nav>
 
-                  <div className="mt-10 p-6 bg-gradient-to-br from-purple-50 to-teal-50 rounded-[32px] border border-white">
-                     <div className="flex items-center gap-2 mb-4">
+                  <div className="rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 to-teal-50 p-4">
+                     <div className="flex items-center gap-2">
                         <Sparkles size={14} className="text-[#a26da8]" />
-                        <span className="text-[9px] font-black text-gray-900 uppercase tracking-widest">Builder Tip</span>
+                        <span className="text-[13px] font-semibold text-slate-900">Builder tip</span>
                      </div>
-                     <p className="text-[11px] font-bold text-gray-500 leading-relaxed uppercase tracking-tight">
-                        Configure specialized guardrails to prevent AI hallucinations when using custom knowledge bases.
+                     <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-600">
+                        The chat preview uses your last saved configuration. Save after each change, then test it from the chat button.
                      </p>
                   </div>
                </div>
@@ -422,7 +439,7 @@ const StandaloneAgentBuilder: React.FC = () => {
 
             {/* Main Content Area */}
             <div className="flex-1 min-w-0">
-               <div className="bg-white rounded-[40px] border border-gray-100 p-10 lg:p-16 shadow-sm min-h-[800px]">
+               <div className="bg-white rounded-xl border border-slate-200 p-6 md:p-8 lg:p-10 shadow-sm min-h-[800px]">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeTab}
@@ -461,9 +478,6 @@ const StandaloneAgentBuilder: React.FC = () => {
                       )}
                       {activeTab === 'tools' && (
                         <ToolsTab agentId={id!} refreshKey={refreshKey} />
-                      )}
-                      {activeTab === 'playground' && (
-                        <PlaygroundTab agentId={id!} refreshKey={refreshKey} />
                       )}
                       {activeTab === 'channels' && (
                         <ChannelsTab 
