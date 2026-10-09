@@ -5,8 +5,8 @@
  */
 
 // const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://13.207.66.222:5000'}/api`;
-// const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = "https://avagama-backend-ckm9.onrender.com/api";
+// const BASE_URL = "http://localhost:5000/api";
 // Exposed for the Orchestration live-update WebSocket (ws(s)://<api-host>/ws).
 export const API_BASE_URL = BASE_URL;
 // RFP endpoints. Production still calls the original Render host; the main API now serves /api/rfp as
