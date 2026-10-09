@@ -375,6 +375,8 @@ const RfpDetail: React.FC = () => {
       // shows as generated on return without the whole list being re-fetched.
       if (usecaseId) {
         rfpSessionCache.updateOne(usecaseId, {
+          rfpId,
+          rfpStatus: 'generated',
           rfpGenerated: true,
           company_name: entityCompany.trim(),
         });
@@ -582,16 +584,28 @@ const RfpDetail: React.FC = () => {
       setGenerationSuccess(false);
       setUsecaseData(prev => prev ? { ...prev, status: 'DRAFT' } : null);
 
-      // Clear the generated marker on this one cached entry. The page we are
-      // about to navigate back to reads the cache, so without this it would
-      // still show the document as generated.
+      // Reset this one cached entry to exactly the shape the list endpoint
+      // returns for a use case that has no RFP. Clearing rfpGenerated alone is
+      // not enough: the row would keep the rfpId and rfpStatus it was fetched
+      // with, and the RFP Creation page treats those as evidence that a
+      // document exists — so the button would stay on "View RFP Document"
+      // until an explicit refresh re-fetched the list.
       if (usecaseId) {
-        rfpSessionCache.updateOne(usecaseId, { rfpGenerated: false });
+        rfpSessionCache.updateOne(usecaseId, {
+          rfpId: null,
+          rfpStatus: 'not_created',
+          rfpGenerated: false,
+        });
       }
 
       toast.success('RFP document deleted successfully.');
       setShowDeleteConfirm(false);
-      navigate('/admin/orchestration', { state: { selectedMenu: 'proposal-forge' } });
+      // rfpDeletedUsecaseId tells the RFP Creation page to re-fetch its list on
+      // arrival instead of relying on the cache patch above alone — the cache
+      // may be missing or expired, and the patch then never reaches the page.
+      navigate('/admin/orchestration', {
+        state: { selectedMenu: 'proposal-forge', rfpDeletedUsecaseId: usecaseId }
+      });
     } catch (err: any) {
       console.error('Delete RFP error:', err);
       toast.error('Failed to delete the RFP document. Please try again.');

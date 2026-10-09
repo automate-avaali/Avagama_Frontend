@@ -193,8 +193,13 @@ export const AgentOrchestration: React.FC = () => {
     const cached = rfpSessionCache.get() || [];
     const map: Record<string, boolean> = {};
     cached.forEach((item: any) => {
+      // `false` is recorded as deliberately as `true`. A row the user just
+      // deleted the document for must read as a present "no", not as a missing
+      // entry that the heuristics in isRfpAlreadyGenerated would then answer.
+      // A row carrying no rfpGenerated at all is left out, so those heuristics
+      // still get to speak for it.
       const uId = item.usecaseId || item._id || item.id;
-      if (uId && item.rfpGenerated === true) map[uId] = true;
+      if (uId && typeof item.rfpGenerated === 'boolean') map[uId] = item.rfpGenerated;
     });
     return map;
   });
@@ -207,9 +212,20 @@ export const AgentOrchestration: React.FC = () => {
   const isRfpAlreadyGenerated = (item: any) => {
     if (!item) return false;
     const uId = item.usecaseId || item._id || item.id;
-    if (uId && generatedRfpMap[uId]) return true;
 
-    if (item.rfpGenerated === true || item.isGenerated === true || item.hasRfp === true || item.rfp_generated === true) {
+    // The map is the answer whenever it holds this row — it is built from the
+    // list endpoint's own `rfpGenerated` field and carries the optimistic
+    // updates made when a document is generated or deleted in this tab.
+    //
+    // It has to win outright rather than only being able to say "yes". The
+    // checks below are fallbacks for rows that predate the inline status, and
+    // every one of them can only turn a "no" into a "yes" — so after a delete
+    // they would read the row's leftover rfpId/rfpStatus and keep the button on
+    // "View RFP Document" even though the map had already been corrected.
+    if (uId && uId in generatedRfpMap) return generatedRfpMap[uId];
+    if (typeof item.rfpGenerated === 'boolean') return item.rfpGenerated;
+
+    if (item.isGenerated === true || item.hasRfp === true || item.rfp_generated === true) {
       return true;
     }
 
@@ -388,8 +404,10 @@ export const AgentOrchestration: React.FC = () => {
   const generatedMapFromItems = (items: any[]): Record<string, boolean> => {
     const map: Record<string, boolean> = {};
     items.forEach((item: any) => {
+      // Same rule as the state initialiser above: an explicit boolean is
+      // recorded either way, and a row without one is left for the fallbacks.
       const uId = item.usecaseId || item._id || item.id;
-      if (uId && item.rfpGenerated === true) map[uId] = true;
+      if (uId && typeof item.rfpGenerated === 'boolean') map[uId] = item.rfpGenerated;
     });
     return map;
   };
@@ -400,8 +418,10 @@ export const AgentOrchestration: React.FC = () => {
   // Generation, or across a browser refresh — renders immediately without
   // touching the API. `force` is the explicit user action ("Refresh Shortlisted
   // evaluations" and the retry buttons): it drops the cache and re-fetches.
-  const loadShortlistedEvaluations = async (options: { force?: boolean } = {}) => {
-    const { force = false } = options;
+  // `deletedUsecaseId` is set when returning from RfpDetail right after a
+  // document was deleted there; see the auto-load effect below.
+  const loadShortlistedEvaluations = async (options: { force?: boolean; deletedUsecaseId?: string } = {}) => {
+    const { force = false, deletedUsecaseId } = options;
 
     if (force) {
       rfpSessionCache.clear();
@@ -434,19 +454,24 @@ export const AgentOrchestration: React.FC = () => {
         throw new Error(`Server returned status ${response.status}`);
       }
       const data = await response.json();
-      const items = Array.isArray(data) ? data : (data.data && Array.isArray(data.data)) ? data.data : [];
+      const fetched = Array.isArray(data) ? data : (data.data && Array.isArray(data.data)) ? data.data : [];
+
+      // The delete for this use case has already succeeded, so its row is
+      // reset to the "no RFP" shape whatever this response says — in case the
+      // list has not caught up with the delete yet.
+      const items = deletedUsecaseId
+        ? fetched.map((item: any) =>
+            String(item.usecaseId || item._id || item.id) === deletedUsecaseId
+              ? { ...item, rfpId: null, rfpStatus: 'not_created', rfpGenerated: false }
+              : item)
+        : fetched;
 
       // The backend now returns rfpGenerated inline per row, so the map is
       // built — and set — before setRfpUsecases. Both updates land in the
       // same synchronous batch, so the first paint that includes these rows
       // already carries correct status; there is no longer a verification
       // window for the button to sit in.
-      const map: Record<string, boolean> = {};
-      items.forEach((item: any) => {
-        const uId = item.usecaseId || item._id || item.id;
-        if (uId) map[uId] = Boolean(item.rfpGenerated);
-      });
-      setGeneratedRfpMap(map);
+      setGeneratedRfpMap(generatedMapFromItems(items));
       setVerifyingRfpMap({});
       setRfpUsecases(items);
       rfpSessionCache.set(items);
@@ -554,7 +579,7 @@ export const AgentOrchestration: React.FC = () => {
       window.URL.revokeObjectURL(url);
 
       setGeneratedRfpMap(prev => ({ ...prev, [usecaseId]: true }));
-      rfpSessionCache.updateOne(usecaseId, { rfpGenerated: true });
+      rfpSessionCache.updateOne(usecaseId, { rfpStatus: 'generated', rfpGenerated: true });
 
       toast.dismiss(toastId);
     } catch (err: any) {
@@ -567,9 +592,21 @@ export const AgentOrchestration: React.FC = () => {
 
   // Auto load shortlisted evaluations when navigating to proposal-forge
   useEffect(() => {
-    if (selectedMenu === 'proposal-forge') {
-      loadShortlistedEvaluations();
+    if (selectedMenu !== 'proposal-forge') return;
+
+    // Returning from RfpDetail right after deleting a document: re-sync the
+    // list with the server, as the Refresh button does, so the button flips
+    // back to "Generate RFP Document" without a manual refresh.
+    const deletedUsecaseId = location.state?.rfpDeletedUsecaseId;
+    if (deletedUsecaseId) {
+      // Drop the marker from this history entry so a reload or Back does not
+      // replay the delete over a document generated since.
+      navigate(location.pathname, { replace: true, state: { selectedMenu } });
+      loadShortlistedEvaluations({ force: true, deletedUsecaseId: String(deletedUsecaseId) });
+      return;
     }
+
+    loadShortlistedEvaluations();
   }, [selectedMenu]);
 
   const MENU_LABELS: Record<string, string> = {
