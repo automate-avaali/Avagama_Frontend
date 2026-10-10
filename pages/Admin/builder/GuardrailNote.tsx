@@ -1,7 +1,7 @@
 // What the agent's AI Guardrails did on a message (backend contract F.7).
 // Shown under messages in the chat preview and the Conversations tab; renders nothing when no guardrail acted.
 import React from 'react';
-import { BookX, EyeOff, ShieldAlert } from 'lucide-react';
+import { BookX, EyeOff, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 const REASONS: Record<string, string> = {
   forbidden_topic: 'forbidden topic',
@@ -34,13 +34,19 @@ const Chip: React.FC<{ tone: keyof typeof TONES; icon: React.ReactNode; children
 // guardrails: the reply's guardrails object; piiTypes / piiAction: personal data found in the user's message.
 export const GuardrailNote: React.FC<{ guardrails?: any; piiTypes?: string[]; piiAction?: string; align?: 'left' | 'right' }> = ({ guardrails, piiTypes, piiAction, align = 'left' }) => {
   const chips: React.ReactNode[] = [];
+  // "Declined" is keyed off blocked only: a forbidden topic can also come back answered-but-limited (blocked false).
   if (guardrails?.blocked) {
     chips.push(<Chip key="blocked" tone="amber" icon={<ShieldAlert size={12} />}>Declined by guardrail · {reasonLabel(guardrails.reason)}</Chip>);
-  } else if (guardrails?.grounded === false) {
-    // Sources = knowledge base, live web search results and tool results (backend grounding check).
-    chips.push(<Chip key="grounded" tone="slate" icon={<BookX size={12} />}>No supporting source found · fallback reply</Chip>);
-  } else if (guardrails?.grounded === 'partial') {
-    chips.push(<Chip key="grounded" tone="slate" icon={<BookX size={12} />}>Only partly supported by the sources</Chip>);
+  } else {
+    if (guardrails?.limited) {
+      chips.push(<Chip key="limited" tone="slate" icon={<ShieldCheck size={12} />}>Answered within this agent's limits{guardrails.reason ? ` · ${reasonLabel(guardrails.reason)}` : ''}</Chip>);
+    }
+    if (guardrails?.grounded === false) {
+      // Sources = the conversation, knowledge base, live web search results and tool results (backend grounding check).
+      chips.push(<Chip key="grounded" tone="slate" icon={<BookX size={12} />}>No supporting source found · fallback reply</Chip>);
+    } else if (guardrails?.grounded === 'partial') {
+      chips.push(<Chip key="grounded" tone="slate" icon={<BookX size={12} />}>Only partly supported by the sources</Chip>);
+    }
   }
   if (piiTypes && piiTypes.length) {
     const what = piiAction === 'mask' ? 'Personal data masked' : piiAction === 'flag' ? 'Personal data flagged' : 'Personal data detected';
@@ -54,5 +60,6 @@ const TAG_LABELS: Record<string, string> = {
   'guardrail:forbidden_topic': 'Forbidden topic',
   'guardrail:safety': 'Safety',
   'guardrail:pii': 'Personal data',
+  'guardrail:restricted_reply': 'Restricted reply',
 };
 export const tagLabel = (t: string) => TAG_LABELS[t] || t;
